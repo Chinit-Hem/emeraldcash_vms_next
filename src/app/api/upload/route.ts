@@ -165,24 +165,37 @@ async function fileToBase64(file: File): Promise<string> {
  * Determines the Cloudinary folder based on vehicle category
  * 
  * @param {string} category - Vehicle category (e.g., "Cars", "Motorcycles")
- * @returns {string} Cloudinary folder path
+ * @returns {string} Cloudinary folder path (e.g., "vms/cars", "vms/motorcycles", "vms/tuktuks")
  */
 function getCloudinaryFolder(category: string): string {
   const normalizedCategory = category.toLowerCase().trim();
   
-  // Map categories to folder names
+  // Map categories to folder names using explicit vms/ prefix
   const folderMap: Record<string, string> = {
     "cars": "vms/cars",
     "car": "vms/cars",
+    "suv": "vms/cars",
+    "sedan": "vms/cars",
+    "truck": "vms/cars",
+    "pickup": "vms/cars",
+    "van": "vms/cars",
     "motorcycles": "vms/motorcycles",
     "motorcycle": "vms/motorcycles",
     "moto": "vms/motorcycles",
+    "bike": "vms/motorcycles",
+    "scooter": "vms/motorcycles",
     "tuktuk": "vms/tuktuks",
     "tuk-tuk": "vms/tuktuks",
     "tuk tuk": "vms/tuktuks",
+    "tuk": "vms/tuktuks",
+    "auto rickshaw": "vms/tuktuks",
+    "three wheeler": "vms/tuktuks",
   };
 
-  return folderMap[normalizedCategory] || `vms/${normalizedCategory}s`;
+  // Return mapped folder or default to vms/{category}s
+  const folder = folderMap[normalizedCategory] || `vms/${normalizedCategory}s`;
+  console.log(`[getCloudinaryFolder] Category: "${category}" -> Folder: "${folder}"`);
+  return folder;
 }
 
 /**

@@ -78,9 +78,19 @@ export async function uploadImage(
 
     const result = await cloudinary.uploader.upload(imageData, uploadOptions);
 
+    // Ensure we return the secure_url from Cloudinary
+    const secureUrl = result.secure_url;
+    if (!secureUrl) {
+      console.error("Cloudinary upload succeeded but no secure_url returned:", result);
+      return {
+        success: false,
+        error: "Upload succeeded but no secure_url was returned from Cloudinary",
+      };
+    }
+
     return {
       success: true,
-      url: result.secure_url,
+      url: secureUrl,
       publicId: result.public_id,
       folder: targetFolder,
     };

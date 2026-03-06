@@ -332,7 +332,7 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
   };
 
   return (
-    <aside className="ec-sidebar w-[280px] h-screen overflow-y-auto flex flex-col print:hidden">
+    <aside className="ec-sidebar w-[280px] h-screen overflow-y-auto flex flex-col print:hidden relative z-[50]">
       {/* Gradient overlay */}
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true" />
 

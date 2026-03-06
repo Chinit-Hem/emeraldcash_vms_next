@@ -281,9 +281,11 @@ export async function PUT(
     }
 
     if (imageDataToUpload) {
+      // Get folder using explicit vms/ prefix pattern
       const targetFolder = getCloudinaryFolder(category);
       console.log(`[PUT /api/vehicles/${vehicleId}] Uploading to Cloudinary folder: ${targetFolder}`);
       
+      // Upload with explicit folder option
       const uploadResult = await uploadImage(imageDataToUpload, {
         folder: targetFolder,
         publicId: `vehicle_${vehicleId}_${Date.now()}`,
@@ -297,9 +299,10 @@ export async function PUT(
         console.warn(`[PUT /api/vehicles/${vehicleId}] Image upload failed: ${uploadResult.error}`);
         // Continue without the image rather than returning 502
       } else {
+        // Use secure_url from Cloudinary response
         imageId = uploadResult.url || null;
-        console.log(`✅ [PUT /api/vehicles/${vehicleId}] Image successfully uploaded to Cloudinary folder '${targetFolder}' and Database updated!`);
-        console.log(`[PUT /api/vehicles/${vehicleId}] Image URL: ${imageId}`);
+        console.log(`✅ [PUT /api/vehicles/${vehicleId}] Image successfully uploaded to Cloudinary folder '${targetFolder}'`);
+        console.log(`[PUT /api/vehicles/${vehicleId}] Secure URL: ${imageId}`);
       }
     } else {
       console.log(`[PUT /api/vehicles/${vehicleId}] No image data to upload`);

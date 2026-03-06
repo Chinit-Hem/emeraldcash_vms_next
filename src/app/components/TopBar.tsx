@@ -34,7 +34,7 @@ export default function TopBar({
   };
 
   return (
-    <header className="sticky top-0 z-[100] ec-glassPanel ec-theme-overlay-host border-b border-black/5 dark:border-white/5 print:hidden">
+    <header className="sticky top-0 z-[200] ec-glassPanel ec-theme-overlay-host border-b border-black/5 dark:border-white/5 print:hidden">
       <div className="h-14 px-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {showBack ? (

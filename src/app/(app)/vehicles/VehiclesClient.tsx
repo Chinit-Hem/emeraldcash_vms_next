@@ -660,7 +660,7 @@ export default function VehiclesClient() {
 
         {/* Data Status Bar - Enterprise Grade */}
         {!loading && !error && (
-          <div className="ec-status-bar relative z-0 flex flex-wrap items-center justify-between gap-4 mb-6 p-4 bg-gradient-to-r from-white/90 to-white/70 dark:from-gray-800/90 dark:to-gray-800/70 backdrop-blur-md rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+          <div className="ec-status-bar relative z-[1] flex flex-wrap items-center justify-between gap-4 mb-6 p-4 bg-gradient-to-r from-white/90 to-white/70 dark:from-gray-800/90 dark:to-gray-800/70 backdrop-blur-md rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
             <div className="flex items-center gap-6 text-sm">
               {/* Last Sync */}
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
