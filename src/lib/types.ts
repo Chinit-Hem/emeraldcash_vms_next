@@ -121,9 +121,9 @@ export type Vehicle = {
 export type VehicleMeta = {
   total?: number;           // Total count of ALL vehicles (not max ID)
   countsByCategory?: {
-    Car?: number;           // Normalized from "Car", "Cars"
+    Cars?: number;          // Normalized from "Car", "Cars"
     Motorcycles?: number;   // Normalized from "Motorcycle", "Motorcycles"
-    "Tuk Tuk"?: number;     // Normalized from "Tuk Tuk", "TukTuks", etc.
+    TukTuks?: number;       // Normalized from "Tuk Tuk", "TukTuks", etc.
   };
   avgPrice?: number;        // Average price across ALL vehicles
   noImageCount?: number;    // Count of vehicles without images

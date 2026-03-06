@@ -7,6 +7,7 @@ import { extractDriveFileId } from "@/lib/drive";
 import type { Vehicle } from "@/lib/types";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getVehicleById, updateVehicle, deleteVehicle, toVehicle as dbToVehicle } from "@/lib/db-schema";
 import { uploadImage, getCloudinaryFolder, deleteImage } from "@/lib/cloudinary";
 
@@ -342,7 +343,17 @@ export async function PUT(
       imageUrl: imageUrl.substring(0, 100) + "..."
     });
 
+    // Clear server-side cache and revalidate
     clearCachedVehicles();
+    
+    // Revalidate Next.js cache tags
+    try {
+      revalidateTag('vehicles', {});
+      console.log(`[PUT /api/vehicles/${vehicleId}] Revalidated vehicles tag`);
+    } catch (e) {
+      console.error(`[PUT /api/vehicles/${vehicleId}] Failed to revalidate:`, e);
+    }
+    
     return NextResponse.json({ ok: true, data: responseVehicle });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
@@ -432,7 +443,18 @@ export async function DELETE(
     }
 
     console.log(`[DELETE /api/vehicles/${vehicleId}] Vehicle deleted successfully`);
+    
+    // Clear server-side cache and revalidate
     clearCachedVehicles();
+    
+    // Revalidate Next.js cache tags
+    try {
+      revalidateTag('vehicles', {});
+      console.log(`[DELETE /api/vehicles/${vehicleId}] Revalidated vehicles tag`);
+    } catch (e) {
+      console.error(`[DELETE /api/vehicles/${vehicleId}] Failed to revalidate:`, e);
+    }
+    
     return NextResponse.json({ ok: true, data: null });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";

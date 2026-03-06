@@ -1,4 +1,5 @@
 import type { Vehicle, VehicleMeta } from "./types";
+import { recordMutation } from "./vehicleCache";
 
 
 // API Configuration
@@ -531,25 +532,33 @@ export const vehicleApi = {
 
   // Add new vehicle
   async addVehicle(vehicleData: Partial<Vehicle>): Promise<Vehicle> {
-    return apiRequest<Vehicle>("/api/vehicles", {
+    const result = await apiRequest<Vehicle>("/api/vehicles", {
       method: "POST",
       body: JSON.stringify(vehicleData),
     });
+    // Record mutation to invalidate client-side cache
+    recordMutation();
+    return result;
   },
 
   // Update vehicle
   async updateVehicle(id: string, vehicleData: Partial<Vehicle>): Promise<Vehicle> {
-    return apiRequest<Vehicle>(`/api/vehicles/${encodeURIComponent(id)}`, {
+    const result = await apiRequest<Vehicle>(`/api/vehicles/${encodeURIComponent(id)}`, {
       method: "PUT",
       body: JSON.stringify(vehicleData),
     });
+    // Record mutation to invalidate client-side cache
+    recordMutation();
+    return result;
   },
 
   // Delete vehicle
   async deleteVehicle(id: string): Promise<void> {
-    return apiRequest<void>(`/api/vehicles/${encodeURIComponent(id)}`, {
+    await apiRequest<void>(`/api/vehicles/${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
+    // Record mutation to invalidate client-side cache
+    recordMutation();
   },
 
   // Clear cache

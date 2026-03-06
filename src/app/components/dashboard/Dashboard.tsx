@@ -297,9 +297,9 @@ export default function Dashboard() {
       return {
         total: meta.total ?? vehicles.length,
         // API now returns normalized category names
-        cars: meta.countsByCategory?.Car ?? 0,
+        cars: meta.countsByCategory?.Cars ?? 0,
         motorcycles: meta.countsByCategory?.Motorcycles ?? 0,
-        tukTuk: meta.countsByCategory?.["Tuk Tuk"] ?? 0,
+        tukTuk: meta.countsByCategory?.TukTuks ?? 0,
         newCount: meta.countsByCondition?.New ?? 0,
         usedCount: meta.countsByCondition?.Used ?? 0,
         noImagesCount: meta.noImageCount ?? 0,

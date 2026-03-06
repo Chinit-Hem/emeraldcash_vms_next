@@ -1,6 +1,8 @@
+
+
 import { useCallback, useEffect, useState } from "react";
 import { vehicleApi, isApiError, isConfigError, isNetworkError, getErrorDetails } from "./api";
-import { onVehicleCacheUpdate } from "./vehicleCache";
+import { onVehicleCacheUpdate, shouldUseCache, isCacheStale } from "./vehicleCache";
 import type { Vehicle, VehicleMeta } from "./types";
 import { isIOSSafariBrowser } from "./platform";
 
@@ -29,9 +31,17 @@ export function useVehicles(noCache = true): UseVehiclesReturn {
     setError(null);
     
     try {
+      // Check if cache is stale - if so, force noCache to true
+      const cacheIsStale = isCacheStale();
+      const effectiveNoCache = noCache || cacheIsStale;
+      
+      if (cacheIsStale && process.env.NODE_ENV === 'development') {
+        console.log('[useVehicles] Cache is stale, forcing fresh data fetch');
+      }
+      
       const useLiteMode = isIOSSafariBrowser();
       const result = await vehicleApi.getVehicles(
-        noCache,
+        effectiveNoCache,
         useLiteMode
           ? {
               lite: true,

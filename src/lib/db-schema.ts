@@ -191,9 +191,9 @@ function normalizeCondition(condition: string): "New" | "Used" | "Other" {
 // Normalize category to standard format
 function normalizeCategory(category: string): string {
   const lower = category?.toLowerCase().trim();
-  if (lower === "car" || lower === "cars") return "Car";
+  if (lower === "car" || lower === "cars") return "Cars";
   if (lower === "motorcycle" || lower === "motorcycles") return "Motorcycles";
-  if (lower === "tuk tuk" || lower === "tuktuk" || lower === "tuk-tuk" || lower === "tuktuks") return "Tuk Tuk";
+  if (lower === "tuk tuk" || lower === "tuktuk" || lower === "tuk-tuk" || lower === "tuktuks") return "TukTuks";
   return category?.trim() || "Other";
 }
 

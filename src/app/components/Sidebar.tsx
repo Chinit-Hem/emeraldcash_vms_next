@@ -378,9 +378,9 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
 
   // Get counts from meta
   const allVehiclesCount = meta?.total ?? 0;
-  const carsCount = meta?.countsByCategory?.Car ?? 0;
+  const carsCount = meta?.countsByCategory?.Cars ?? 0;
   const motorcyclesCount = meta?.countsByCategory?.Motorcycles ?? 0;
-  const tukTuksCount = meta?.countsByCategory?.["Tuk Tuk"] ?? 0;
+  const tukTuksCount = meta?.countsByCategory?.TukTuks ?? 0;
 
   return (
     <aside className="ec-sidebar w-[280px] h-screen overflow-y-auto flex flex-col print:hidden relative z-[50]">

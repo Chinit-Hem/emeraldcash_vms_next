@@ -51,7 +51,7 @@ function computeVehicleMeta(vehicles: Vehicle[]): VehicleMeta {
     countsByCategory: {
       Cars: vehicles.filter(v => v.Category === "Cars").length,
       Motorcycles: vehicles.filter(v => v.Category === "Motorcycles").length,
-      TukTuks: vehicles.filter(v => v.Category === "Tuk Tuk").length,
+      TukTuks: vehicles.filter(v => v.Category === "TukTuks").length,
     },
     avgPrice: vehicles.length > 0
       ? vehicles.reduce((sum, v) => sum + (v.PriceNew || 0), 0) / vehicles.length
@@ -804,7 +804,7 @@ export default function VehiclesClient() {
             { key: "All", label: "All Vehicles", count: kpis.total },
             { key: "Cars", label: "Cars", count: kpis.cars },
             { key: "Motorcycles", label: "Motorcycles", count: kpis.motorcycles },
-            { key: "Tuk Tuk", label: "TukTuks", count: kpis.tukTuks },
+        { key: "TukTuks", label: "TukTuks", count: kpis.tukTuks },
           ].map((tab) => (
             <button
               key={tab.key}

@@ -11,6 +11,7 @@ import {
 import { uploadImage, getCloudinaryFolder } from "@/lib/cloudinary";
 import type { Vehicle, VehicleMeta } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { clearCachedVehicles } from "./_cache";
 import { extractDriveFileId } from "./_shared";
 
@@ -257,7 +258,17 @@ export async function POST(req: NextRequest) {
     // Create vehicle in database
     const newVehicle = await createVehicle(vehicleData);
 
+    // Clear server-side cache and revalidate
     clearCachedVehicles();
+    
+    // Revalidate Next.js cache tags
+    try {
+      revalidateTag('vehicles', {});
+      console.log("[POST /api/vehicles] Revalidated vehicles tag");
+    } catch (e) {
+      console.error("[POST /api/vehicles] Failed to revalidate:", e);
+    }
+    
     return NextResponse.json({ 
       ok: true, 
       data: toVehicle(newVehicle) 

@@ -1,5 +1,5 @@
 // Database operations for users table using Neon PostgreSQL
-import { sql } from "./db";
+import { sql, queryWithRetry } from "./db";
 import type { Role } from "./types";
 import {
   DatabaseError,
@@ -78,9 +78,10 @@ function validateCreatedBy(createdBy: string): void {
 async function checkUserExists(username: string): Promise<UserDB> {
   log("DEBUG", "Checking if user exists", { username });
   
-  const result = await sql`
-    SELECT * FROM users WHERE username = ${username}
-  `;
+  const result = await queryWithRetry(
+    async () => sql`SELECT * FROM users WHERE username = ${username}`,
+    "checkUserExists"
+  );
   
   if (result.length === 0) {
     log("DEBUG", "User not found", { username });
@@ -95,16 +96,19 @@ export async function ensureUsersTable(): Promise<void> {
   log("INFO", "Checking if users table exists");
   
   try {
-    await sql`
-      CREATE TABLE IF NOT EXISTS users (
-        username VARCHAR(32) PRIMARY KEY,
-        role VARCHAR(10) NOT NULL CHECK (role IN ('Admin', 'Staff')),
-        password_hash VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        created_by VARCHAR(32) NOT NULL
-      )
-    `;
+    await queryWithRetry(
+      async () => sql`
+        CREATE TABLE IF NOT EXISTS users (
+          username VARCHAR(32) PRIMARY KEY,
+          role VARCHAR(10) NOT NULL CHECK (role IN ('Admin', 'Staff')),
+          password_hash VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          created_by VARCHAR(32) NOT NULL
+        )
+      `,
+      "ensureUsersTable"
+    );
     log("INFO", "Users table verified/created successfully");
   } catch (error) {
     log("ERROR", "Failed to create users table", { 
@@ -141,25 +145,29 @@ export async function createUserInDB(params: {
   
   try {
     // Check if user already exists
-    const existingResult = await sql`
-      SELECT username FROM users WHERE username = ${normalizedUsername}
-    `;
+    const existingResult = await queryWithRetry(
+      async () => sql`SELECT username FROM users WHERE username = ${normalizedUsername}`,
+      "createUserInDB-checkExists"
+    );
     
     if (existingResult.length > 0) {
       log("ERROR", "User already exists", { username: normalizedUsername });
       throw new DuplicateError("User");
     }
     
-    const result = await sql`
-      INSERT INTO users (username, role, password_hash, created_by)
-      VALUES (
-        ${normalizedUsername},
-        ${params.role},
-        ${params.passwordHash},
-        ${params.createdBy.trim()}
-      )
-      RETURNING *
-    `;
+    const result = await queryWithRetry(
+      async () => sql`
+        INSERT INTO users (username, role, password_hash, created_by)
+        VALUES (
+          ${normalizedUsername},
+          ${params.role},
+          ${params.passwordHash},
+          ${params.createdBy.trim()}
+        )
+        RETURNING *
+      `,
+      "createUserInDB-insert"
+    );
     
     if (!result || result.length === 0) {
       throw new DatabaseError("Failed to create user - no result returned");
@@ -211,9 +219,10 @@ export async function getUserByUsername(username: string): Promise<UserDB | null
   const normalizedUsername = username.trim().toLowerCase();
   
   try {
-    const result = await sql`
-      SELECT * FROM users WHERE username = ${normalizedUsername}
-    `;
+    const result = await queryWithRetry(
+      async () => sql`SELECT * FROM users WHERE username = ${normalizedUsername}`,
+      "getUserByUsername"
+    );
     
     if (result.length === 0) {
       log("DEBUG", "User not found", { username: normalizedUsername });
@@ -240,9 +249,10 @@ export async function listUsersFromDB(): Promise<UserDB[]> {
   log("INFO", "Listing all users from database");
   
   try {
-    const result = await sql`
-      SELECT * FROM users ORDER BY username ASC
-    `;
+    const result = await queryWithRetry(
+      async () => sql`SELECT * FROM users ORDER BY username ASC`,
+      "listUsersFromDB"
+    );
     
     log("INFO", "Found users in database", { count: result.length });
     return result as UserDB[];
@@ -279,14 +289,17 @@ export async function updateUserInDB(params: {
     // Check if user exists before updating
     await checkUserExists(normalizedUsername);
     
-    const result = await sql`
-      UPDATE users 
-      SET 
-        password_hash = ${params.passwordHash},
-        updated_at = CURRENT_TIMESTAMP
-      WHERE username = ${normalizedUsername}
-      RETURNING *
-    `;
+    const result = await queryWithRetry(
+      async () => sql`
+        UPDATE users 
+        SET 
+          password_hash = ${params.passwordHash},
+          updated_at = CURRENT_TIMESTAMP
+        WHERE username = ${normalizedUsername}
+        RETURNING *
+      `,
+      "updateUserInDB"
+    );
     
     if (!result || result.length === 0) {
       log("ERROR", "Update returned no rows", { username: normalizedUsername });
@@ -332,10 +345,13 @@ export async function deleteUserFromDB(username: string): Promise<boolean> {
     // Check if user exists before deleting
     await checkUserExists(normalizedUsername);
     
-    const result = await sql`
-      DELETE FROM users WHERE username = ${normalizedUsername}
-      RETURNING username
-    `;
+    const result = await queryWithRetry(
+      async () => sql`
+        DELETE FROM users WHERE username = ${normalizedUsername}
+        RETURNING username
+      `,
+      "deleteUserFromDB"
+    );
     
     const deleted = result.length > 0;
     
@@ -367,9 +383,10 @@ export async function countAdminUsers(): Promise<number> {
   log("DEBUG", "Counting admin users");
   
   try {
-    const result = await sql`
-      SELECT COUNT(*) as count FROM users WHERE role = 'Admin'
-    `;
+    const result = await queryWithRetry(
+      async () => sql`SELECT COUNT(*) as count FROM users WHERE role = 'Admin'`,
+      "countAdminUsers"
+    );
     
     if (!result || result.length === 0 || !result[0].count) {
       log("ERROR", "Count query returned unexpected result");

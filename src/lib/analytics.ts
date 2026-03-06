@@ -1,6 +1,6 @@
 import type { Vehicle } from "@/lib/types";
 
-export type CategoryLabel = "Cars" | "Motorcycles" | "Tuk Tuk" | "Other";
+export type CategoryLabel = "Cars" | "Motorcycles" | "TukTuks" | "Other";
 export type ConditionLabel = "New" | "Used" | "Other";
 
 export type PieDatum = { name: string; value: number; color: string };
@@ -20,7 +20,7 @@ export function normalizeCategoryLabel(value: unknown): CategoryLabel {
   if (!raw) return "Other";
   if (raw === "cars" || raw === "car") return "Cars";
   if (raw === "motorcycles" || raw === "motorcycle") return "Motorcycles";
-  if (raw === "tuk tuk" || raw === "tuktuk" || raw === "tuk-tuk") return "Tuk Tuk";
+  if (raw === "tuk tuk" || raw === "tuktuk" || raw === "tuk-tuk" || raw === "tuktuks") return "TukTuks";
   return "Other";
 }
 
@@ -105,7 +105,7 @@ export function buildVehiclesByCategory(vehicles: Vehicle[]): PieDatum[] {
   const counts: Record<CategoryLabel, number> = {
     Cars: 0,
     Motorcycles: 0,
-    "Tuk Tuk": 0,
+    TukTuks: 0,
     Other: 0,
   };
 
@@ -114,7 +114,7 @@ export function buildVehiclesByCategory(vehicles: Vehicle[]): PieDatum[] {
   const colors: Record<CategoryLabel, string> = {
     Cars: "var(--ec-chart-emerald)",
     Motorcycles: "var(--ec-chart-emerald-soft)",
-    "Tuk Tuk": "var(--ec-chart-red-soft)",
+    TukTuks: "var(--ec-chart-red-soft)",
     Other: "var(--ec-chart-neutral)",
   };
 
