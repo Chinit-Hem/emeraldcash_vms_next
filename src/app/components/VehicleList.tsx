@@ -784,7 +784,8 @@ export default function VehicleList({ category }: VehicleListProps) {
                   if (!vehicleId) return;
                   router.push(`/vehicles/${encodeURIComponent(vehicleId)}/view`);
                 }}
-                className={`p-4 ${vehicleId ? "cursor-pointer" : ""} transition-colors active:opacity-95 ${rowClass}`}
+                className={`p-4 ${vehicleId ? "cursor-pointer touch-manipulation" : ""} transition-all duration-150 active:scale-[0.98] active:bg-black/5 select-none ${rowClass}`}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="shrink-0">
