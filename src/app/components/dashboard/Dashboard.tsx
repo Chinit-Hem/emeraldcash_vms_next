@@ -47,7 +47,6 @@ import { getCambodiaNowString } from "@/lib/cambodiaTime";
 import { extractDriveFileId } from "@/lib/drive";
 import type { Vehicle, VehicleMeta } from "@/lib/types";
 import { writeVehicleCache } from "@/lib/vehicleCache";
-import { isIOSSafariBrowser } from "@/lib/platform";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -112,37 +111,18 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState<string>("");
   const [cambodiaNow, setCambodiaNow] = useState(() => getCambodiaNowString());
   const [isLoading, setIsLoading] = useState(true);
-  const [isIOSSafari, setIsIOSSafari] = useState(false);
   const fetchAbortRef = useRef<AbortController | null>(null);
 
   // Modal state - now using global UI state
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
 
   useEffect(() => {
-    setIsIOSSafari(isIOSSafariBrowser());
-  }, []);
-
-  useEffect(() => {
-    if (isIOSSafari) return;
     const interval = window.setInterval(() => setCambodiaNow(getCambodiaNowString()), 1000);
     return () => window.clearInterval(interval);
-  }, [isIOSSafari]);
+  }, []);
 
   // Load from cache immediately on mount
   useEffect(() => {
-    if (isIOSSafari) {
-      try {
-        const cached = localStorage.getItem("vms-vehicles");
-        if (cached && cached.length > 250_000) {
-          localStorage.removeItem("vms-vehicles");
-          localStorage.removeItem("vms-vehicles-meta");
-        }
-      } catch {
-        // ignore storage errors
-      }
-      return;
-    }
-
     try {
       const cached = localStorage.getItem("vms-vehicles");
       if (cached) {
@@ -154,7 +134,7 @@ export default function Dashboard() {
     } catch {
       // Ignore cache errors
     }
-  }, [isIOSSafari]);
+  }, []);
 
   const fetchVehicles = async () => {
     fetchAbortRef.current?.abort();
@@ -164,8 +144,7 @@ export default function Dashboard() {
     setIsRefreshing(true);
     setVehiclesError("");
     try {
-      const endpoint = isIOSSafari ? "/api/vehicles?noCache=1&lite=1&maxRows=200" : "/api/vehicles?noCache=1";
-      const res = await fetch(endpoint, {
+      const res = await fetch("/api/vehicles?noCache=1", {
         cache: "no-store",
         signal: controller.signal,
       });
@@ -182,15 +161,13 @@ export default function Dashboard() {
       setLastUpdated(getCambodiaNowString());
       setIsLoading(false);
       // Save to localStorage
-      if (!isIOSSafari) {
-        try {
-          writeVehicleCache(newVehicles);
-          if (newMeta) {
-            localStorage.setItem("vms-vehicles-meta", JSON.stringify(newMeta));
-          }
-        } catch {
-          // Ignore storage errors
+      try {
+        writeVehicleCache(newVehicles);
+        if (newMeta) {
+          localStorage.setItem("vms-vehicles-meta", JSON.stringify(newMeta));
         }
+      } catch {
+        // Ignore storage errors
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
@@ -209,7 +186,7 @@ export default function Dashboard() {
       fetchAbortRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, isIOSSafari]);
+  }, [router]);
 
   // Safe error message extraction to prevent circular reference issues
   const getSafeErrorMessage = (errorData: unknown): string => {
@@ -356,160 +333,15 @@ export default function Dashboard() {
     };
   }, [vehicles, meta]);
 
-  const chartVehicles = useMemo(() => (isIOSSafari ? [] : vehicles), [isIOSSafari, vehicles]);
-  const byCategory = useMemo(() => buildVehiclesByCategory(chartVehicles), [chartVehicles]);
-  const byBrand = useMemo(() => buildVehiclesByBrand(chartVehicles, 12), [chartVehicles]);
-  const priceDistribution = useMemo(() => buildPriceDistribution(chartVehicles), [chartVehicles]);
-  const newVsUsed = useMemo(() => buildNewVsUsed(chartVehicles), [chartVehicles]);
-  const monthlyAdded = useMemo(() => buildMonthlyAdded(chartVehicles), [chartVehicles]);
+  // iOS now gets full functionality like desktop
+  const byCategory = useMemo(() => buildVehiclesByCategory(vehicles), [vehicles]);
+  const byBrand = useMemo(() => buildVehiclesByBrand(vehicles, 12), [vehicles]);
+  const priceDistribution = useMemo(() => buildPriceDistribution(vehicles), [vehicles]);
+  const newVsUsed = useMemo(() => buildNewVsUsed(vehicles), [vehicles]);
+  const monthlyAdded = useMemo(() => buildMonthlyAdded(vehicles), [vehicles]);
 
   if (isLoading && vehicles.length === 0) {
-    if (isIOSSafari) {
-      return (
-        <div className="p-4 sm:p-6">
-          <div className="rounded-xl border border-slate-200/70 bg-white p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-            Loading dashboard...
-          </div>
-        </div>
-      );
-    }
     return <SkeletonDashboard />;
-  }
-
-  if (isIOSSafari) {
-    return (
-      <div className="p-3 sm:p-4 min-h-screen pb-20 ios-safe-area">
-        <GlassToast toasts={toasts} onRemove={removeToast} />
-
-        {/* iOS Header */}
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-slate-800 dark:text-white">Dashboard</h1>
-            <p className="text-xs text-slate-500">Welcome, {user?.username || "Guest"}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-mono text-slate-600 dark:text-slate-400">{cambodiaNow}</p>
-          </div>
-        </div>
-
-        {vehiclesError ? (
-          <div className="mb-4 rounded-xl border border-red-300/70 bg-red-50 p-3 text-sm text-red-700">
-            <p className="mb-2">{vehiclesError}</p>
-            <button
-              onClick={() => fetchVehicles()}
-              className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white active:scale-95 transition-transform"
-            >
-              Retry
-            </button>
-          </div>
-        ) : null}
-
-        {/* All 7 KPI Cards - Optimized for iOS */}
-        <div className="mb-4 grid grid-cols-2 gap-2 sm:gap-3">
-          <KpiCard 
-            label="Total" 
-            value={kpis.total.toLocaleString()} 
-            sublabel="vehicles"
-            accent="green" 
-            onClick={() => router.push("/vehicles")}
-          />
-          <KpiCard 
-            label="Cars" 
-            value={kpis.cars.toLocaleString()} 
-            sublabel="vehicles"
-            accent="green" 
-            onClick={() => applyFilter(router, { type: "category", value: "Car" })}
-          />
-          <KpiCard
-            label="Motorcycles"
-            value={kpis.motorcycles.toLocaleString()}
-            sublabel="vehicles"
-            accent="gray"
-            onClick={() => applyFilter(router, { type: "category", value: "Motorcycle" })}
-          />
-          <KpiCard 
-            label="Tuk Tuk" 
-            value={kpis.tukTuk.toLocaleString()} 
-            sublabel="vehicles"
-            accent="green" 
-            onClick={() => applyFilter(router, { type: "category", value: "Tuk Tuk" })}
-          />
-          <KpiCard 
-            label="New" 
-            value={kpis.newCount.toLocaleString()} 
-            sublabel="condition"
-            accent="green" 
-            onClick={() => applyFilter(router, { type: "condition", value: "New" })}
-          />
-          <KpiCard 
-            label="Used" 
-            value={kpis.usedCount.toLocaleString()} 
-            sublabel="condition"
-            accent="red" 
-            onClick={() => applyFilter(router, { type: "condition", value: "Used" })}
-          />
-          <KpiCard 
-            label="No Images" 
-            value={kpis.noImagesCount.toLocaleString()} 
-            sublabel="need upload"
-            accent="red" 
-            onClick={() => applyFilter(router, { type: "noImage", value: true })}
-          />
-          {/* Quick Actions Card */}
-          <div 
-            className="ec-metric-card ec-metric-card-accent-blue active:scale-95 transition-transform cursor-pointer"
-            onClick={() => router.push("/vehicles")}
-          >
-            <div className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-              Quick Action
-            </div>
-            <div className="mt-2 text-lg font-bold text-[var(--text-primary)]">
-              View All
-            </div>
-            <div className="mt-1 text-xs font-medium text-[var(--text-secondary)]">
-              Open vehicles list
-            </div>
-          </div>
-        </div>
-
-        {/* iOS Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          <button
-            type="button"
-            onClick={() => fetchVehicles()}
-            disabled={isRefreshing}
-            className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-sm font-medium text-slate-700 active:bg-slate-100 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:active:bg-slate-800 transition-colors"
-          >
-            {isRefreshing ? "Refreshing..." : "Refresh Data"}
-          </button>
-          <button
-            type="button"
-            onClick={handleOpenAddModal}
-            className="flex-1 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-medium text-white active:bg-emerald-700 transition-colors"
-          >
-            + Add Vehicle
-          </button>
-        </div>
-
-        {/* Simple Category Chart for iOS */}
-        <div className="rounded-xl border border-slate-200/70 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-white mb-3">Vehicles by Category</h3>
-          <div className="space-y-2">
-            {[
-              { name: "Cars", value: kpis.cars, color: "bg-emerald-500" },
-              { name: "Motorcycles", value: kpis.motorcycles, color: "bg-blue-500" },
-              { name: "Tuk Tuk", value: kpis.tukTuk, color: "bg-orange-500" },
-            ].map((item) => (
-              <div key={item.name} className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${item.color}`} />
-                <div className="flex-1 text-sm text-slate-700 dark:text-slate-300">{item.name}</div>
-                <div className="text-sm font-bold text-slate-900 dark:text-white">{item.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
   }
 
   return (
