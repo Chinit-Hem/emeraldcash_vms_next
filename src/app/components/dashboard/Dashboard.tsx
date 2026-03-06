@@ -124,12 +124,28 @@ export default function Dashboard() {
   // Load from cache immediately on mount
   useEffect(() => {
     try {
+      // Check cache version to invalidate old cached data with wrong category keys
+      const cacheVersion = localStorage.getItem("vms-vehicles-version");
+      if (cacheVersion !== "2") {
+        // Clear old cache to force fresh data load with normalized categories
+        localStorage.removeItem("vms-vehicles");
+        localStorage.removeItem("vms-vehicles-meta");
+        localStorage.setItem("vms-vehicles-version", "2");
+        console.log("[Dashboard] Cleared old cache to load normalized category data");
+        return;
+      }
+      
       const cached = localStorage.getItem("vms-vehicles");
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed)) {
           setVehicles(parsed as Vehicle[]);
         }
+      }
+      const cachedMeta = localStorage.getItem("vms-vehicles-meta");
+      if (cachedMeta) {
+        const parsedMeta = JSON.parse(cachedMeta);
+        setMeta(parsedMeta);
       }
     } catch {
       // Ignore cache errors

@@ -1,11 +1,25 @@
-import type { Vehicle } from "@/lib/types";
+import type { Vehicle, VehicleMeta } from "@/lib/types";
 
 const CACHE_KEY = "vms-vehicles";
+const META_KEY = "vms-vehicles-meta";
+const CACHE_VERSION_KEY = "vms-vehicles-version";
+const CURRENT_CACHE_VERSION = "2"; // Increment when cache format changes
 const UPDATE_EVENT = "vms-vehicles-updated";
 
 export function readVehicleCache(): Vehicle[] | null {
   if (typeof window === "undefined") return null;
   try {
+    // Check cache version first
+    const cacheVersion = localStorage.getItem(CACHE_VERSION_KEY);
+    if (cacheVersion !== CURRENT_CACHE_VERSION) {
+      // Clear old cache
+      localStorage.removeItem(CACHE_KEY);
+      localStorage.removeItem(META_KEY);
+      localStorage.setItem(CACHE_VERSION_KEY, CURRENT_CACHE_VERSION);
+      console.log("[vehicleCache] Cache version mismatch, cleared old cache");
+      return null;
+    }
+    
     const cached = localStorage.getItem(CACHE_KEY);
     if (!cached) return null;
     const parsed = JSON.parse(cached);
@@ -15,10 +29,26 @@ export function readVehicleCache(): Vehicle[] | null {
   }
 }
 
-export function writeVehicleCache(vehicles: Vehicle[]) {
+export function readVehicleMetaCache(): VehicleMeta | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const cached = localStorage.getItem(META_KEY);
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+    return parsed as VehicleMeta;
+  } catch {
+    return null;
+  }
+}
+
+export function writeVehicleCache(vehicles: Vehicle[], meta?: VehicleMeta) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(vehicles));
+    if (meta) {
+      localStorage.setItem(META_KEY, JSON.stringify(meta));
+    }
+    localStorage.setItem(CACHE_VERSION_KEY, CURRENT_CACHE_VERSION);
   } catch {
     // ignore cache write errors
   }
