@@ -317,7 +317,7 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
       try {
         // Check cache version first
         const cacheVersion = localStorage.getItem("vms-vehicles-version");
-        if (cacheVersion === "2") {
+        if (cacheVersion === "3") {
           const cachedMeta = localStorage.getItem("vms-vehicles-meta");
           if (cachedMeta) {
             setMeta(JSON.parse(cachedMeta));

@@ -3,7 +3,7 @@ import type { Vehicle, VehicleMeta } from "@/lib/types";
 const CACHE_KEY = "vms-vehicles";
 const META_KEY = "vms-vehicles-meta";
 const CACHE_VERSION_KEY = "vms-vehicles-version";
-const CURRENT_CACHE_VERSION = "2"; // Increment when cache format changes
+const CURRENT_CACHE_VERSION = "3"; // Increment when cache format changes
 const UPDATE_EVENT = "vms-vehicles-updated";
 
 export function readVehicleCache(): Vehicle[] | null {

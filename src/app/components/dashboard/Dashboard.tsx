@@ -126,11 +126,11 @@ export default function Dashboard() {
     try {
       // Check cache version to invalidate old cached data with wrong category keys
       const cacheVersion = localStorage.getItem("vms-vehicles-version");
-      if (cacheVersion !== "2") {
+      if (cacheVersion !== "3") {
         // Clear old cache to force fresh data load with normalized categories
         localStorage.removeItem("vms-vehicles");
         localStorage.removeItem("vms-vehicles-meta");
-        localStorage.setItem("vms-vehicles-version", "2");
+        localStorage.setItem("vms-vehicles-version", "3");
         console.log("[Dashboard] Cleared old cache to load normalized category data");
         return;
       }
