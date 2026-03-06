@@ -298,14 +298,25 @@ export default function Dashboard() {
 
   // Use server-provided meta for counts to ensure consistency with table
   const kpis = useMemo(() => {
+    // Helper to safely get category count from meta with various key formats
+    const getCategoryCount = (metaObj: VehicleMeta | null, normalizedLabel: string): number => {
+      if (!metaObj?.countsByCategory) return 0;
+      const counts = metaObj.countsByCategory;
+      // Try exact match first
+      if (counts[normalizedLabel] !== undefined) return counts[normalizedLabel];
+      // Try case-insensitive match
+      const key = Object.keys(counts).find(k => k.toLowerCase() === normalizedLabel.toLowerCase());
+      return key ? counts[key] : 0;
+    };
+
     // If we have meta from server, use it for counts (single source of truth)
     if (meta) {
       const stats = marketPriceStats(vehicles);
       return {
         total: meta.total ?? vehicles.length,
-        cars: meta.countsByCategory?.Cars ?? 0,
-        motorcycles: meta.countsByCategory?.Motorcycles ?? 0,
-        tukTuk: meta.countsByCategory?.TukTuks ?? 0,
+        cars: getCategoryCount(meta, "Cars"),
+        motorcycles: getCategoryCount(meta, "Motorcycles"),
+        tukTuk: getCategoryCount(meta, "Tuk Tuk") || getCategoryCount(meta, "TukTuks"),
         newCount: meta.countsByCondition?.New ?? 0,
         usedCount: meta.countsByCondition?.Used ?? 0,
         noImagesCount: meta.noImageCount ?? 0,
