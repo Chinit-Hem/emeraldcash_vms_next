@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GlassButton } from "@/app/components/ui/GlassButton";
+import { isIOSSafariBrowser } from "@/lib/platform";
 
 // Safe client-side only hook to prevent hydration mismatches
 function useIsMounted() {
@@ -25,9 +26,17 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isIOSSafari, setIsIOSSafari] = useState(false);
   
   // Navigation guard to prevent redirect loops
   const hasRedirected = useRef(false);
+
+  // Detect iOS Safari on client side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsIOSSafari(isIOSSafariBrowser());
+    }
+  }, []);
 
   // Load remembered username (client-side only)
   useEffect(() => {
@@ -155,16 +164,26 @@ function LoginForm() {
 
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 p-4 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      {/* Animated Background */}
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute left-0 top-0 h-[520px] w-[520px] rounded-full bg-gradient-to-br from-emerald-400/12 via-emerald-500/6 to-transparent blur-3xl dark:from-emerald-500/10 dark:via-transparent animate-float-slow" />
-        <div className="absolute bottom-0 right-0 h-[460px] w-[460px] rounded-full bg-gradient-to-tl from-red-400/12 via-red-500/8 to-transparent blur-3xl dark:from-red-500/10 dark:via-transparent animate-float-slow-reverse" />
-      </div>
+    <div className={`relative flex min-h-screen items-center justify-center p-4 ${
+      isIOSSafari 
+        ? 'bg-slate-50 dark:bg-slate-950' 
+        : 'bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900'
+    }`}>
+      {/* Animated Background - DISABLED on iOS Safari to prevent crashes */}
+      {!isIOSSafari && (
+        <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+          <div className="absolute left-0 top-0 h-[520px] w-[520px] rounded-full bg-gradient-to-br from-emerald-400/12 via-emerald-500/6 to-transparent blur-3xl dark:from-emerald-500/10 dark:via-transparent animate-float-slow" />
+          <div className="absolute bottom-0 right-0 h-[460px] w-[460px] rounded-full bg-gradient-to-tl from-red-400/12 via-red-500/8 to-transparent blur-3xl dark:from-red-500/10 dark:via-transparent animate-float-slow-reverse" />
+        </div>
+      )}
 
       <div className="w-full max-w-[400px] relative z-10">
-        {/* Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)]/95 shadow-[0_16px_36px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:bg-slate-900/82 dark:border-slate-600/35 dark:shadow-[0_20px_40px_rgba(2,6,23,0.56)]">
+        {/* Card - iOS: solid background, Others: glass effect */}
+        <div className={`relative overflow-hidden rounded-3xl border ${
+          isIOSSafari
+            ? 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 shadow-lg'
+            : 'bg-[var(--card)]/95 backdrop-blur-xl border-[var(--border)] shadow-[0_16px_36px_rgba(15,23,42,0.12)] dark:bg-slate-900/82 dark:border-slate-600/35 dark:shadow-[0_20px_40px_rgba(2,6,23,0.56)]'
+        }`}>
           
           {/* Header */}
           <div className="relative h-32 bg-gradient-to-r from-emerald-600 to-emerald-500 overflow-visible">
@@ -364,9 +383,9 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-emerald-50 via-white to-red-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950">
         <div className="w-full max-w-[400px]">
-          <div className="relative overflow-hidden rounded-3xl bg-white/90 dark:bg-slate-900/82 backdrop-blur-xl border border-white/50 dark:border-slate-600/35 shadow-2xl p-8">
+          <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-lg p-8">
             <div className="flex flex-col items-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mb-4"></div>
               <p className="text-gray-600 dark:text-gray-400">Loading...</p>
