@@ -5116,6 +5116,29 @@ body {
   color: inherit !important;
 }
 
+/* Force all text inside glass cards to be visible in dark mode */
+.dark [class*="glass"],
+.dark [class*="Glass"],
+.dark [class*="glass-card"],
+.dark [class*="GlassCard"],
+:root[data-theme="dark"] [class*="glass"],
+:root[data-theme="dark"] [class*="Glass"],
+:root[data-theme="dark"] [class*="glass-card"],
+:root[data-theme="dark"] [class*="GlassCard"] {
+  color: var(--text);
+}
+
+.dark [class*="glass"] *,
+.dark [class*="Glass"] *,
+.dark [class*="glass-card"] *,
+.dark [class*="GlassCard"] *,
+:root[data-theme="dark"] [class*="glass"] *,
+:root[data-theme="dark"] [class*="Glass"] *,
+:root[data-theme="dark"] [class*="glass-card"] *,
+:root[data-theme="dark"] [class*="GlassCard"] * {
+  color: inherit;
+}
+
 .ios-safari.dark :where(
     .ec-sidebar *,
     .ec-glassPanel *,
