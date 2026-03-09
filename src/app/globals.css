@@ -5430,3 +5430,67 @@ body {
 :root[data-theme="dark"] .text-red-600 {
   color: var(--danger) !important;
 }
+
+/* ---------------- SPECIFIC FIX: Vehicle Details Page ---------------- */
+
+/* Force all text in vehicle detail cards to be visible in dark mode */
+.dark .glass-card,
+.dark [class*="glass-card"],
+.dark .glassCard,
+.dark [class*="glassCard"],
+:root[data-theme="dark"] .glass-card,
+:root[data-theme="dark"] [class*="glass-card"],
+:root[data-theme="dark"] .glassCard,
+:root[data-theme="dark"] [class*="glassCard"] {
+  color: var(--text) !important;
+}
+
+.dark .glass-card h1,
+.dark .glass-card h2,
+.dark .glass-card h3,
+.dark .glass-card p,
+.dark .glass-card span,
+.dark .glass-card label,
+.dark .glass-card div,
+.dark [class*="glass-card"] h1,
+.dark [class*="glass-card"] h2,
+.dark [class*="glass-card"] h3,
+.dark [class*="glass-card"] p,
+.dark [class*="glass-card"] span,
+.dark [class*="glass-card"] label,
+.dark [class*="glass-card"] div,
+:root[data-theme="dark"] .glass-card h1,
+:root[data-theme="dark"] .glass-card h2,
+:root[data-theme="dark"] .glass-card h3,
+:root[data-theme="dark"] .glass-card p,
+:root[data-theme="dark"] .glass-card span,
+:root[data-theme="dark"] .glass-card label,
+:root[data-theme="dark"] .glass-card div,
+:root[data-theme="dark"] [class*="glass-card"] h1,
+:root[data-theme="dark"] [class*="glass-card"] h2,
+:root[data-theme="dark"] [class*="glass-card"] h3,
+:root[data-theme="dark"] [class*="glass-card"] p,
+:root[data-theme="dark"] [class*="glass-card"] span,
+:root[data-theme="dark"] [class*="glass-card"] label,
+:root[data-theme="dark"] [class*="glass-card"] div {
+  color: var(--text) !important;
+}
+
+/* Force vehicle detail specific elements */
+.dark [class*="VehicleDetails"],
+.dark [class*="vehicle-details"],
+.dark [class*="vehicle-detail"],
+:root[data-theme="dark"] [class*="VehicleDetails"],
+:root[data-theme="dark"] [class*="vehicle-details"],
+:root[data-theme="dark"] [class*="vehicle-detail"] {
+  color: var(--text) !important;
+}
+
+.dark [class*="VehicleDetails"] *,
+.dark [class*="vehicle-details"] *,
+.dark [class*="vehicle-detail"] *,
+:root[data-theme="dark"] [class*="VehicleDetails"] *,
+:root[data-theme="dark"] [class*="vehicle-details"] *,
+:root[data-theme="dark"] [class*="vehicle-detail"] * {
+  color: inherit !important;
+}
