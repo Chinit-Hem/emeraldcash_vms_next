@@ -5,13 +5,25 @@ import { useUI } from "@/app/components/UIContext";
 import ChartCard from "@/app/components/dashboard/ChartCard";
 import KpiCard from "@/app/components/dashboard/KpiCard";
 import SkeletonDashboard from "@/app/components/dashboard/SkeletonDashboard";
-import MonthlyAddedChart from "@/app/components/dashboard/charts/MonthlyAddedChart";
-import NewVsUsedChart from "@/app/components/dashboard/charts/NewVsUsedChart";
-import PriceDistributionChart from "@/app/components/dashboard/charts/PriceDistributionChart";
-import VehiclesByBrandChart from "@/app/components/dashboard/charts/VehiclesByBrandChart";
-import VehiclesByCategoryChart from "@/app/components/dashboard/charts/VehiclesByCategoryChart";
 import VehicleModal from "@/app/components/dashboard/VehicleModal";
 import { GlassToast, useToast } from "@/app/components/ui/GlassToast";
+import { Suspense, lazy } from "react";
+
+// Lazy load charts
+const MonthlyAddedChart = lazy(() => import("@/app/components/dashboard/charts/MonthlyAddedChart"));
+const NewVsUsedChart = lazy(() => import("@/app/components/dashboard/charts/NewVsUsedChart"));
+const PriceDistributionChart = lazy(() => import("@/app/components/dashboard/charts/PriceDistributionChart"));
+const VehiclesByBrandChart = lazy(() => import("@/app/components/dashboard/charts/VehiclesByBrandChart"));
+const VehiclesByCategoryChart = lazy(() => import("@/app/components/dashboard/charts/VehiclesByCategoryChart"));
+
+// Chart loading fallback
+function ChartSkeleton() {
+  return (
+    <div className="h-64 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+    </div>
+  );
+}
 import {
   buildMonthlyAdded,
   buildNewVsUsed,
@@ -49,6 +61,15 @@ import type { Vehicle, VehicleMeta } from "@/lib/types";
 import { writeVehicleCache } from "@/lib/vehicleCache";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+// Safe client-side only hook to prevent hydration mismatches
+function useIsMounted() {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  return isMounted;
+}
 
 function formatMoney(value: number | null): string {
   if (value == null || !Number.isFinite(value)) return "—";
@@ -112,17 +133,20 @@ export default function Dashboard() {
   const [cambodiaNow, setCambodiaNow] = useState(() => getCambodiaNowString());
   const [isLoading, setIsLoading] = useState(true);
   const fetchAbortRef = useRef<AbortController | null>(null);
+  const isMounted = useIsMounted();
 
   // Modal state - now using global UI state
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
 
   useEffect(() => {
+    if (!isMounted) return;
     const interval = window.setInterval(() => setCambodiaNow(getCambodiaNowString()), 1000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [isMounted]);
 
-  // Load from cache immediately on mount
+  // Load from cache immediately on mount (client-side only)
   useEffect(() => {
+    if (!isMounted) return;
     try {
       // Check cache version to invalidate old cached data with wrong category keys
       const cacheVersion = localStorage.getItem("vms-vehicles-version");
@@ -150,7 +174,7 @@ export default function Dashboard() {
     } catch {
       // Ignore cache errors
     }
-  }, []);
+  }, [isMounted]);
 
   const fetchVehicles = async () => {
     fetchAbortRef.current?.abort();
@@ -176,14 +200,16 @@ export default function Dashboard() {
       setMeta(newMeta || null);
       setLastUpdated(getCambodiaNowString());
       setIsLoading(false);
-      // Save to localStorage
-      try {
-        writeVehicleCache(newVehicles);
-        if (newMeta) {
-          localStorage.setItem("vms-vehicles-meta", JSON.stringify(newMeta));
+      // Save to localStorage (client-side only)
+      if (isMounted) {
+        try {
+          writeVehicleCache(newVehicles);
+          if (newMeta) {
+            localStorage.setItem("vms-vehicles-meta", JSON.stringify(newMeta));
+          }
+        } catch {
+          // Ignore storage errors
         }
-      } catch {
-        // Ignore storage errors
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
@@ -361,17 +387,19 @@ export default function Dashboard() {
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">
               Dashboard
             </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm text-slate-600 dark:text-white">
               Welcome, <span className="font-semibold text-slate-800 dark:text-white">{user?.username || "Guest"}</span>
               <span className="mx-2 text-slate-400">•</span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+              <span 
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-600 dark:text-white"
+              >
                 {user?.role || "User"}
               </span>
             </p>
             {lastUpdated && (
-              <p className="text-xs text-slate-500 dark:text-slate-500 flex items-center gap-1.5">
+              <p className="text-xs text-slate-500 dark:text-white flex items-center gap-1.5">
                 <span>Last updated:</span>
-                <span className="font-mono text-slate-600 dark:text-slate-400">{lastUpdated}</span>
+                <span className="font-mono text-slate-600 dark:text-white">{lastUpdated}</span>
                 {isRefreshing && (
                   <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                     <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
@@ -494,21 +522,29 @@ export default function Dashboard() {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <ChartCard title="Vehicles by Category" subtitle="Distribution across categories">
-          <VehiclesByCategoryChart data={byCategory} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <VehiclesByCategoryChart data={byCategory} />
+          </Suspense>
         </ChartCard>
 
         <ChartCard title="New vs Used" subtitle="Condition ratio">
-          <NewVsUsedChart data={newVsUsed} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <NewVsUsedChart data={newVsUsed} />
+          </Suspense>
         </ChartCard>
       </div>
 
       <div className="space-y-4">
         <ChartCard title="Vehicles by Brand" subtitle="Top brands (others grouped)">
-          <VehiclesByBrandChart data={byBrand} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <VehiclesByBrandChart data={byBrand} />
+          </Suspense>
         </ChartCard>
 
         <ChartCard title="Monthly Added Vehicles" subtitle="Based on Time column">
-          <MonthlyAddedChart data={monthlyAdded} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <MonthlyAddedChart data={monthlyAdded} />
+          </Suspense>
         </ChartCard>
 
         <ChartCard
@@ -527,7 +563,9 @@ export default function Dashboard() {
             </div>
           }
         >
-          <PriceDistributionChart data={priceDistribution} />
+          <Suspense fallback={<ChartSkeleton />}>
+            <PriceDistributionChart data={priceDistribution} />
+          </Suspense>
         </ChartCard>
       </div>
 

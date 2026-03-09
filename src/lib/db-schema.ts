@@ -52,7 +52,7 @@ export async function getVehicles(filters?: {
   let query = sql`SELECT * FROM cleaned_vehicles_for_google_sheets WHERE 1=1`;
   
   if (filters?.category) {
-    query = sql`${query} AND category = ${filters.category}`;
+    query = sql`${query} AND TRIM(category) ILIKE ${filters.category}`;
   }
   
   if (filters?.brand) {

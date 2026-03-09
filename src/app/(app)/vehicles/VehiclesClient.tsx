@@ -64,13 +64,7 @@ function computeVehicleMeta(vehicles: Vehicle[]): VehicleMeta {
   };
 }
 
-function deferMicrotask(callback: () => void): void {
-  if (typeof queueMicrotask === "function") {
-    queueMicrotask(callback);
-    return;
-  }
-  Promise.resolve().then(callback);
-}
+// Removed deferMicrotask - using direct state updates for better performance
 
 export default function VehiclesClient() {
   const user = useAuthUser();
@@ -292,13 +286,10 @@ export default function VehiclesClient() {
     return filteredVehicles.slice(start, start + pageSize);
   }, [filteredVehicles, currentPage, pageSize]);
 
-  // Reset page when filters change - use useLayoutEffect to avoid setState in render warning
+  // Reset page when filters change - direct state update for better performance
   useEffect(() => {
-    // Use queueMicrotask to defer state update to after render
-    deferMicrotask(() => {
-      setCurrentPage(1);
-    });
-  }, [filters, pageSize]);
+    setCurrentPage(1);
+  }, [filters.search, filters.category, filters.brand, filters.condition, filters.color, filters.yearMin, filters.yearMax, filters.priceMin, filters.priceMax, filters.dateFrom, filters.dateTo, filters.withoutImage, pageSize]);
 
   // Initialize filters from URL query params (so dashboard links like
   // `/vehicles?category=car&condition=new&noImage=1` work).
@@ -311,25 +302,23 @@ export default function VehiclesClient() {
     const nextCondition = conditionParam ? normalizeConditionLabel(conditionParam) : "All";
     const nextWithoutImage = noImageParam === "1";
 
-    // Use queueMicrotask to defer state update to after render
-    deferMicrotask(() => {
-      setFilters((prev) => {
-        // Avoid no-op state writes that can cause render loops on some mobile browsers.
-        if (
-          prev.category === nextCategory &&
-          prev.condition === nextCondition &&
-          prev.withoutImage === nextWithoutImage
-        ) {
-          return prev;
-        }
+    // Direct state update for better performance
+    setFilters((prev) => {
+      // Avoid no-op state writes that can cause render loops on some mobile browsers.
+      if (
+        prev.category === nextCategory &&
+        prev.condition === nextCondition &&
+        prev.withoutImage === nextWithoutImage
+      ) {
+        return prev;
+      }
 
-        return {
-          ...prev,
-          category: nextCategory,
-          condition: nextCondition,
-          withoutImage: nextWithoutImage,
-        };
-      });
+      return {
+        ...prev,
+        category: nextCategory,
+        condition: nextCondition,
+        withoutImage: nextWithoutImage,
+      };
     });
   }, [categoryParam, conditionParam, noImageParam]);
 

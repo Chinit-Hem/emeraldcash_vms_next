@@ -4819,40 +4819,9 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
 }
 
-:where(
-    .ec-sidebar h1,
-    .ec-sidebar h2,
-    .ec-sidebar h3,
-    .ec-sidebar span,
-    .ec-sidebar p,
-    .ec-sidebar label,
-    .ec-dashboard-hero h1,
-    .ec-dashboard-hero h2,
-    .ec-dashboard-hero h3,
-    .ec-dashboard-hero p,
-    .ec-metric-card,
-    .ec-metric-card h1,
-    .ec-metric-card h2,
-    .ec-metric-card h3,
-    .ec-metric-card h4,
-    .ec-metric-card p,
-    .ec-chart-card,
-    .ec-chart-card h1,
-    .ec-chart-card h2,
-    .ec-chart-card h3,
-    .ec-chart-card p,
-    .ec-chart-card label,
-    .ec-time-pill,
-    .ec-alert-glass-title,
-    .ec-alert-glass-message,
-    .ec-liquid-table-head th,
-    .ec-liquid-table-row td
-  ) {
-  color: var(--cc-text) !important;
-}
-
+/* Text colors now handled by component-level Tailwind classes */
 :where(textarea::placeholder, input::placeholder) {
-  color: var(--cc-muted) !important;
+  color: var(--cc-muted);
 }
 
 :where(.ec-chart-card-header, .ec-liquid-table-head) {
@@ -5347,449 +5316,111 @@ body {
   }
 }
 
-/* ---------------- EMERGENCY FIX: Force All Text Visible in Dark Mode ---------------- */
+/* ---------------- Text Color Utilities ---------------- */
 
-/* Force ALL text elements to be light in dark mode */
-.dark,
-:root[data-theme="dark"] {
-  color: var(--text) !important;
+/* ---------------- Performance Optimizations ---------------- */
+
+/* Fast click response - reduce transition delays */
+.ec-sidebar-item,
+.ec-sidebar-action-secondary,
+.ec-sidebar-action-danger,
+.ec-dashboard-btn-icon,
+.ec-dashboard-btn-primary,
+.ec-liquid-btn,
+.ec-liquid-btn-secondary,
+.ec-liquid-btn-outline,
+.ec-liquid-input,
+.ec-glassInput,
+button,
+[role="button"] {
+  transition-duration: 150ms !important;
+  transition-timing-function: ease-out !important;
 }
 
-.dark *,
-:root[data-theme="dark"] * {
-  color: inherit !important;
+/* GPU acceleration for glass elements */
+.ec-liquid-card,
+.ec-liquid-card-soft,
+.ec-liquid-modal,
+.ec-glassPanel,
+.ec-glassPanelSoft,
+.ec-dashboard-hero,
+.ec-metric-card,
+.ec-chart-card,
+.ec-sidebar,
+.ec-sidebar-user-card,
+.ec-time-pill,
+.ec-mobileNav,
+.ec-glassCard,
+.ec-liquid-table-wrap {
+  will-change: transform;
+  transform: translateZ(0);
+  contain: layout style paint;
 }
 
-/* But allow specific color overrides */
-.dark [class*="text-"],
-:root[data-theme="dark"] [class*="text-"] {
-  color: inherit !important;
+/* Optimize pseudo-elements */
+.ec-liquid-card::before,
+.ec-liquid-card-soft::before,
+.ec-liquid-modal::before,
+.ec-glassPanel::before,
+.ec-glassPanelSoft::before,
+.ec-dashboard-hero::before,
+.ec-metric-card::before,
+.ec-chart-card::before,
+.ec-sidebar::before,
+.ec-sidebar-user-card::before,
+.ec-time-pill::before,
+.ec-mobileNav::before,
+.ec-glassCard::before,
+.ec-liquid-table-wrap::before,
+.ec-liquid-card::after,
+.ec-liquid-card-soft::after,
+.ec-liquid-modal::after,
+.ec-glassPanel::after,
+.ec-glassPanelSoft::after,
+.ec-dashboard-hero::after,
+.ec-metric-card::after,
+.ec-chart-card::after,
+.ec-sidebar::after,
+.ec-sidebar-user-card::after,
+.ec-time-pill::after,
+.ec-mobileNav::after,
+.ec-glassCard::after,
+.ec-liquid-table-wrap::after {
+  will-change: opacity;
+  content: "";
+  pointer-events: none;
 }
 
-/* Force specific text colors for common Tailwind classes in dark mode */
-.dark .text-gray-900,
-.dark .text-gray-800,
-.dark .text-gray-700,
-.dark .text-gray-600,
-.dark .text-gray-500,
-.dark .text-slate-900,
-.dark .text-slate-800,
-.dark .text-slate-700,
-.dark .text-slate-600,
-.dark .text-slate-500,
-.dark .text-black,
-:root[data-theme="dark"] .text-gray-900,
-:root[data-theme="dark"] .text-gray-800,
-:root[data-theme="dark"] .text-gray-700,
-:root[data-theme="dark"] .text-gray-600,
-:root[data-theme="dark"] .text-gray-500,
-:root[data-theme="dark"] .text-slate-900,
-:root[data-theme="dark"] .text-slate-800,
-:root[data-theme="dark"] .text-slate-700,
-:root[data-theme="dark"] .text-slate-600,
-:root[data-theme="dark"] .text-slate-500,
-:root[data-theme="dark"] .text-black {
-  color: var(--text) !important;
+/* Active state for immediate feedback */
+.ec-sidebar-item:active,
+.ec-sidebar-action-secondary:active,
+.ec-sidebar-action-danger:active,
+.ec-dashboard-btn-icon:active,
+.ec-dashboard-btn-primary:active,
+.ec-liquid-btn:active,
+.ec-liquid-btn-secondary:active,
+.ec-liquid-btn-outline:active {
+  transform: scale(0.96) translateZ(0);
+  transition-duration: 50ms;
 }
 
-/* Force all headings, paragraphs, spans, labels to be visible */
-.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6,
-.dark p, .dark span, .dark label, .dark div, .dark a,
-.dark button, .dark input, .dark textarea, .dark select,
-.dark li, .dark td, .dark th,
-:root[data-theme="dark"] h1, :root[data-theme="dark"] h2, :root[data-theme="dark"] h3,
-:root[data-theme="dark"] h4, :root[data-theme="dark"] h5, :root[data-theme="dark"] h6,
-:root[data-theme="dark"] p, :root[data-theme="dark"] span, :root[data-theme="dark"] label,
-:root[data-theme="dark"] div, :root[data-theme="dark"] a, :root[data-theme="dark"] button,
-:root[data-theme="dark"] input, :root[data-theme="dark"] textarea, :root[data-theme="dark"] select,
-:root[data-theme="dark"] li, :root[data-theme="dark"] td, :root[data-theme="dark"] th {
-  color: var(--text) !important;
+/* Remove animation delays */
+.ec-metric-card,
+.ec-dashboard-btn-icon,
+.ec-dashboard-btn-primary {
+  transition: transform 150ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out, background-color 150ms ease-out !important;
 }
 
-/* Exception: keep muted text muted */
-.dark .text-gray-400, .dark .text-gray-300, .dark .text-slate-400, .dark .text-slate-300,
-.dark .text-muted, .dark [class*="muted"],
-:root[data-theme="dark"] .text-gray-400, :root[data-theme="dark"] .text-gray-300,
-:root[data-theme="dark"] .text-slate-400, :root[data-theme="dark"] .text-slate-300,
-:root[data-theme="dark"] .text-muted, :root[data-theme="dark"] [class*="muted"] {
-  color: var(--muted) !important;
+/* Optimize metric card hover */
+.ec-metric-card:hover {
+  transform: translateY(-2px) translateZ(0);
+  transition-duration: 150ms;
 }
 
-/* Exception: keep primary colored text */
-.dark .text-primary, .dark .text-emerald-500, .dark .text-emerald-600,
-.dark .text-green-500, .dark .text-green-600,
-:root[data-theme="dark"] .text-primary, :root[data-theme="dark"] .text-emerald-500,
-:root[data-theme="dark"] .text-emerald-600, :root[data-theme="dark"] .text-green-500,
-:root[data-theme="dark"] .text-green-600 {
-  color: var(--primary) !important;
+/* Fast skeleton animation */
+.ec-skeleton-line,
+.ec-skeleton-circle {
+  animation-duration: 1s !important;
 }
 
-/* Exception: keep danger colored text */
-.dark .text-danger, .dark .text-red-500, .dark .text-red-600,
-:root[data-theme="dark"] .text-danger, :root[data-theme="dark"] .text-red-500,
-:root[data-theme="dark"] .text-red-600 {
-  color: var(--danger) !important;
-}
-
-/* ---------------- SPECIFIC FIX: Vehicle Details Page ---------------- */
-
-/* Force all text in vehicle detail cards to be visible in dark mode */
-.dark .glass-card,
-.dark [class*="glass-card"],
-.dark .glassCard,
-.dark [class*="glassCard"],
-:root[data-theme="dark"] .glass-card,
-:root[data-theme="dark"] [class*="glass-card"],
-:root[data-theme="dark"] .glassCard,
-:root[data-theme="dark"] [class*="glassCard"] {
-  color: var(--text) !important;
-}
-
-.dark .glass-card h1,
-.dark .glass-card h2,
-.dark .glass-card h3,
-.dark .glass-card p,
-.dark .glass-card span,
-.dark .glass-card label,
-.dark .glass-card div,
-.dark [class*="glass-card"] h1,
-.dark [class*="glass-card"] h2,
-.dark [class*="glass-card"] h3,
-.dark [class*="glass-card"] p,
-.dark [class*="glass-card"] span,
-.dark [class*="glass-card"] label,
-.dark [class*="glass-card"] div,
-:root[data-theme="dark"] .glass-card h1,
-:root[data-theme="dark"] .glass-card h2,
-:root[data-theme="dark"] .glass-card h3,
-:root[data-theme="dark"] .glass-card p,
-:root[data-theme="dark"] .glass-card span,
-:root[data-theme="dark"] .glass-card label,
-:root[data-theme="dark"] .glass-card div,
-:root[data-theme="dark"] [class*="glass-card"] h1,
-:root[data-theme="dark"] [class*="glass-card"] h2,
-:root[data-theme="dark"] [class*="glass-card"] h3,
-:root[data-theme="dark"] [class*="glass-card"] p,
-:root[data-theme="dark"] [class*="glass-card"] span,
-:root[data-theme="dark"] [class*="glass-card"] label,
-:root[data-theme="dark"] [class*="glass-card"] div {
-  color: var(--text) !important;
-}
-
-/* Force vehicle detail specific elements */
-.dark [class*="VehicleDetails"],
-.dark [class*="vehicle-details"],
-.dark [class*="vehicle-detail"],
-:root[data-theme="dark"] [class*="VehicleDetails"],
-:root[data-theme="dark"] [class*="vehicle-details"],
-:root[data-theme="dark"] [class*="vehicle-detail"] {
-  color: var(--text) !important;
-}
-
-.dark [class*="VehicleDetails"] *,
-.dark [class*="vehicle-details"] *,
-.dark [class*="vehicle-detail"] *,
-:root[data-theme="dark"] [class*="VehicleDetails"] *,
-:root[data-theme="dark"] [class*="vehicle-details"] *,
-:root[data-theme="dark"] [class*="vehicle-detail"] * {
-  color: inherit !important;
-}
-
-/* ---------------- UNIVERSAL FIX: All Devices Dark Mode Text Visibility ---------------- */
-
-/* Universal dark mode text fix - applies to ALL devices */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-  }
-  
-  body {
-    color: #f8fafc !important;
-    background-color: #0b1220 !important;
-  }
-  
-  /* Force all text to be light */
-  * {
-    color: inherit !important;
-  }
-  
-  /* Specific element overrides */
-  h1, h2, h3, h4, h5, h6, p, span, label, div, a, button, 
-  input, textarea, select, li, td, th, strong, em, small {
-    color: #f8fafc !important;
-  }
-  
-  /* Muted text */
-  .text-muted, [class*="muted"], .text-gray-400, .text-gray-500, 
-  .text-slate-400, .text-slate-500 {
-    color: #cbd5e1 !important;
-  }
-  
-  /* Primary accent */
-  .text-primary, .text-emerald-500, .text-emerald-600, 
-  .text-green-500, .text-green-600 {
-    color: #34d399 !important;
-  }
-  
-  /* Danger accent */
-  .text-danger, .text-red-500, .text-red-600 {
-    color: #f87171 !important;
-  }
-}
-
-/* Class-based dark mode (manual toggle) */
-.dark,
-[data-theme="dark"] {
-  color-scheme: dark !important;
-}
-
-.dark body,
-[data-theme="dark"] body {
-  color: #f8fafc !important;
-  background-color: #0b1220 !important;
-}
-
-/* Force ALL elements in dark mode to have visible text */
-.dark *,
-[data-theme="dark"] * {
-  color: inherit !important;
-}
-
-/* Override inline styles and Tailwind classes */
-.dark [style*="color"],
-[data-theme="dark"] [style*="color"] {
-  color: #f8fafc !important;
-}
-
-/* Specific overrides for common Tailwind text classes in dark mode */
-.dark .text-black,
-.dark .text-gray-900,
-.dark .text-gray-800,
-.dark .text-gray-700,
-.dark .text-gray-600,
-.dark .text-slate-900,
-.dark .text-slate-800,
-.dark .text-slate-700,
-.dark .text-slate-600,
-.dark .text-zinc-900,
-.dark .text-zinc-800,
-.dark .text-zinc-700,
-.dark .text-neutral-900,
-.dark .text-neutral-800,
-.dark .text-neutral-700,
-[data-theme="dark"] .text-black,
-[data-theme="dark"] .text-gray-900,
-[data-theme="dark"] .text-gray-800,
-[data-theme="dark"] .text-gray-700,
-[data-theme="dark"] .text-gray-600,
-[data-theme="dark"] .text-slate-900,
-[data-theme="dark"] .text-slate-800,
-[data-theme="dark"] .text-slate-700,
-[data-theme="dark"] .text-slate-600,
-[data-theme="dark"] .text-zinc-900,
-[data-theme="dark"] .text-zinc-800,
-[data-theme="dark"] .text-zinc-700,
-[data-theme="dark"] .text-neutral-900,
-[data-theme="dark"] .text-neutral-800,
-[data-theme="dark"] .text-neutral-700 {
-  color: #f8fafc !important;
-}
-
-/* Glass card specific fixes for all devices */
-.dark .glass-card,
-.dark [class*="glass-card"],
-.dark .glassCard,
-.dark [class*="glassCard"],
-.dark .ec-glassCard,
-.dark [class*="ec-glass"],
-.dark .ec-liquid-card,
-.dark [class*="ec-liquid"],
-[data-theme="dark"] .glass-card,
-[data-theme="dark"] [class*="glass-card"],
-[data-theme="dark"] .glassCard,
-[data-theme="dark"] [class*="glassCard"],
-[data-theme="dark"] .ec-glassCard,
-[data-theme="dark"] [class*="ec-glass"],
-[data-theme="dark"] .ec-liquid-card,
-[data-theme="dark"] [class*="ec-liquid"] {
-  color: #f8fafc !important;
-  background-color: rgba(15, 23, 42, 0.85) !important;
-}
-
-/* Ensure all children inherit proper color */
-.dark .glass-card *,
-.dark [class*="glass-card"] *,
-.dark .glassCard *,
-.dark [class*="glassCard"] *,
-.dark .ec-glassCard *,
-.dark [class*="ec-glass"] *,
-.dark .ec-liquid-card *,
-.dark [class*="ec-liquid"] *,
-[data-theme="dark"] .glass-card *,
-[data-theme="dark"] [class*="glass-card"] *,
-[data-theme="dark"] .glassCard *,
-[data-theme="dark"] [class*="glassCard"] *,
-[data-theme="dark"] .ec-glassCard *,
-[data-theme="dark"] [class*="ec-glass"] *,
-[data-theme="dark"] .ec-liquid-card *,
-[data-theme="dark"] [class*="ec-liquid"] * {
-  color: inherit !important;
-}
-
-/* Button text visibility */
-.dark button,
-.dark [role="button"],
-.dark .btn,
-.dark [class*="btn"],
-[data-theme="dark"] button,
-[data-theme="dark"] [role="button"],
-[data-theme="dark"] .btn,
-[data-theme="dark"] [class*="btn"] {
-  color: #f8fafc !important;
-}
-
-/* Input text visibility */
-.dark input,
-.dark textarea,
-.dark select,
-[data-theme="dark"] input,
-[data-theme="dark"] textarea,
-[data-theme="dark"] select {
-  color: #f8fafc !important;
-  background-color: rgba(30, 41, 59, 0.8) !important;
-}
-
-/* Link visibility */
-.dark a:not([class*="btn"]),
-[data-theme="dark"] a:not([class*="btn"]) {
-  color: #34d399 !important;
-}
-
-/* Dashboard specific */
-.dark .ec-metric-card,
-.dark .ec-chart-card,
-.dark .ec-dashboard-hero,
-[data-theme="dark"] .ec-metric-card,
-[data-theme="dark"] .ec-chart-card,
-[data-theme="dark"] .ec-dashboard-hero {
-  color: #f8fafc !important;
-}
-
-/* Sidebar specific */
-.dark .ec-sidebar,
-.dark .ec-sidebar-item,
-.dark .ec-sidebar-user-card,
-[data-theme="dark"] .ec-sidebar,
-[data-theme="dark"] .ec-sidebar-item,
-[data-theme="dark"] .ec-sidebar-user-card {
-  color: #f8fafc !important;
-}
-
-/* Vehicle details specific */
-.dark [class*="VehicleDetails"],
-.dark [class*="vehicle-details"],
-.dark [class*="vehicle-detail"],
-.dark [class*="Vehicle"],
-[data-theme="dark"] [class*="VehicleDetails"],
-[data-theme="dark"] [class*="vehicle-details"],
-[data-theme="dark"] [class*="vehicle-detail"],
-[data-theme="dark"] [class*="Vehicle"] {
-  color: #f8fafc !important;
-}
-
-/* Force white text on dark backgrounds */
-.dark [class*="bg-slate-900"],
-.dark [class*="bg-gray-900"],
-.dark [class*="bg-zinc-900"],
-.dark [class*="bg-neutral-900"],
-.dark [class*="bg-dark"],
-[data-theme="dark"] [class*="bg-slate-900"],
-[data-theme="dark"] [class*="bg-gray-900"],
-[data-theme="dark"] [class*="bg-zinc-900"],
-[data-theme="dark"] [class*="bg-neutral-900"],
-[data-theme="dark"] [class*="bg-dark"] {
-  color: #f8fafc !important;
-}
-
-/* Table visibility */
-.dark table,
-.dark th,
-.dark td,
-[data-theme="dark"] table,
-[data-theme="dark"] th,
-[data-theme="dark"] td {
-  color: #f8fafc !important;
-}
-
-/* Modal/Dialog visibility */
-.dark [role="dialog"],
-.dark [role="alertdialog"],
-.dark .modal,
-.dark [class*="modal"],
-.dark .dialog,
-.dark [class*="dialog"],
-[data-theme="dark"] [role="dialog"],
-[data-theme="dark"] [role="alertdialog"],
-[data-theme="dark"] .modal,
-[data-theme="dark"] [class*="modal"],
-[data-theme="dark"] .dialog,
-[data-theme="dark"] [class*="dialog"] {
-  color: #f8fafc !important;
-}
-
-/* Navigation visibility */
-.dark nav,
-.dark [role="navigation"],
-.dark .nav,
-.dark [class*="nav"],
-[data-theme="dark"] nav,
-[data-theme="dark"] [role="navigation"],
-[data-theme="dark"] .nav,
-[data-theme="dark"] [class*="nav"] {
-  color: #f8fafc !important;
-}
-
-/* Card visibility */
-.dark .card,
-.dark [class*="card"],
-[data-theme="dark"] .card,
-[data-theme="dark"] [class*="card"] {
-  color: #f8fafc !important;
-}
-
-/* Form visibility */
-.dark form,
-.dark fieldset,
-.dark legend,
-[data-theme="dark"] form,
-[data-theme="dark"] fieldset,
-[data-theme="dark"] legend {
-  color: #f8fafc !important;
-}
-
-/* List visibility */
-.dark ul,
-.dark ol,
-.dark dl,
-.dark li,
-[data-theme="dark"] ul,
-[data-theme="dark"] ol,
-[data-theme="dark"] dl,
-[data-theme="dark"] li {
-  color: #f8fafc !important;
-}
-
-/* Ensure text is never transparent */
-.dark [class*="text-transparent"],
-[data-theme="dark"] [class*="text-transparent"] {
-  color: #f8fafc !important;
-}
-
-/* Fix for any element with opacity issues */
-.dark [style*="opacity: 0"],
-.dark [style*="opacity:0"],
-[data-theme="dark"] [style*="opacity: 0"],
-[data-theme="dark"] [style*="opacity:0"] {
-  opacity: 1 !important;
-  color: #f8fafc !important;
-}
+/* ---------------- End of Global Styles ---------------- */

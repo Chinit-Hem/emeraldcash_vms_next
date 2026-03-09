@@ -5,6 +5,15 @@ import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+// Safe client-side only hook to prevent hydration mismatches
+function useIsMounted() {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  return isMounted;
+}
+
 function normalizeCategory(value: unknown) {
   return String(value ?? "").trim().toLowerCase();
 }
@@ -310,9 +319,12 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [meta, setMeta] = useState<VehicleMeta | null>(null);
+  const isMounted = useIsMounted();
 
-  // Fetch meta data for category counts
+  // Fetch meta data for category counts (client-side only)
   useEffect(() => {
+    if (!isMounted) return;
+    
     async function fetchMeta() {
       try {
         // Check cache version first
@@ -353,7 +365,7 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
     
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  }, [isMounted]);
 
   const isAdmin = user.role === "Admin";
 

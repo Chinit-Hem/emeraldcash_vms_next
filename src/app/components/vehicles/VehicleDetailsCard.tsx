@@ -100,7 +100,7 @@ export function VehicleDetailsCard({
 
   return (
     <>
-      <div className="min-h-screen pb-[11rem] md:pb-8">
+      <div className="min-h-screen pb-[11rem] md:pb-8" style={{ color: '#f8fafc' }}>
         {/* Header Section */}
         <div className="mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

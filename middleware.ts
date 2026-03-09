@@ -82,7 +82,11 @@ function redirectToLogin(request: NextRequest): Response {
     `${request.nextUrl.pathname}${request.nextUrl.search}`
   );
 
-  if (requestedPath) {
+  // Prevent redirect loops: don't add redirect param if already coming from login
+  const isComingFromLogin = request.headers.get("referer")?.includes("/login");
+  const alreadyHasRedirect = request.nextUrl.searchParams.has("redirect");
+  
+  if (requestedPath && !isComingFromLogin && !alreadyHasRedirect) {
     loginUrl.searchParams.set("redirect", requestedPath);
   }
 

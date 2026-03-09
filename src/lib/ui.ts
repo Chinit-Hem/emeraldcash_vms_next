@@ -30,7 +30,7 @@ export const ui = {
   },
   button: {
     base:
-      "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] disabled:cursor-not-allowed disabled:opacity-60 disabled:pointer-events-none active:scale-[0.98]",
+      "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-transform transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] disabled:cursor-not-allowed disabled:opacity-60 disabled:pointer-events-none active:scale-[0.96] will-change-transform",
     size: {
       sm: "h-9 px-3.5",
       md: "h-11 px-4.5",

@@ -4,9 +4,19 @@ import React, { useState, useEffect, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GlassButton } from "@/app/components/ui/GlassButton";
 
+// Safe client-side only hook to prevent hydration mismatches
+function useIsMounted() {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  return isMounted;
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isMounted = useIsMounted();
   
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -19,8 +29,9 @@ function LoginForm() {
   // Navigation guard to prevent redirect loops
   const hasRedirected = useRef(false);
 
-  // Load remembered username
+  // Load remembered username (client-side only)
   useEffect(() => {
+    if (!isMounted) return;
     try {
       const remembered = localStorage.getItem("ec_remember_username");
       if (remembered) {
@@ -30,7 +41,7 @@ function LoginForm() {
     } catch {
       // Ignore storage access errors in restricted browser modes.
     }
-  }, []);
+  }, [isMounted]);
 
   // Debug info for troubleshooting mobile cookie issues
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
@@ -114,15 +125,17 @@ function LoginForm() {
         throw new Error(`Session verification failed: ${lastError}`);
       }
 
-      // Save username if remember me is checked
-      try {
-        if (rememberMe) {
-          localStorage.setItem("ec_remember_username", trimmedUsername);
-        } else {
-          localStorage.removeItem("ec_remember_username");
+      // Save username if remember me is checked (client-side only)
+      if (isMounted) {
+        try {
+          if (rememberMe) {
+            localStorage.setItem("ec_remember_username", trimmedUsername);
+          } else {
+            localStorage.removeItem("ec_remember_username");
+          }
+        } catch {
+          // Ignore storage errors; login can continue without remember-me persistence.
         }
-      } catch {
-        // Ignore storage errors; login can continue without remember-me persistence.
       }
 
       // Redirect to original destination when safe, otherwise app home.
