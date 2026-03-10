@@ -9,6 +9,7 @@ import MobileBottomNav from "@/app/components/MobileBottomNav";
 import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 import ImageModal from "@/app/components/ImageModal";
 import { GlassToast, useToast } from "@/app/components/ui/GlassToast";
+import { driveThumbnailUrl } from "@/lib/drive";
 
 interface CleanedVehicle {
   id: number;
@@ -81,9 +82,28 @@ export default function CleanedVehiclesPage() {
     }
   };
 
-  const getGoogleDriveImageUrl = (fileId: string | null) => {
-    if (!fileId) return null;
-    return `https://drive.google.com/uc?export=view&id=${fileId}`;
+  // Check if image_id is a Cloudinary URL
+  const isCloudinaryUrl = (imageId: string | null): boolean => {
+    if (!imageId) return false;
+    return imageId.includes('res.cloudinary.com');
+  };
+
+  // Get thumbnail URL for table display (small size)
+  const getThumbnailUrl = (imageId: string | null) => {
+    if (!imageId) return null;
+    // If it's a Cloudinary URL, return as-is (Cloudinary handles resizing via URL params if needed)
+    if (isCloudinaryUrl(imageId)) return imageId;
+    // Otherwise treat as Google Drive file ID
+    return driveThumbnailUrl(imageId, "w200-h150");
+  };
+
+  // Get full-size URL for modal display
+  const getFullImageUrl = (imageId: string | null) => {
+    if (!imageId) return null;
+    // If it's a Cloudinary URL, return as-is
+    if (isCloudinaryUrl(imageId)) return imageId;
+    // Otherwise treat as Google Drive file ID
+    return driveThumbnailUrl(imageId, "w1200-h900");
   };
 
   const formatPrice = (price: string | number | null) => {
@@ -219,17 +239,17 @@ export default function CleanedVehiclesPage() {
                   {vehicles.map((vehicle) => (
                     <tr 
                       key={vehicle.id} 
-                      onClick={() => vehicle.image_id && setSelectedImage(getGoogleDriveImageUrl(vehicle.image_id))}
+                      onClick={() => vehicle.image_id && setSelectedImage(getFullImageUrl(vehicle.image_id))}
                       className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${vehicle.image_id ? "cursor-pointer" : ""}`}
                     >
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         {vehicle.image_id ? (
                           <button
-                            onClick={() => setSelectedImage(getGoogleDriveImageUrl(vehicle.image_id))}
+                            onClick={() => setSelectedImage(getFullImageUrl(vehicle.image_id))}
                             className="w-16 h-12 rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-700 hover:opacity-80 transition-opacity"
                           >
                             <img
-                              src={getGoogleDriveImageUrl(vehicle.image_id) || ""}
+                              src={getThumbnailUrl(vehicle.image_id) || ""}
                               alt={`${vehicle.brand} ${vehicle.model}`}
                               className="w-full h-full object-cover"
                               onError={(e) => {

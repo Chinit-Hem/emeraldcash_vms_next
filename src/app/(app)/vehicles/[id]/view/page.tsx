@@ -354,7 +354,7 @@ function ViewVehicleInner() {
             <VehicleDetailsCard
               vehicle={vehicle}
               userRole={userRole}
-              onDelete={async () => setIsDeleteModalOpen(true)}
+              onDelete={async () => { setIsDeleteModalOpen(true); }}
               isDeleting={isDeleting}
             />
           </div>

@@ -282,28 +282,52 @@ export async function PUT(
     }
 
     if (imageDataToUpload) {
+      // Validate Cloudinary configuration before upload
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+      const apiKey = process.env.CLOUDINARY_API_KEY;
+      const apiSecret = process.env.CLOUDINARY_API_SECRET;
+      
+      if (!cloudName || !apiKey || !apiSecret) {
+        console.error(`[PUT /api/vehicles/${vehicleId}] Cloudinary configuration missing`);
+        return NextResponse.json(
+          { ok: false, error: "Image upload service not configured. Please contact administrator." },
+          { status: 503 }
+        );
+      }
+      
       // Get folder using explicit vms/ prefix pattern
       const targetFolder = getCloudinaryFolder(category);
       console.log(`[PUT /api/vehicles/${vehicleId}] Uploading to Cloudinary folder: ${targetFolder}`);
       
-      // Upload with explicit folder option
-      const uploadResult = await uploadImage(imageDataToUpload, {
-        folder: targetFolder,
-        publicId: `vehicle_${vehicleId}_${Date.now()}`,
-        tags: [category, brand, model].filter(Boolean),
-      });
+      try {
+        // Upload with explicit folder option
+        const uploadResult = await uploadImage(imageDataToUpload, {
+          folder: targetFolder,
+          publicId: `vehicle_${vehicleId}_${Date.now()}`,
+          tags: [category, brand, model].filter(Boolean),
+        });
 
-      console.log(`[PUT /api/vehicles/${vehicleId}] Upload result: success=${uploadResult.success}, url=${uploadResult.url || 'none'}, error=${uploadResult.error || 'none'}`);
+        console.log(`[PUT /api/vehicles/${vehicleId}] Upload result: success=${uploadResult.success}, url=${uploadResult.url ? 'present' : 'none'}, error=${uploadResult.error || 'none'}`);
 
-      if (!uploadResult.success) {
-        // Log warning but don't fail the update - just skip the image
-        console.warn(`[PUT /api/vehicles/${vehicleId}] Image upload failed: ${uploadResult.error}`);
-        // Continue without the image rather than returning 502
-      } else {
-        // Use secure_url from Cloudinary response
-        imageId = uploadResult.url || null;
-        console.log(`✅ [PUT /api/vehicles/${vehicleId}] Image successfully uploaded to Cloudinary folder '${targetFolder}'`);
-        console.log(`[PUT /api/vehicles/${vehicleId}] Secure URL: ${imageId}`);
+        if (!uploadResult.success) {
+          // Return specific error to client
+          console.error(`[PUT /api/vehicles/${vehicleId}] Image upload failed: ${uploadResult.error}`);
+          return NextResponse.json(
+            { ok: false, error: `Image upload failed: ${uploadResult.error || "Unknown error"}` },
+            { status: 502 }
+          );
+        } else {
+          // Use secure_url from Cloudinary response
+          imageId = uploadResult.url || null;
+          console.log(`✅ [PUT /api/vehicles/${vehicleId}] Image successfully uploaded to Cloudinary folder '${targetFolder}'`);
+          console.log(`[PUT /api/vehicles/${vehicleId}] Secure URL: ${imageId?.substring(0, 100)}...`);
+        }
+      } catch (uploadError) {
+        console.error(`[PUT /api/vehicles/${vehicleId}] Upload exception:`, uploadError);
+        return NextResponse.json(
+          { ok: false, error: "Image upload service error. Please try again later." },
+          { status: 502 }
+        );
       }
     } else {
       console.log(`[PUT /api/vehicles/${vehicleId}] No image data to upload`);

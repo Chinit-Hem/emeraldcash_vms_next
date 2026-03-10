@@ -119,20 +119,44 @@ export function EditVehicleModal({
       alert("Please select an image file");
       return;
     }
-    if (file.size > 4 * 1024 * 1024) {
-      alert("Image too large (max 4MB)");
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image too large (max 5MB)");
       return;
     }
 
     setImageLoading(true);
     try {
-      const dataUrl = await fileToDataUrl(file);
-      setValue("Image", dataUrl, { shouldDirty: true });
+      // For large files (>1MB), use object URL to avoid memory issues
+      // For smaller files, use data URL for preview
+      let previewUrl: string;
+      if (file.size > 1024 * 1024) {
+        previewUrl = URL.createObjectURL(file);
+      } else {
+        previewUrl = await fileToDataUrl(file);
+      }
+      setValue("Image", previewUrl, { shouldDirty: true });
       setUploadedImageFile(file);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to load image");
     } finally {
       setImageLoading(false);
+    }
+  };
+
+  // Handle paste from clipboard
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          await handleImageFile(file);
+        }
+        break;
+      }
     }
   };
 
@@ -202,7 +226,7 @@ export function EditVehicleModal({
             </div>
 
             {/* Form Content */}
-            <form onSubmit={handleSubmit(onSubmit)} className="p-4 md:p-6 space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)} onPaste={handlePaste} className="p-4 md:p-6 space-y-6">
               {/* Image Section */}
               <section>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">

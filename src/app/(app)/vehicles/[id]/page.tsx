@@ -10,7 +10,6 @@ import { CardSkeleton } from "@/app/components/LoadingSkeleton";
 
 import { extractDriveFileId } from "@/lib/drive";
 import { refreshVehicleCache, writeVehicleCache } from "@/lib/vehicleCache";
-import { compressImage } from "@/lib/compressImage";
 import type { Vehicle } from "@/lib/types";
 import { derivePrices } from "@/lib/pricing";
 
@@ -170,14 +169,9 @@ function VehicleDetailInner() {
         });
         formDataToSend.append("VehicleId", vehicle.VehicleId);
 
-        // Compress and add the image
-        const compressedResult = await compressImage(formData.imageFile, {
-          maxWidth: 1280,
-          quality: 0.75,
-          targetMinSizeKB: 250,
-          targetMaxSizeKB: 800,
-        });
-        formDataToSend.append("image", compressedResult.file);
+        // Add the image file directly - compression happens once in the form component
+        // The API will handle the upload to Cloudinary
+        formDataToSend.append("image", formData.imageFile);
 
         body = formDataToSend;
       } else {

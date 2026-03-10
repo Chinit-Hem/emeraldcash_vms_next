@@ -172,8 +172,8 @@ export function VehicleForm({
       return;
     }
     
-    if (file.size > 4 * 1024 * 1024) {
-      setErrors((prev) => ({ ...prev, Image: "Image too large (max 4MB)" }));
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, Image: "Image too large (max 5MB)" }));
       return;
     }
 
@@ -181,8 +181,16 @@ export function VehicleForm({
     setErrors((prev) => ({ ...prev, Image: "" }));
     
     try {
-      const dataUrl = await fileToDataUrl(file);
-      setFormData((prev) => ({ ...prev, Image: dataUrl }));
+      // For large files (>1MB), use object URL to avoid memory issues
+      // For smaller files, use data URL for preview
+      let previewUrl: string;
+      if (file.size > 1024 * 1024) {
+        previewUrl = URL.createObjectURL(file);
+      } else {
+        previewUrl = await fileToDataUrl(file);
+      }
+      
+      setFormData((prev) => ({ ...prev, Image: previewUrl }));
       setUploadedImageFile(file);
     } catch (err) {
       setErrors((prev) => ({ 
@@ -193,6 +201,23 @@ export function VehicleForm({
       setImageLoading(false);
     }
   }, []);
+
+  // Handle paste from clipboard
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          await handleImageFile(file);
+        }
+        break;
+      }
+    }
+  }, [handleImageFile]);
 
   // Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
@@ -259,7 +284,7 @@ export function VehicleForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} onPaste={handlePaste} className="space-y-6">
       {/* Image Section */}
       <SectionCard title="Vehicle Image" icon={icons.image}>
         {formData.Image ? (

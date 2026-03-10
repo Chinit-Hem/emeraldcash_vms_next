@@ -42,19 +42,42 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get("category");
     const brand = searchParams.get("brand");
 
-    let query = sql`SELECT * FROM cleaned_vehicles_for_google_sheets WHERE 1=1`;
+    // Build query dynamically based on filters
+    let vehicles;
     
-    if (category) {
-      query = sql`${query} AND category ILIKE ${`%${category}%`}`;
+    if (category && brand) {
+      vehicles = await sql`
+        SELECT * FROM cleaned_vehicles_for_google_sheets 
+        WHERE category ILIKE ${`%${category}%`} 
+        AND brand ILIKE ${`%${brand}%`}
+        ORDER BY id 
+        LIMIT ${limit} 
+        OFFSET ${offset}
+      `;
+    } else if (category) {
+      vehicles = await sql`
+        SELECT * FROM cleaned_vehicles_for_google_sheets 
+        WHERE category ILIKE ${`%${category}%`}
+        ORDER BY id 
+        LIMIT ${limit} 
+        OFFSET ${offset}
+      `;
+    } else if (brand) {
+      vehicles = await sql`
+        SELECT * FROM cleaned_vehicles_for_google_sheets 
+        WHERE brand ILIKE ${`%${brand}%`}
+        ORDER BY id 
+        LIMIT ${limit} 
+        OFFSET ${offset}
+      `;
+    } else {
+      vehicles = await sql`
+        SELECT * FROM cleaned_vehicles_for_google_sheets 
+        ORDER BY id 
+        LIMIT ${limit} 
+        OFFSET ${offset}
+      `;
     }
-    
-    if (brand) {
-      query = sql`${query} AND brand ILIKE ${`%${brand}%`}`;
-    }
-    
-    query = sql`${query} ORDER BY id LIMIT ${limit} OFFSET ${offset}`;
-    
-    const vehicles = await query;
     
     // Get total count
     const countResult = await sql`SELECT COUNT(*) as count FROM cleaned_vehicles_for_google_sheets`;

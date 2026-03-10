@@ -26,19 +26,20 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
     throw new Error("This browser cannot convert files to base64. Please paste an image URL instead.");
   }
 
-  // ជំនួសផ្នែកនេះទាំងអស់ (ពី for loop ដល់ return)
-let binary = '';
-const bytes = new Uint8Array(buffer);
-const chunkSize = 8192; // អាចប្តូរតាមចង់
+  // Convert ArrayBuffer to base64 string using chunked processing
+  // This is more memory-efficient than using spread operator on large arrays
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 8192; // Process in 8KB chunks to avoid stack overflow
 
-for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-  const chunk = bytes.subarray(offset, offset + chunkSize);
-  // FIXED: ប្រើ loop ធម្មតា ជំនួស spread
-  for (let i = 0; i < chunk.length; i++) {
-    binary += String.fromCharCode(chunk[i]);
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    const chunk = bytes.subarray(offset, offset + chunkSize);
+    // Use standard for loop instead of spread operator for better performance
+    for (let i = 0; i < chunk.length; i++) {
+      binary += String.fromCharCode(chunk[i]);
+    }
   }
-}
 
-return btoa(binary);
+  return btoa(binary);
 }
 

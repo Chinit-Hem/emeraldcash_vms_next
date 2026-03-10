@@ -861,8 +861,10 @@ export class VehicleService {
         RETURNING *
       `;
 
+      // Use sql.query for conventional parameterized queries (not tagged template)
+      const sql = dbManager.getClient();
       const result = await dbManager.query(
-        async () => dbManager.execute(updateQuery as unknown as TemplateStringsArray, ...updateParams),
+        async () => sql.query(updateQuery, updateParams),
         { operationName: "updateVehicle", maxRetries: 3 }
       );
 
