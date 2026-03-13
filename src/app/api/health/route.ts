@@ -37,12 +37,40 @@ let LAST_SYNC_TIME: string | null = null;
 let LAST_SYNC_ERROR: string | null = null;
 
 // Update sync status (called by cron job)
-export function updateSyncStatus(success: boolean, error?: string) {
+function updateSyncStatus(success: boolean, error?: string) {
   if (success) {
     LAST_SYNC_TIME = new Date().toISOString();
     LAST_SYNC_ERROR = null;
   } else {
     LAST_SYNC_ERROR = error || "Unknown error";
+  }
+}
+
+// POST handler to update sync status via API call
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { success, error } = body;
+    
+    if (typeof success !== 'boolean') {
+      return NextResponse.json(
+        { error: 'Invalid request: success must be a boolean' },
+        { status: 400 }
+      );
+    }
+    
+    updateSyncStatus(success, error);
+    
+    return NextResponse.json({
+      success: true,
+      lastSyncTime: LAST_SYNC_TIME,
+      lastSyncError: LAST_SYNC_ERROR,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Invalid JSON body' },
+      { status: 400 }
+    );
   }
 }
 

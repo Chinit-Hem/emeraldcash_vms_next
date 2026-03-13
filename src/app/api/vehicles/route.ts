@@ -427,8 +427,8 @@ const postHandler = withErrorHandling(async (req, { logger, requestId, startTime
   }
   
   logger.info("Vehicle created successfully", {
-    id: result.data?.id,
-    plate: result.data?.plate,
+    vehicleId: result.data?.VehicleId,
+    plate: result.data?.Plate,
   });
   
   return createSuccessResponse(
