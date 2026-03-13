@@ -4,16 +4,7 @@ import type { User, VehicleMeta } from "@/lib/types";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isIOSSafariBrowser } from "@/lib/platform";
-
-// Safe client-side only hook to prevent hydration mismatches
-function useIsMounted() {
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-  return isMounted;
-}
+import { useMounted } from "@/lib/useMounted";
 
 function normalizeCategory(value: unknown) {
   return String(value ?? "").trim().toLowerCase();
@@ -320,8 +311,7 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [meta, setMeta] = useState<VehicleMeta | null>(null);
-  const [isIOSSafari, setIsIOSSafari] = useState(false);
-  const isMounted = useIsMounted();
+  const isMounted = useMounted();
 
   // Fetch meta data for category counts (client-side only)
   useEffect(() => {

@@ -5,9 +5,10 @@ const META_KEY = "vms-vehicles-meta";
 const CACHE_VERSION_KEY = "vms-vehicles-version";
 const CACHE_TIMESTAMP_KEY = "vms-vehicles-timestamp";
 const LAST_MUTATION_KEY = "vms-vehicles-last-mutation";
-const CURRENT_CACHE_VERSION = "4"; // Increment when cache format changes
+const CURRENT_CACHE_VERSION = "5"; // Increment when cache format changes
 const UPDATE_EVENT = "vms-vehicles-updated";
-const CACHE_STALE_MS = 5 * 60 * 1000; // 5 minutes default stale time
+const CACHE_STALE_MS = 5 * 60 * 1000; // 5 minutes stale time - prevents cache-invalidation-storm
+const MAX_CACHE_AGE_MS = 10 * 60 * 1000; // 10 minutes max cache age - allows longer cache lifetime
 
 export function readVehicleCache(): Vehicle[] | null {
   if (typeof window === "undefined") return null;
@@ -195,5 +196,61 @@ export function clearAllVehicleCache(): void {
     console.log("[vehicleCache] All cache cleared");
   } catch {
     // ignore errors
+  }
+}
+
+/**
+ * Get the age of the cache in milliseconds
+ * @returns Cache age in ms, or null if no cache exists
+ */
+export function getCacheAge(): number | null {
+  if (typeof window === "undefined") return null;
+  const cacheTime = getCacheTimestamp();
+  if (!cacheTime) return null;
+  return Date.now() - cacheTime;
+}
+
+/**
+ * Check if cache is extremely old (over 5 minutes)
+ * This helps detect the "482643290 ms" type issues
+ */
+export function isCacheExtremelyStale(): boolean {
+  const age = getCacheAge();
+  if (age === null) return true;
+  return age > MAX_CACHE_AGE_MS;
+}
+
+/**
+ * Clear cache on mount - should be called when app initializes
+ * This prevents showing stale data from previous sessions
+ * 
+ * NOTE: This function is now less aggressive to prevent cache-invalidation-storm.
+ * Cache is only cleared if it's truly expired (10+ minutes old) or if a mutation occurred.
+ */
+export function clearCacheOnMount(): void {
+  if (typeof window === "undefined") return;
+  
+  const cacheAge = getCacheAge();
+  
+  // Log cache status for debugging
+  if (cacheAge !== null) {
+    const ageMinutes = Math.round(cacheAge / 60000);
+    console.log(`[vehicleCache] Cache age: ${cacheAge}ms (${ageMinutes}min)`);
+    
+    // Only clear if cache is truly expired (10+ minutes) - prevents cache-invalidation-storm
+    if (cacheAge > MAX_CACHE_AGE_MS) {
+      console.log(`[vehicleCache] Cache is expired (${ageMinutes} min > ${MAX_CACHE_AGE_MS / 60000} min), clearing...`);
+      clearAllVehicleCache();
+      return;
+    }
+  }
+  
+  // Only clear if cache is stale due to mutation or version mismatch
+  // Don't clear just because cache is "stale" by time - that causes the storm
+  const mutationTime = getLastMutationTime();
+  const cacheTime = getCacheTimestamp();
+  if (mutationTime && cacheTime && mutationTime > cacheTime) {
+    console.log("[vehicleCache] Cache invalidated by mutation, clearing...");
+    clearAllVehicleCache();
   }
 }

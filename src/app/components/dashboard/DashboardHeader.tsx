@@ -40,6 +40,7 @@ export default function DashboardHeader() {
                 fill
                 className="object-contain"
                 priority
+                sizes="(max-width: 640px) 48px, 56px"
               />
             </div>
             <div>

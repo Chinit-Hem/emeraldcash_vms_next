@@ -15,7 +15,6 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import type { Vehicle } from "@/lib/types";
-import { useMounted } from "@/lib/useHydrationSafe";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { normalizeCategoryLabel } from "@/lib/analytics";
 import { CATEGORY_COLORS } from "@/lib/categoryColors";
@@ -77,7 +76,7 @@ type DashboardMeta = {
 
 type DashboardProps = {
   initialVehicles: Vehicle[];
-  initialMeta: DashboardMeta | null;
+  initialMeta: DashboardMeta;
   initialError: string | null;
 };
 
@@ -317,17 +316,21 @@ export default function Dashboard({
   initialMeta,
   initialError,
 }: DashboardProps) {
-  const isMounted = useMounted();
+  // iOS fix: Use state for data to handle hydration issues
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(initialError);
   const [searchQuery, setSearchQuery] = useState("");
+  const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
+  const [meta, setMeta] = useState<DashboardMeta>(initialMeta);
   
   // B. Debounced search (300ms) for smooth performance
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
 
-  // Use initial data
-  const vehicles = initialVehicles;
-  const meta = initialMeta;
+  // iOS fix: Ensure data is set on mount if initial props change
+  useEffect(() => {
+    setVehicles(initialVehicles);
+    setMeta(initialMeta);
+  }, [initialVehicles, initialMeta]);
 
   // ============================================================================
   // B. O(n) Hash Map Aggregation - Single Pass Algorithm
@@ -522,10 +525,17 @@ export default function Dashboard({
   }
 
   // D. Show data immediately from initialMeta, skeleton only for charts
-  // Fixed: KPI cards show actual data even before mount to prevent iOS "—" display
-  const showKpiData = meta && !isRefreshing;
+  // Fixed: Always show data, meta is now guaranteed to be non-null
+  const showKpiData = !isRefreshing;
+  
+  // iOS fix: Use actual data values directly
+  const totalVehicles = meta.total;
+  const carsCount = meta.countsByCategory.Cars;
+  const motorcyclesCount = meta.countsByCategory.Motorcycles;
+  const tukTuksCount = meta.countsByCategory.TukTuks;
+  const noImageCount = meta.noImageCount;
 
-  const isLoading = !meta || isRefreshing;
+  const isLoading = isRefreshing;
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-[1600px] mx-auto">
@@ -541,7 +551,7 @@ export default function Dashboard({
             {isLoading ? (
               <span className="inline-block w-20 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
             ) : (
-              `${meta.total.toLocaleString()} total vehicles`
+              `${totalVehicles.toLocaleString()} total vehicles`
             )}
           </p>
         </div>
@@ -557,53 +567,53 @@ export default function Dashboard({
 
       {/* ============================================================================
           Stats Grid - 2 cols mobile, 5 cols desktop
-          Fixed: Use showKpiData to display actual counts immediately on iOS
+          Fixed: Always display actual data values, never "—" on iOS
       ============================================================================ */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <StatCard
           title="Total Vehicles"
-          value={showKpiData ? meta.total.toLocaleString() : "—"}
-          subtitle={showKpiData ? `${meta.noImageCount} without images` : "—"}
+          value={totalVehicles.toLocaleString()}
+          subtitle={`${noImageCount} without images`}
           subtitleHref="/vehicles?noImage=1"
           icon={Icons.totalVehicles}
           color="emerald"
-          isLoading={!showKpiData}
+          isLoading={isRefreshing}
           href="/vehicles"
         />
         <StatCard
           title="Cars"
-          value={showKpiData ? meta.countsByCategory.Cars.toLocaleString() : "—"}
+          value={carsCount.toLocaleString()}
           subtitle="All car types"
           icon={Icons.car}
           color="blue"
-          isLoading={!showKpiData}
+          isLoading={isRefreshing}
           href="/vehicles?category=Cars"
         />
         <StatCard
           title="Motorcycles"
-          value={showKpiData ? meta.countsByCategory.Motorcycles.toLocaleString() : "—"}
+          value={motorcyclesCount.toLocaleString()}
           subtitle="All motorcycle types"
           icon={Icons.motorcycle}
           color="purple"
-          isLoading={!showKpiData}
+          isLoading={isRefreshing}
           href="/vehicles?category=Motorcycles"
         />
         <StatCard
           title="Tuk Tuks"
-          value={showKpiData ? meta.countsByCategory.TukTuks.toLocaleString() : "—"}
+          value={tukTuksCount.toLocaleString()}
           subtitle="All tuk tuk types"
           icon={Icons.tuk}
           color="orange"
-          isLoading={!showKpiData}
+          isLoading={isRefreshing}
           href="/vehicles?category=Tuk+Tuk"
         />
         <StatCard
           title="No Images"
-          value={showKpiData ? meta.noImageCount.toLocaleString() : "—"}
+          value={noImageCount.toLocaleString()}
           subtitle="Click to view"
           icon={Icons.noImage}
           color="red"
-          isLoading={!showKpiData}
+          isLoading={isRefreshing}
           href="/vehicles?noImage=1"
         />
       </div>
@@ -636,7 +646,7 @@ export default function Dashboard({
         </span>
         {debouncedSearch && (
           <span>
-            matching "{debouncedSearch}"
+            matching &quot;{debouncedSearch}&quot;
           </span>
         )}
       </div>

@@ -82,9 +82,10 @@ export default function CleanedVehiclesPage() {
     }
   };
 
-  // Check if image_id is a Cloudinary URL
+  // Check if image_id is a Cloudinary URL (guard against "undefined" string)
   const isCloudinaryUrl = (imageId: string | null): boolean => {
     if (!imageId) return false;
+    if (imageId === 'undefined' || imageId === 'null') return false;
     return imageId.includes('res.cloudinary.com');
   };
 

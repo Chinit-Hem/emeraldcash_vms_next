@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import { vehicleApi, isApiError, isConfigError, isNetworkError, getErrorDetails, NetworkError, type VehicleFilters } from "./api";
-import { onVehicleCacheUpdate, shouldUseCache, isCacheStale } from "./vehicleCache";
+import { onVehicleCacheUpdate, shouldUseCache, isCacheStale, getCacheAge, clearAllVehicleCache } from "./vehicleCache";
 import type { Vehicle, VehicleMeta } from "./types";
 import { isIOSSafariBrowser } from "./platform";
 
@@ -11,8 +11,10 @@ const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 1000; // 1 second
 const MAX_RETRY_DELAY = 5000; // 5 seconds
 
-// Debounce delay for filter changes (ms)
-const FILTER_DEBOUNCE_MS = 300;
+// Debounce delay for search queries (ms) - wait 500ms before fetching
+const SEARCH_DEBOUNCE_MS = 500;
+// Debounce delay for other filter changes (ms)
+const FILTER_DEBOUNCE_MS = 150;
 
 interface UseVehiclesReturn {
   vehicles: Vehicle[];
@@ -37,7 +39,8 @@ interface UseVehiclesOptions {
 }
 
 export function useVehicles(options: UseVehiclesOptions = {}): UseVehiclesReturn {
-  const { noCache = true, filters, limit: customLimit } = options;
+  // Default to using cache (noCache = false) - only fetch fresh data when explicitly requested
+  const { noCache = false, filters, limit: customLimit } = options;
   
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [meta, setMeta] = useState<VehicleMeta | null>(null);
@@ -186,6 +189,26 @@ export function useVehicles(options: UseVehiclesOptions = {}): UseVehiclesReturn
     }
   }, [noCache, customLimit]);
 
+  // Check cache on mount - only clear if truly expired (5+ minutes old)
+  // This prevents the cache-invalidation-storm while ensuring data freshness
+  useEffect(() => {
+    console.log('[useVehicles] Component mounted, checking cache...');
+    const cacheAge = getCacheAge();
+    if (cacheAge !== null) {
+      console.log(`[useVehicles] Current cache age: ${cacheAge}ms`);
+      
+      // Only clear cache if it's truly expired (older than 5 minutes)
+      // This prevents aggressive cache clearing on every mount
+      const FIVE_MINUTES = 5 * 60 * 1000;
+      if (cacheAge > FIVE_MINUTES) {
+        console.log(`[useVehicles] Cache is ${Math.round(cacheAge / 1000)}s old (expired), clearing...`);
+        clearAllVehicleCache();
+      } else {
+        console.log(`[useVehicles] Cache is fresh (${Math.round(cacheAge / 1000)}s), keeping...`);
+      }
+    }
+  }, []);
+
   // Initial fetch and refetch when filters change (with debounce)
   useEffect(() => {
     // Clear any existing debounce timeout
@@ -193,10 +216,15 @@ export function useVehicles(options: UseVehiclesOptions = {}): UseVehiclesReturn
       clearTimeout(debounceTimeoutRef.current);
     }
     
-    // Debounce filter changes to avoid excessive API calls
+    // Determine debounce delay based on filter type
+    // Search queries get longer debounce (500ms) to avoid excessive API calls while typing
+    // Other filter changes get shorter debounce (150ms) for responsiveness
+    const hasSearchQuery = filters?.search && filters.search.trim().length > 0;
+    const debounceMs = hasSearchQuery ? SEARCH_DEBOUNCE_MS : FILTER_DEBOUNCE_MS;
+    
     debounceTimeoutRef.current = setTimeout(() => {
       fetchVehicles(filters);
-    }, filters?.search ? FILTER_DEBOUNCE_MS : 0);
+    }, debounceMs);
     
     // Cleanup timeout on unmount or filter change
     return () => {

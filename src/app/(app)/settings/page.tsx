@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { clearCachedUser } from "@/app/components/authCache";
 import { useAuthUser } from "@/app/components/AuthContext";
-import ThemeToggle from "@/components/theme-toggle";
+import ThemeToggle from "@/app/components/ThemeToggle";
 import type { Role } from "@/lib/types";
 
 type ManagedUser = {

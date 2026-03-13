@@ -3,9 +3,9 @@
 import { BookOpen, Car, LayoutDashboard, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { isIOSSafariBrowser } from "@/lib/platform";
+import { useMounted } from "@/lib/useMounted";
 
 type NavItem = {
   label: string;
@@ -22,13 +22,7 @@ const navItems: NavItem[] = [
 
 export default function MobileBottomNav() {
   const pathname = usePathname() || "/";
-  const [isIOSSafari, setIsIOSSafari] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsIOSSafari(isIOSSafariBrowser());
-    }
-  }, []);
+  const isIOSSafari = useMounted() && isIOSSafariBrowser();
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/" || pathname === "/dashboard";

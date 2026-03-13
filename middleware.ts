@@ -6,6 +6,7 @@ import {
   getSessionFromRequest,
   validateSession,
 } from "@/lib/auth";
+import { globalLogger } from "@/lib/logger";
 
 const PUBLIC_PAGE_ROUTES = new Set(["/login"]);
 const PUBLIC_API_ROUTES = new Set([
@@ -98,82 +99,139 @@ function redirectToLogin(request: NextRequest): Response {
 }
 
 export function middleware(request: NextRequest) {
+  const startTime = Date.now();
   const { pathname } = request.nextUrl;
   const userAgent = getClientUserAgent(request.headers);
+  const requestId = request.headers.get("x-request-id") || crypto.randomUUID();
 
-  // Skip static/public assets early.
-  if (isPublicAsset(pathname)) {
-    return NextResponse.next();
-  }
+  try {
+    // Skip static/public assets early.
+    if (isPublicAsset(pathname)) {
+      return NextResponse.next();
+    }
 
-  // Allow CORS preflight to reach route handlers.
-  if (request.method === "OPTIONS") {
-    return NextResponse.next();
-  }
+    // Allow CORS preflight to reach route handlers.
+    if (request.method === "OPTIONS") {
+      return NextResponse.next();
+    }
 
-  // Prevent unstable session behavior in production when secret is missing.
-  if (IS_PRODUCTION && !hasSessionSecretConfigured()) {
-    if (pathname.startsWith("/api/") && !isPublicApiRoute(pathname)) {
+    // Prevent unstable session behavior in production when secret is missing.
+    if (IS_PRODUCTION && !hasSessionSecretConfigured()) {
+      globalLogger.error("SESSION_SECRET missing in production", new Error("Auth misconfiguration"), {
+        pathname,
+        requestId,
+      });
+      
+      if (pathname.startsWith("/api/") && !isPublicApiRoute(pathname)) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "Server configuration error. Please contact support.",
+            requestId,
+          },
+          { status: 500, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } }
+        );
+      }
+
+      // Allow login page to render and recover, but avoid app route access.
+      if (!PUBLIC_PAGE_ROUTES.has(pathname)) {
+        return redirectToLogin(request);
+      }
+    }
+
+    const authenticated = isAuthenticated(request);
+
+    // API routes: return JSON 401 instead of page redirects.
+    if (pathname.startsWith("/api/")) {
+      if (isPublicApiRoute(pathname)) {
+        return NextResponse.next();
+      }
+
+      if (!authenticated) {
+        globalLogger.warn("Unauthorized API access attempt", {
+          pathname,
+          requestId,
+          ip: getClientIp(request.headers),
+        });
+        
+        return NextResponse.json(
+          { 
+            ok: false, 
+            error: "Unauthorized. Please log in.",
+            requestId,
+          },
+          { status: 401, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } }
+        );
+      }
+
+      // Add request ID to response for API routes
+      const response = NextResponse.next();
+      response.headers.set("X-Request-ID", requestId);
+      return response;
+    }
+
+    // Login page is public, but authenticated users should not stay on it.
+    if (PUBLIC_PAGE_ROUTES.has(pathname)) {
+      if (!authenticated) return NextResponse.next();
+
+      // Safari/iOS WebKit can loop on middleware-level redirects when session storage
+      // is in a transient state. Let client-side auth flow navigate after /api/auth/me.
+      if (isIosDevice(userAgent)) {
+        return NextResponse.next();
+      }
+
+      const redirectParam = getSafeRedirectPath(
+        request.nextUrl.searchParams.get("redirect")
+      );
+      const target = redirectParam || "/";
+      const response = Response.redirect(new URL(target, request.url), 302);
+      response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+      response.headers.set("Pragma", "no-cache");
+      response.headers.set("X-Request-ID", requestId);
+      return response;
+    }
+
+    // All other app routes are protected.
+    if (!authenticated) {
+      return redirectToLogin(request);
+    }
+
+    // Add request ID to all responses
+    const response = NextResponse.next();
+    response.headers.set("X-Request-ID", requestId);
+    return response;
+  } catch (error) {
+    // Global middleware error handler
+    const duration = Date.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : "Unknown middleware error";
+    
+    globalLogger.error("Middleware error", error, {
+      pathname,
+      requestId,
+      durationMs: duration,
+    });
+
+    // Return appropriate error response based on route type
+    if (pathname.startsWith("/api/")) {
       return NextResponse.json(
         {
           ok: false,
-          error:
-            "Server auth misconfiguration: SESSION_SECRET is missing in production environment.",
+          error: "An internal error occurred. Our team has been notified.",
+          requestId,
         },
-        { status: 500, headers: { "Cache-Control": "no-store" } }
+        { 
+          status: 500, 
+          headers: { 
+            "Cache-Control": "no-store",
+            "X-Request-ID": requestId,
+          } 
+        }
       );
     }
 
-    // Allow login page to render and recover, but avoid app route access.
-    if (!PUBLIC_PAGE_ROUTES.has(pathname)) {
-      return redirectToLogin(request);
-    }
-  }
-
-  const authenticated = isAuthenticated(request);
-
-  // API routes: return JSON 401 instead of page redirects.
-  if (pathname.startsWith("/api/")) {
-    if (isPublicApiRoute(pathname)) {
-      return NextResponse.next();
-    }
-
-    if (!authenticated) {
-      return NextResponse.json(
-        { ok: false, error: "Unauthorized" },
-        { status: 401, headers: { "Cache-Control": "no-store" } }
-      );
-    }
-
-    return NextResponse.next();
-  }
-
-  // Login page is public, but authenticated users should not stay on it.
-  if (PUBLIC_PAGE_ROUTES.has(pathname)) {
-    if (!authenticated) return NextResponse.next();
-
-    // Safari/iOS WebKit can loop on middleware-level redirects when session storage
-    // is in a transient state. Let client-side auth flow navigate after /api/auth/me.
-    if (isIosDevice(userAgent)) {
-      return NextResponse.next();
-    }
-
-    const redirectParam = getSafeRedirectPath(
-      request.nextUrl.searchParams.get("redirect")
-    );
-    const target = redirectParam || "/";
-    const response = Response.redirect(new URL(target, request.url), 302);
-    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
-    response.headers.set("Pragma", "no-cache");
-    return response;
-  }
-
-  // All other app routes are protected.
-  if (!authenticated) {
+    // For page routes, redirect to error page
     return redirectToLogin(request);
   }
-
-  return NextResponse.next();
 }
 
 export const config = {

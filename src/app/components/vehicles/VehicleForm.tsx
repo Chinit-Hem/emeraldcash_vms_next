@@ -37,6 +37,70 @@ interface FormErrors {
   [key: string]: string;
 }
 
+/**
+ * Helper function to sanitize numeric input values
+ * Converts empty strings, undefined, NaN to null
+ * Returns a valid number or null
+ */
+function sanitizeNumericInput(value: unknown): number | null {
+  // Handle null, undefined, empty string
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  
+  // Handle number type
+  if (typeof value === "number") {
+    // Check for NaN
+    if (Number.isNaN(value)) {
+      return null;
+    }
+    return value;
+  }
+  
+  // Handle string type
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "" || trimmed === "undefined" || trimmed === "NaN") {
+      return null;
+    }
+    const parsed = Number(trimmed);
+    if (Number.isNaN(parsed)) {
+      return null;
+    }
+    return parsed;
+  }
+  
+  return null;
+}
+
+/**
+ * Helper function to sanitize vehicle data before submission
+ * Ensures all numeric fields are strictly numbers or null
+ */
+function sanitizeVehicleDataForSubmit(data: Partial<Vehicle>): Partial<Vehicle> {
+  const sanitized = { ...data };
+  
+  // Sanitize Year
+  sanitized.Year = sanitizeNumericInput(data.Year);
+  
+  // Sanitize PriceNew
+  sanitized.PriceNew = sanitizeNumericInput(data.PriceNew);
+  
+  // Sanitize derived prices
+  sanitized.Price40 = sanitizeNumericInput(data.Price40);
+  sanitized.Price70 = sanitizeNumericInput(data.Price70);
+  
+  // Remove any remaining undefined values from the object
+  Object.keys(sanitized).forEach((key) => {
+    const k = key as keyof Vehicle;
+    if (sanitized[k] === undefined) {
+      delete sanitized[k];
+    }
+  });
+  
+  return sanitized;
+}
+
 export function VehicleForm({
   vehicle,
   onSubmit,
@@ -76,12 +140,18 @@ export function VehicleForm({
 
   // Handle field changes
   const handleChange = useCallback((field: keyof Vehicle, value: string | number | null) => {
+    // Sanitize numeric fields immediately on change
+    let sanitizedValue: string | number | null = value;
+    if (field === "Year" || field === "PriceNew") {
+      sanitizedValue = sanitizeNumericInput(value);
+    }
+    
     setFormData((prev) => {
-      const next = { ...prev, [field]: value };
+      const next = { ...prev, [field]: sanitizedValue };
       
       // Auto-calculate derived prices when PriceNew changes
       if (field === "PriceNew") {
-        const priceNew = typeof value === "number" && value > 0 ? value : null;
+        const priceNew = sanitizedValue as number | null;
         const derived = derivePrices(priceNew);
         next.Price40 = derived.Price40;
         next.Price70 = derived.Price70;
@@ -283,7 +353,17 @@ export function VehicleForm({
       ? { ...formData, Image: imageUrl }
       : formData;
     
-    await onSubmit(submitData, imageFile);
+    // Sanitize the data before submission to ensure no undefined/NaN values
+    const sanitizedSubmitData = sanitizeVehicleDataForSubmit(submitData);
+    
+    console.log("[VehicleForm] Submitting sanitized data:", {
+      original: submitData,
+      sanitized: sanitizedSubmitData,
+      year: sanitizedSubmitData.Year,
+      priceNew: sanitizedSubmitData.PriceNew
+    });
+    
+    await onSubmit(sanitizedSubmitData, imageFile);
   }, [formData, uploadedImage, onSubmit, validateForm]);
 
   // Handle remove image

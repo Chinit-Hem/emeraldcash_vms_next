@@ -22,10 +22,14 @@ interface UseUpdateVehicleOptimisticReturn {
 }
 
 // Maximum retry attempts for transient errors
-const MAX_RETRY_ATTEMPTS = 3;
-const RETRY_DELAY_MS = 1000;
-const MAX_CLOUDINARY_RETRIES = 2;
-const CLOUDINARY_RETRY_DELAY = 500;
+const MAX_RETRY_ATTEMPTS = 2; // Reduced from 3 for faster failure
+const RETRY_DELAY_MS = 500; // Reduced from 1000 for faster retry
+const MAX_CLOUDINARY_RETRIES = 1; // Reduced from 2
+const CLOUDINARY_RETRY_DELAY = 300; // Reduced from 500
+
+// Image compression settings - optimized for speed
+const COMPRESSION_MAX_WIDTH = 800; // Reduced from 1280 for faster processing
+const COMPRESSION_QUALITY = 0.7; // Reduced from 0.75 for faster processing
 
 // Cloudinary configuration from environment variables
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -287,8 +291,8 @@ export function useUpdateVehicleOptimistic(
           console.log(`[updateVehicle] Compressing image file...`);
           
           const compressedResult = await compressImage(imageFile, {
-            maxWidth: 1280,
-            quality: 0.75,
+            maxWidth: COMPRESSION_MAX_WIDTH,
+            quality: COMPRESSION_QUALITY,
           });
           
           console.log(`[updateVehicle] Image compressed:`, {

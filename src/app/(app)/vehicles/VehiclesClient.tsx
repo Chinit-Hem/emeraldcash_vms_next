@@ -300,6 +300,16 @@ interface FilterState {
   withoutImage: boolean;
 }
 
+// Helper function to safely create Cloudinary image URLs
+// Returns null for invalid paths (empty, "undefined", "null")
+const getSafeImageUrl = (imagePath: string | undefined | null) => {
+  // បើ path ទទេ ឬជា string "undefined" មិនបាច់បង្កើត URL ទេ
+  if (!imagePath || imagePath === "undefined" || imagePath === "null") {
+    return null; // ឬ return default placeholder image
+  }
+  return `https://res.cloudinary.com/dgntrakv6/image/upload/${imagePath}`;
+};
+
 // Helper function to compute meta from vehicle array
 // Defensive programming: handles undefined/null inputs safely
 function computeVehicleMeta(vehicles: Vehicle[] | undefined | null): VehicleMeta {
@@ -898,77 +908,153 @@ export default function VehiclesClient() {
     }
   };
 
-  const handleSaveVehicle = async (vehicleData: Partial<Vehicle>, imageFile?: File): Promise<void> => {
-    if (!editingVehicle) {
-      // For new vehicles, use traditional flow
-      const url = "/api/vehicles";
-      const loadingToastId = addToast("Adding vehicle...", "info");
+  // Helper function to sanitize vehicle data before sending to API
+  // Converts undefined/NaN values to null for number fields
+  const sanitizeVehicleData = (data: Partial<Vehicle>): Partial<Vehicle> => {
+    const sanitized = { ...data };
+    
+    // List of number fields that need sanitization
+    const numberFields: (keyof Vehicle)[] = ['Year', 'PriceNew', 'Price40', 'Price70'];
+    
+    numberFields.forEach((field) => {
+      const value = sanitized[field];
+      // Convert undefined, NaN, empty string, or the string "undefined"/"NaN" to null
+      if (
+        value === undefined || 
+        Number.isNaN(value) || 
+        value === '' ||
+        value === 'undefined' ||
+        value === 'NaN'
+      ) {
+        (sanitized as Record<string, unknown>)[field] = null;
+      }
+    });
+    
+    // Remove any remaining undefined values from the object
+    Object.keys(sanitized).forEach((key) => {
+      const k = key as keyof Vehicle;
+      if (sanitized[k] === undefined) {
+        delete (sanitized as Record<string, unknown>)[k];
+      }
+    });
+    
+    return sanitized;
+  };
 
-      try {
-        let body: string | FormData;
-        const headers: Record<string, string> = {};
+  // Helper function to check if a value is safe to append to FormData
+  // Returns true only for valid non-null, non-undefined values that aren't the string "undefined"
+  const isSafeFormDataValue = (value: unknown): boolean => {
+    if (value === null || value === undefined) return false;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      // Reject empty strings, "undefined", and "NaN"
+      if (trimmed === '' || trimmed === 'undefined' || trimmed === 'NaN') return false;
+    }
+    if (typeof value === 'number' && Number.isNaN(value)) return false;
+    return true;
+  };
 
-        if (imageFile) {
-          const formData = new FormData();
-          Object.entries(vehicleData).forEach(([key, value]) => {
-            if (value != null) formData.append(key, String(value));
-          });
-          formData.append("image", imageFile);
-          body = formData;
-        } else {
-          headers["Content-Type"] = "application/json";
-          body = JSON.stringify(vehicleData);
-        }
+  // Handle adding a new vehicle (POST /api/vehicles)
+  const handleSaveVehicle = async (data: Partial<Vehicle>, imageFile?: File): Promise<void> => {
+    const formData = new FormData();
 
-        const res = await fetch(url, {
-          method: "POST",
-          headers,
-          body,
-        });
+    // Create Mapping between Frontend Fields and Database Fields
+    // Don't send Price40 or Price70 as they are calculated values not in DB
+    const fieldMapping: Record<string, string> = {
+      'PriceNew': 'market_price',  // DB column name
+      'Brand': 'brand',
+      'Model': 'model',
+      'Year': 'year',
+      'Category': 'category',
+      'Condition': 'condition',
+      'Color': 'color',
+      'Plate': 'plate',
+      'TaxType': 'tax_type',
+      'BodyType': 'body_type',
+      'VehicleId': 'vehicle_id',
+      'Image': 'image',
+      'Time': 'time',
+      // Note: Price40 and Price70 are not included here as they don't exist in DB
+    };
 
-        if (!res.ok) {
-          const json = await res.json().catch(() => ({}));
-          throw new Error(json.error || "Failed to add vehicle");
-        }
-
-        removeToast(loadingToastId);
-        toastSuccess("Vehicle added successfully!", 2000);
-
-        await refetch();
-        setIsAddEditModalOpen(false);
-      } catch (err) {
-        removeToast(loadingToastId);
-        const errorMessage = err instanceof Error ? err.message : "Failed to add vehicle";
-        toastError(errorMessage, 4000);
-        throw err;
+    Object.entries(data).forEach(([key, value]) => {
+      // Skip fields not in the mapping (like Price40, Price70)
+      if (!fieldMapping[key]) {
+        return;
       }
 
-      return;
+      // Validation: Don't append undefined, null, or string "undefined"
+      const isInvalid = 
+        value === undefined || 
+        value === null || 
+        value === "undefined" || 
+        value === "NaN" ||
+        (typeof value === 'number' && isNaN(value));
+
+      if (!isInvalid) {
+        // Use Database Field Name instead of Frontend Field Name
+        const dbFieldName = fieldMapping[key];
+        formData.append(dbFieldName, String(value));
+      }
+      // If invalid, just skip (omit) - PostgreSQL prefers missing key over "undefined"
+    });
+
+    if (imageFile) {
+      formData.append("image", imageFile);
     }
 
-    // For existing vehicles - use optimistic update with immediate modal close
-    // Close modal immediately for instant feedback
-    setIsAddEditModalOpen(false);
-    
-    // Mark optimistic update in progress to prevent useEffect from overwriting
-    optimisticUpdateInProgress.current = true;
-    
-    const loadingToastId = addToast("Saving changes...", "info");
+    // Debug Log: See actual values being sent to Server
+    console.log("[handleSaveVehicle] Payload to be sent:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0], pair[1]);
+    }
 
-    // Optimistic update: update UI immediately
-    setVehicles((prev) =>
-      prev.map((v) =>
-        v.VehicleId === editingVehicle.VehicleId ? { ...v, ...vehicleData } : v
-      )
-    );
+    const response = await fetch('/api/vehicles', {
+      method: 'POST',
+      body: formData,
+    });
 
-    try {
-      await updateVehicle(editingVehicle.VehicleId, vehicleData, editingVehicle, imageFile);
-      removeToast(loadingToastId);
-    } catch (err) {
-      removeToast(loadingToastId);
-      // Error is handled by onError callback (rollback happens there)
-      throw err;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to save vehicle");
+    }
+    // Return void instead of response.json() to match expected signature
+    await response.json();
+  };
+
+  // Unified handler that routes to add or update based on editingVehicle state
+  const handleSubmitVehicle = async (data: Partial<Vehicle>, imageFile?: File): Promise<void> => {
+    if (editingVehicle) {
+      // UPDATE mode: Use updateVehicle with Cloudinary upload
+      console.log("[handleSubmitVehicle] UPDATE mode - using updateVehicle", {
+        vehicleId: editingVehicle.VehicleId,
+        hasImageFile: !!imageFile,
+        hasImageInData: !!data.Image,
+      });
+      
+      // Set optimistic update flag to prevent useEffect from overwriting
+      optimisticUpdateInProgress.current = true;
+      
+      // Use the updateVehicle hook which handles Cloudinary upload and PUT request
+      await updateVehicle(editingVehicle.VehicleId, data, editingVehicle, imageFile || null);
+      
+      // Close modal and clear editing state on success
+      // (onSuccess callback handles this, but we also do it here as backup)
+      setIsAddEditModalOpen(false);
+      setEditingVehicle(null);
+      setSelectedVehicle(null);
+    } else {
+      // ADD mode: Use handleSaveVehicle with FormData POST
+      console.log("[handleSubmitVehicle] ADD mode - using handleSaveVehicle", {
+        hasImageFile: !!imageFile,
+      });
+      
+      await handleSaveVehicle(data, imageFile);
+      
+      // Close modal and refresh vehicle list
+      setIsAddEditModalOpen(false);
+      // Trigger a refetch to get the new vehicle
+      void refetch();
     }
   };
 
@@ -1114,7 +1200,7 @@ export default function VehiclesClient() {
           isOpen={isAddEditModalOpen}
           vehicle={selectedVehicle}
           onClose={() => setIsAddEditModalOpen(false)}
-          onSave={handleSaveVehicle}
+          onSave={handleSubmitVehicle}
         />
 
         <DeleteConfirmationModal
@@ -1142,8 +1228,9 @@ export default function VehiclesClient() {
 
         {/* Data Status Bar - Enterprise Grade */}
         {!loading && !error && (
-          <div className="ec-status-bar relative z-[1] flex flex-wrap items-center justify-between gap-4 mb-6 p-4 bg-gradient-to-r from-white/90 to-white/70 dark:from-gray-800/90 dark:to-gray-800/70 backdrop-blur-md rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-            <div className="flex items-center gap-6 text-sm">
+          <div className="ec-status-bar relative z-[1] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6 p-4 bg-gradient-to-r from-white/90 to-white/70 dark:from-gray-800/90 dark:to-gray-800/70 backdrop-blur-md rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+            {/* Left Section - Info & Controls */}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-6 text-sm">
               {/* Last Sync */}
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                 <svg
@@ -1166,7 +1253,7 @@ export default function VehiclesClient() {
               <button
                 onClick={() => void refetch()}
                 disabled={loading}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-fit"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -1202,12 +1289,15 @@ export default function VehiclesClient() {
                   </span>
                 </div>
               )}
+            </div>
 
-              {/* View Mode Toggle */}
-              <div className="ec-status-toggle flex items-center gap-2 bg-gray-100/80 dark:bg-gray-700/50 rounded-lg p-1">
+            {/* Center/Right Section - View Mode Toggle & Clear Filters */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              {/* View Mode Toggle - Mobile-First Responsive */}
+              <div className="ec-status-toggle flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-gray-100/80 dark:bg-gray-700/50 rounded-lg p-1 w-full sm:w-auto">
                 <button
                   onClick={() => setViewMode("all-time")}
-                  className={`ec-status-btn px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                  className={`ec-status-btn flex-1 sm:flex-initial min-h-[44px] px-4 py-2 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
                     viewMode === "all-time"
                       ? "ec-status-btn-active bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
                       : "ec-status-btn-inactive text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
@@ -1218,7 +1308,7 @@ export default function VehiclesClient() {
                 <button
                   onClick={() => setViewMode("filtered")}
                   disabled={!isFiltered}
-                  className={`ec-status-btn px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                  className={`ec-status-btn flex-1 sm:flex-initial min-h-[44px] px-4 py-2 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
                     viewMode === "filtered"
                       ? "ec-status-btn-active bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
                       : "ec-status-btn-inactive text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1227,9 +1317,8 @@ export default function VehiclesClient() {
                   Filtered Results
                 </button>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2">
+              {/* Clear Filters Button */}
               {isFiltered && (
                 <GlassButton
                   onClick={() => {
@@ -1249,7 +1338,7 @@ export default function VehiclesClient() {
                     });
                     setViewMode("all-time");
                   }}
-                  className="text-sm"
+                  className="text-sm w-full sm:w-auto justify-center"
                   variant="outline"
                 >
                   <svg
@@ -1509,7 +1598,7 @@ export default function VehiclesClient() {
         isOpen={isAddEditModalOpen}
         vehicle={selectedVehicle}
         onClose={() => setIsAddEditModalOpen(false)}
-        onSave={handleSaveVehicle}
+        onSave={handleSubmitVehicle}
       />
 
       <DeleteConfirmationModal

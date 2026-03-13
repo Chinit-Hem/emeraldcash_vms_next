@@ -1,4 +1,4 @@
-﻿﻿"use client";
+﻿"use client";
 
 import { normalizeCambodiaTimeString } from "@/lib/cambodiaTime";
 import { driveThumbnailUrl, extractDriveFileId } from "@/lib/drive";
@@ -492,17 +492,19 @@ export default function VehicleList({ category }: VehicleListProps) {
   return (
     <div>
       <div className="ec-glassPanel rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden">
-        <div className="ec-glassPanelSoft p-4 border-b border-black/5 print:hidden">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+        {/* Mobile-first header with responsive button layout */}
+        <div className="ec-glassPanelSoft p-3 sm:p-4 border-b border-black/5 print:hidden">
+          <div className="flex flex-col gap-3">
+            {/* Top row: Main actions */}
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setFiltersOpen((prev) => !prev);
                 }}
-                className="ec-btn ec-btnPrimary w-full sm:w-auto text-sm"
+                className="ec-btn ec-btnPrimary flex-1 sm:flex-none text-sm min-h-[40px]"
               >
-                <span className="inline-flex items-center gap-2">
+                <span className="inline-flex items-center justify-center gap-2">
                   <span>{filtersOpen ? "Hide Filters" : "Show Filters"}</span>
                   {activeFiltersCount > 0 ? (
                     <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-2 rounded-full bg-white/20 text-white text-xs font-extrabold">
@@ -511,14 +513,16 @@ export default function VehicleList({ category }: VehicleListProps) {
                   ) : null}
                 </span>
               </button>
+              
+              {/* Secondary actions - wrap on mobile */}
               {filtersOpen && (
-                <>
+                <div className="flex flex-wrap items-center gap-2 flex-1 sm:flex-none">
                   {hasFilters ? (
                     <GlassButton
                       type="button"
                       onClick={clearFilters}
                       variant="secondary"
-                      className="w-full sm:w-auto text-sm"
+                      className="flex-1 sm:flex-none text-sm min-h-[40px]"
                     >
                       Clear
                     </GlassButton>
@@ -528,18 +532,26 @@ export default function VehicleList({ category }: VehicleListProps) {
                     onClick={handleRefresh}
                     disabled={isRefreshing}
                     variant="secondary"
-                    className="w-full sm:w-auto text-sm"
+                    className="flex-1 sm:flex-none text-sm min-h-[40px]"
                     isLoading={isRefreshing}
                   >
                     {isRefreshing ? "Refreshing..." : "Refresh"}
                   </GlassButton>
+                </div>
+              )}
+            </div>
+
+            {/* Second row: Filter toggles and count */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {filtersOpen && (
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => {
                       setFilters((prev) => ({ ...prev, withoutImage: !prev.withoutImage }));
                       setFiltersOpen(true);
                     }}
-                    className={`ec-btn w-full sm:w-auto text-sm ${filters.withoutImage ? "ec-btnPrimary" : ""}`}
+                    className={`ec-btn text-sm min-h-[40px] ${filters.withoutImage ? "ec-btnPrimary" : ""}`}
                   >
                     <span className="inline-flex items-center gap-2">
                       <svg
@@ -556,13 +568,14 @@ export default function VehicleList({ category }: VehicleListProps) {
                         <rect width="18" height="18" x="3" y="3" rx="1" />
                         <path d="M9 9h6v6H9z" />
                       </svg>
-                      <span>{filters.withoutImage ? "Show all images" : "Find no image"}</span>
+                      <span className="hidden sm:inline">{filters.withoutImage ? "Show all images" : "Find no image"}</span>
+                      <span className="sm:hidden">{filters.withoutImage ? "All images" : "No image"}</span>
                     </span>
                   </button>
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    className="ec-btn w-full sm:w-auto text-sm"
+                    className="ec-btn text-sm min-h-[40px]"
                     title="Print all vehicle data"
                   >
                     <span className="inline-flex items-center gap-2">
@@ -581,15 +594,15 @@ export default function VehicleList({ category }: VehicleListProps) {
                         <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
                         <rect width="12" height="8" x="6" y="14" />
                       </svg>
-                      <span>Print</span>
+                      <span className="hidden sm:inline">Print</span>
                     </span>
                   </button>
-                </>
+                </div>
               )}
-            </div>
-
-            <div className="text-sm text-gray-600 whitespace-nowrap text-right sm:text-left">
-              {filteredVehicles.length} / {categoryFilteredVehicles.length} vehicles
+              
+              <div className="text-sm text-gray-600 whitespace-nowrap ml-auto">
+                {filteredVehicles.length} / {categoryFilteredVehicles.length} vehicles
+              </div>
             </div>
           </div>
         </div>
@@ -766,8 +779,11 @@ export default function VehicleList({ category }: VehicleListProps) {
             const rowClass = index % 2 === 0 ? "ec-glassRow" : "ec-glassRowAlt";
             const vehicleId = vehicle.VehicleId;
             const displayNo = vehicleId || String(index + 1);
-                // Check if it's a Cloudinary URL first
-                const isCloudinary = vehicle.Image?.includes('res.cloudinary.com');
+                // Check if it's a Cloudinary URL first (guard against "undefined" string)
+                const isCloudinary = vehicle.Image && 
+                  vehicle.Image !== 'undefined' && 
+                  vehicle.Image !== 'null' &&
+                  vehicle.Image.includes('res.cloudinary.com');
                 let thumbUrl: string | null = null;
                 
                 if (isCloudinary) {
@@ -946,8 +962,11 @@ export default function VehicleList({ category }: VehicleListProps) {
                 const vehicleId = vehicle.VehicleId;
                 const displayNo = vehicleId || String(index + 1);
                 
-                // Check if it's a Cloudinary URL first
-                const isCloudinaryDesktop = vehicle.Image?.includes('res.cloudinary.com');
+                // Check if it's a Cloudinary URL first (guard against "undefined" string)
+                const isCloudinaryDesktop = vehicle.Image && 
+                  vehicle.Image !== 'undefined' && 
+                  vehicle.Image !== 'null' &&
+                  vehicle.Image.includes('res.cloudinary.com');
                 let thumbUrlDesktop: string | null = null;
                 
                 if (isCloudinaryDesktop) {
@@ -1076,7 +1095,7 @@ export default function VehicleList({ category }: VehicleListProps) {
             {queryTokens.length > 0 ? (
               <div>
                 <p className="font-medium text-gray-800">
-                  No results for "{filters.query.trim()}"
+                  No results for &quot;{filters.query.trim()}&quot;
                 </p>
                 <p className="text-sm text-gray-600 mt-1">Try a different keyword or clear the search.</p>
               </div>

@@ -64,7 +64,8 @@ class DatabaseManager {
    * Private constructor - use getInstance() instead
    */
   private constructor() {
-    this.config = this.initializeConfig();
+    // Lazy initialization - don't check DATABASE_URL here
+    this.config = null as unknown as ConnectionConfig;
     this.health = {
       healthy: false,
       lastCheck: new Date(),
@@ -87,11 +88,24 @@ class DatabaseManager {
 
   /**
    * Initialize connection configuration from environment
+   * Lazy initialization - only called when database is actually needed
    */
   private initializeConfig(): ConnectionConfig {
     const url = process.env.DATABASE_URL;
     
     if (!url) {
+      // During build time, return a placeholder config
+      // The actual error will be thrown when trying to connect at runtime
+      if (process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV) {
+        // Build time without database - return dummy config
+        return {
+          url: 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
+          maxConnections: 10,
+          connectionTimeoutMs: 10000,
+          idleTimeoutMs: 30000,
+          enableKeepalive: true,
+        };
+      }
       throw new Error("DATABASE_URL environment variable is not set");
     }
 
@@ -105,6 +119,16 @@ class DatabaseManager {
   }
 
   /**
+   * Ensure config is initialized (lazy)
+   */
+  private ensureConfig(): ConnectionConfig {
+    if (!this.config || (this.config as unknown as null) === null) {
+      this.config = this.initializeConfig();
+    }
+    return this.config;
+  }
+
+  /**
    * Initialize the SQL client with optimized settings
    */
   private initializeClient(): NeonQueryFunction<false, false> {
@@ -112,10 +136,13 @@ class DatabaseManager {
       return this.sqlClient;
     }
 
+    // Ensure config is initialized (lazy)
+    const config = this.ensureConfig();
+
     // Add sdk_semver query parameter to satisfy Neon API requirement
     // This is required by Neon SDK 1.0.2+ to identify the client version
     // Parse the URL properly to handle existing query parameters
-    const baseUrl = this.config.url;
+    const baseUrl = config.url;
     const urlObj = new URL(baseUrl);
     
     // Add sdk_semver parameter

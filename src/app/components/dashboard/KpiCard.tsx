@@ -1,7 +1,7 @@
 "use client";
 
 import { isIOSSafariBrowser } from "@/lib/platform";
-import { useEffect, useState } from "react";
+import { useMounted } from "@/lib/useMounted";
 
 type KpiCardProps = {
   label: string;
@@ -35,13 +35,7 @@ function accentClasses(accent: KpiCardProps["accent"], isIOSSafari: boolean) {
 }
 
 export default function KpiCard({ label, value, sublabel, subtitle, accent = "green", onClick }: KpiCardProps) {
-  const [isIOSSafari, setIsIOSSafari] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsIOSSafari(isIOSSafariBrowser());
-    }
-  }, []);
+  const isIOSSafari = useMounted() && isIOSSafariBrowser();
 
   // iOS-safe card classes (solid backgrounds, no blur)
   if (isIOSSafari) {

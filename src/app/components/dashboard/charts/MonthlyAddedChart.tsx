@@ -12,6 +12,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import type { BarDatum } from "@/lib/analytics";
+import { useMounted } from "@/lib/useMounted";
 
 type MonthlyAddedChartProps = {
   data: BarDatum[];
@@ -40,11 +41,10 @@ function RechartsAreaChartWithDimensions({ data, width, height }: { data: BarDat
 export default function MonthlyAddedChart({ data }: MonthlyAddedChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useMounted();
 
   useEffect(() => {
-    setIsMounted(true);
-    if (!containerRef.current) return;
+    if (!containerRef.current || !isMounted) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -57,7 +57,7 @@ export default function MonthlyAddedChart({ data }: MonthlyAddedChartProps) {
 
     resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
-  }, []);
+  }, [isMounted]);
 
   if (data.length === 0) {
     return (

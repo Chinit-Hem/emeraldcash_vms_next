@@ -11,6 +11,8 @@ import { AuthUserProvider } from "@/app/components/AuthContext";
 import { UIProvider, useUI } from "@/app/components/UIContext";
 import { clearCachedUser, getCachedUser, setCachedUser } from "@/app/components/authCache";
 import { isIOSSafariBrowser } from "@/lib/platform";
+import { useMounted } from "@/lib/useMounted";
+import { clearCacheOnMount } from "@/lib/vehicleCache";
 
 type AppShellProps = {
   children: ReactNode;
@@ -25,17 +27,16 @@ function AppShellContent({ children }: AppShellProps) {
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isIOSSafari, setIsIOSSafari] = useState(false);
   const hasRedirected = useRef(false);
-
+  
   // Detect iOS Safari for performance optimization
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsIOSSafari(isIOSSafariBrowser());
-    }
-  }, []);
+  const isIOSSafari = useMounted() && isIOSSafariBrowser();
 
   useEffect(() => {
+    // Clear vehicle cache on app initialization to prevent stale data
+    console.log("[APPSHELL] Clearing cache on app initialization...");
+    clearCacheOnMount();
+
     let isActive = true;
     const controller = new AbortController();
     const defer =
@@ -127,14 +128,15 @@ function AppShellContent({ children }: AppShellProps) {
     return () => cancelAnimationFrame(rafId);
   }, [pathname]);
 
-  // iOS-safe classes
+  // iOS-safe classes with mobile-first responsive design
   const loadingCardClass = isIOSSafari
     ? "bg-white dark:bg-slate-800 rounded-2xl shadow-lg"
     : "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl shadow-2xl";
 
+  // Mobile-first header: solid background on mobile, glass on desktop
   const mobileHeaderClass = isIOSSafari
-    ? "lg:hidden sticky top-0 z-40 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm"
-    : "lg:hidden sticky top-0 z-40 ec-glassPanel ec-theme-overlay-host border-b border-white/40 dark:border-white/10";
+    ? "lg:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm safe-area-top"
+    : "lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border-b border-gray-200/50 dark:border-white/10 safe-area-top";
 
   // Loading state
   if (loading) {
@@ -184,21 +186,21 @@ function AppShellContent({ children }: AppShellProps) {
           </Suspense>
         </div>
 
-        {/* Mobile drawer - Premium glass slide-over */}
+        {/* Mobile drawer - Premium glass slide-over with proper z-index */}
         {isSidebarOpen && (
           <div 
-            className="fixed inset-0 z-50 lg:hidden"
+            className="fixed inset-0 z-[60] lg:hidden"
             onKeyDown={(e) => {
               if (e.key === 'Escape') setIsSidebarOpen(false);
             }}
           >
             <div
-              className="absolute inset-0 ec-sidebar-drawer-backdrop transition-opacity duration-300"
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
               onClick={() => setIsSidebarOpen(false)}
               aria-hidden="true"
             />
             <div 
-              className="absolute inset-y-0 left-0 w-[280px] max-w-[85vw] h-full overflow-hidden shadow-2xl animate-in slide-in-from-left duration-300"
+              className="absolute inset-y-0 left-0 w-[280px] max-w-[85vw] h-full bg-white dark:bg-slate-800 overflow-hidden shadow-2xl animate-in slide-in-from-left duration-300"
               role="dialog"
               aria-modal="true"
               aria-label="Navigation menu"
@@ -210,10 +212,10 @@ function AppShellContent({ children }: AppShellProps) {
           </div>
         )}
 
-        <div className="flex-1 min-w-0 flex flex-col">
-          {/* Mobile header - Liquid Glass White (iOS-safe) */}
+        <div className="flex-1 min-w-0 flex flex-col pt-14 lg:pt-0">
+          {/* Mobile header - Fixed position with safe area support */}
           <header className={mobileHeaderClass}>
-            <div className="h-14 px-4 flex items-center justify-between">
+            <div className="h-14 px-4 flex items-center justify-between max-w-[100vw]">
               <button
                 onClick={() => setIsSidebarOpen(true)}
                 className="p-2 rounded-xl hover:bg-emerald-50 dark:hover:bg-white/10 text-slate-600 dark:text-white/80 hover:text-emerald-600 dark:hover:text-white transition-all touch-target active-scale"
@@ -224,8 +226,8 @@ function AppShellContent({ children }: AppShellProps) {
                 </svg>
               </button>
 
-              <div className="flex items-center gap-3">
-                <div className="relative w-9 h-9 flex items-center justify-center overflow-hidden">
+              <div className="flex items-center gap-3 min-w-0 flex-1 justify-center">
+                <div className="relative w-9 h-9 flex items-center justify-center overflow-hidden flex-shrink-0">
                   <Image 
                     src="/logo.png" 
                     alt="Emerald Cash" 
@@ -234,19 +236,18 @@ function AppShellContent({ children }: AppShellProps) {
                     className="w-7 h-7 object-contain" 
                   />
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-bold text-slate-800 dark:text-white text-sm leading-tight">Emerald Cash</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-slate-800 dark:text-white text-sm leading-tight truncate">Emerald Cash</span>
                   <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">VMS PRO</span>
                 </div>
               </div>
 
-              <div className="w-9" aria-hidden="true" />
+              <div className="w-9 flex-shrink-0" aria-hidden="true" />
             </div>
           </header>
 
-
-          {/* Main content */}
-          <main className="flex-1 overflow-auto pb-24 lg:pb-24">
+          {/* Main content - Add padding-top to account for fixed header on mobile */}
+          <main className="flex-1 overflow-auto pb-safe pt-4 lg:pt-0">
             {children}
           </main>
 

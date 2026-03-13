@@ -1,8 +1,8 @@
 "use client";
 
 import { isIOSSafariBrowser } from "@/lib/platform";
-import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { useMounted } from "@/lib/useMounted";
 
 type ChartCardProps = {
   title: string;
@@ -12,13 +12,7 @@ type ChartCardProps = {
 };
 
 export default function ChartCard({ title, subtitle, right, children }: ChartCardProps) {
-  const [isIOSSafari, setIsIOSSafari] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsIOSSafari(isIOSSafariBrowser());
-    }
-  }, []);
+  const isIOSSafari = useMounted() && isIOSSafariBrowser();
 
   // iOS-safe: Use solid backgrounds
   if (isIOSSafari) {

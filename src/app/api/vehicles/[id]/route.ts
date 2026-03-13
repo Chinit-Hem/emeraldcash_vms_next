@@ -451,8 +451,10 @@ export async function DELETE(
 
     // If vehicle has a Cloudinary image, delete it
     if (vehicle.image_id) {
-      // Check if it's a Cloudinary URL (not a Google Drive ID)
-      if (vehicle.image_id.includes('cloudinary.com')) {
+      // Check if it's a Cloudinary URL (not a Google Drive ID) - guard against "undefined"/"null" strings
+      if (vehicle.image_id !== 'undefined' && 
+          vehicle.image_id !== 'null' && 
+          vehicle.image_id.includes('cloudinary.com')) {
         // Extract public_id from Cloudinary URL
         // URL format: https://res.cloudinary.com/{cloud}/image/upload/v{version}/{folder}/{public_id}
         const urlParts = vehicle.image_id.split('/');

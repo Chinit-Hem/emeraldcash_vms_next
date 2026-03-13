@@ -36,8 +36,11 @@ export default function VehicleCardMobile({
   const price40 = vehicle.Price40 ?? derived.Price40;
   const price70 = vehicle.Price70 ?? derived.Price70;
 
-  // Check if it's a Cloudinary URL first
-  const isCloudinary = vehicle.Image?.includes('res.cloudinary.com');
+  // Check if it's a Cloudinary URL first (guard against "undefined" string)
+  const isCloudinary = vehicle.Image && 
+    vehicle.Image !== 'undefined' && 
+    vehicle.Image !== 'null' &&
+    vehicle.Image.includes('res.cloudinary.com');
   
   // Extract Google Drive file ID if not Cloudinary
   const imageFileId = !isCloudinary ? extractDriveFileId(vehicle.Image) : null;

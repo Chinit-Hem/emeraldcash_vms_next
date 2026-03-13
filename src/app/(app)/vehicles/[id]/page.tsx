@@ -12,15 +12,7 @@ import { extractDriveFileId } from "@/lib/drive";
 import { refreshVehicleCache, writeVehicleCache } from "@/lib/vehicleCache";
 import type { Vehicle } from "@/lib/types";
 import { derivePrices } from "@/lib/pricing";
-
-// Safe client-side only hook to prevent hydration mismatches
-function useIsMounted() {
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-  return isMounted;
-}
+import { useMounted } from "@/lib/useMounted";
 
 export default function VehicleDetailPage() {
   return <VehicleDetailInner />;
@@ -31,7 +23,7 @@ function VehicleDetailInner() {
   const params = useParams<{ id: string }>();
   const id = typeof params?.id === "string" ? params.id : "";
   const user = useAuthUser();
-  const isMounted = useIsMounted();
+  const isMounted = useMounted();
   
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);

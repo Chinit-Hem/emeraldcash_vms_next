@@ -56,12 +56,12 @@ export function VehicleDetailsCard({
     setIsDeleteDialogOpen(false);
   };
 
-// Helper to get proper image URL (handle Google Drive and Cloudinary URLs)
+  // Helper to get proper image URL (handle Google Drive and Cloudinary URLs)
   const getImageUrl = (imageUrl: string | undefined): string | null => {
     if (!imageUrl || !imageUrl.trim()) return null;
     
-    // Check if it's a Cloudinary URL
-    if (imageUrl.includes('res.cloudinary.com')) {
+    // Check if it's a Cloudinary URL (guard against "undefined" string)
+    if (imageUrl !== 'undefined' && imageUrl !== 'null' && imageUrl.includes('res.cloudinary.com')) {
       // Return Cloudinary URL as-is for Next.js Image component
       return imageUrl;
     }
@@ -78,7 +78,10 @@ export function VehicleDetailsCard({
   };
 
   const displayImageUrl = getImageUrl(vehicle.Image);
-  const isCloudinaryImage = displayImageUrl?.includes('res.cloudinary.com') || false;
+  const isCloudinaryImage = displayImageUrl && 
+    displayImageUrl !== 'undefined' && 
+    displayImageUrl !== 'null' &&
+    displayImageUrl.includes('res.cloudinary.com') || false;
 
   const taxTypeMeta = TAX_TYPE_METADATA.find((tt) => tt.value === vehicle.TaxType);
 

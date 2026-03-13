@@ -12,6 +12,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import type { PieDatum } from "@/lib/analytics";
+import { useMounted } from "@/lib/useMounted";
 
 // Dynamic import with ssr: false to prevent hydration errors
 const RechartsPieChart = dynamic(
@@ -46,11 +47,10 @@ function RechartsPieChartWithDimensions({ data, width, height }: { data: PieDatu
 export default function NewVsUsedChart({ data }: NewVsUsedChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useMounted();
 
   useEffect(() => {
-    setIsMounted(true);
-    if (!containerRef.current) return;
+    if (!containerRef.current || !isMounted) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -63,7 +63,7 @@ export default function NewVsUsedChart({ data }: NewVsUsedChartProps) {
 
     resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
-  }, []);
+  }, [isMounted]);
 
   if (data.length === 0) {
     return (

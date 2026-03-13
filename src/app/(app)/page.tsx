@@ -8,16 +8,14 @@ export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 /**
- * Dashboard Server Component
- * Fetches initial data server-side with caching for performance
+ * Fetch dashboard data with error handling
  */
-export default async function Page() {
+async function fetchDashboardData() {
   try {
     // Fetch vehicles and stats in parallel
-    // Use cache for better performance - stats don't change frequently
     const [vehiclesResult, statsResult] = await Promise.all([
-      vehicleService.getVehicles({ limit: 100 }), // Limit initial load, client can fetch more
-      vehicleService.getVehicleStats(false), // Use cache (30s TTL) - much faster
+      vehicleService.getVehicles({ limit: 100 }),
+      vehicleService.getVehicleStats(false),
     ]);
 
     // Extract data or use defaults
@@ -42,23 +40,42 @@ export default async function Page() {
         }
       : null;
 
-    return (
-      <Dashboard
-        initialVehicles={vehicles}
-        initialMeta={meta}
-        initialError={!vehiclesResult.success ? vehiclesResult.error || "Failed to load vehicles" : null}
-      />
-    );
+    return {
+      vehicles,
+      meta,
+      error: !vehiclesResult.success ? vehiclesResult.error || "Failed to load vehicles" : null,
+    };
   } catch (error) {
     console.error("[Dashboard Page] Error fetching data:", error);
-    
-    // Return dashboard with empty data and error message
-    return (
-      <Dashboard
-        initialVehicles={[]}
-        initialMeta={null}
-        initialError={error instanceof Error ? error.message : "Database connection failed. Please check your connection."}
-      />
-    );
+    return {
+      vehicles: [],
+      meta: null,
+      error: error instanceof Error ? error.message : "Database connection failed. Please check your connection.",
+    };
   }
+}
+
+/**
+ * Dashboard Server Component
+ * Fetches initial data server-side with caching for performance
+ */
+export default async function Page() {
+  const { vehicles, meta, error } = await fetchDashboardData();
+
+  // iOS fix: Ensure meta has default values to prevent hydration mismatch
+  const safeMeta = meta || {
+    total: 0,
+    countsByCategory: { Cars: 0, Motorcycles: 0, TukTuks: 0 },
+    countsByCondition: { New: 0, Used: 0 },
+    noImageCount: 0,
+    avgPrice: 0,
+  };
+
+  return (
+    <Dashboard
+      initialVehicles={vehicles}
+      initialMeta={safeMeta}
+      initialError={error}
+    />
+  );
 }
