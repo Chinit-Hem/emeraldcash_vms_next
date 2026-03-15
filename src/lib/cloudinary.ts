@@ -14,10 +14,10 @@ const isCloudinaryConfigured = !!(
   CLOUDINARY_API_SECRET
 );
 
-// Configure Cloudinary SDK with extended timeouts
+// Configure Cloudinary SDK with OPTIMIZED timeouts for faster response
 if (isCloudinaryConfigured) {
-  // CRITICAL: Configure with extended timeout settings
-  // The SDK default timeout is ~1200ms which is way too short for large uploads
+  // OPTIMIZED: Reduced timeout from 60s to 25s for faster failure detection
+  // while still allowing enough time for large uploads
   cloudinary.config({
     cloud_name: CLOUDINARY_CLOUD_NAME,
     api_key: CLOUDINARY_API_KEY,
@@ -32,16 +32,17 @@ if (isCloudinaryConfigured) {
     http_agent?: { timeout?: number };
   };
   
-  // Set timeout to 60 seconds (in milliseconds) - MUST be set after initial config
-  currentConfig.timeout = 60000;
+  // OPTIMIZED: Set timeout to 25 seconds (reduced from 60s)
+  // This provides faster feedback on failures while still handling large uploads
+  currentConfig.timeout = 25000;
   
   // Also set API-specific timeout if the structure exists
   if (!currentConfig.api) {
     (currentConfig as { api?: object }).api = {};
   }
-  (currentConfig.api as { timeout?: number }).timeout = 60000;
+  (currentConfig.api as { timeout?: number }).timeout = 25000;
   
-  console.log('[Cloudinary] SDK configured with extended timeout:', {
+  console.log('[Cloudinary] SDK configured with optimized timeout:', {
     cloudName: CLOUDINARY_CLOUD_NAME,
     timeout: currentConfig.timeout,
     apiTimeout: currentConfig.api?.timeout,

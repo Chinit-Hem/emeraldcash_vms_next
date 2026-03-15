@@ -75,21 +75,41 @@ function ViewVehicleInner() {
   useEffect(() => {
     if (!id || !isMounted) return;
 
-    // Try to find vehicle in cache first
-    try {
-      const cached = localStorage.getItem("vms-vehicles");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) {
-          const found = (parsed as Vehicle[]).find((v) => v.VehicleId === id);
-          if (found) {
-            setVehicle(found);
-            setLoading(false);
+    // Check if we should skip cache (e.g., after an edit)
+    const urlParams = new URLSearchParams(window.location.search);
+    const skipCache = urlParams.get('refresh') === '1';
+    
+    // Try to find vehicle in cache first (only if not skipping)
+    if (!skipCache) {
+      try {
+        const cached = localStorage.getItem("vms-vehicles");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            const found = (parsed as Vehicle[]).find((v) => v.VehicleId === id);
+            if (found) {
+              // Only use cache if it's not stale
+              const cacheTime = localStorage.getItem("vms-vehicles-timestamp");
+              const mutationTime = localStorage.getItem("vms-vehicles-last-mutation");
+              const cacheAge = cacheTime ? Date.now() - parseInt(cacheTime, 10) : Infinity;
+              const hasMutation = mutationTime && cacheTime && parseInt(mutationTime, 10) > parseInt(cacheTime, 10);
+              
+              // Use cache if it's less than 30 seconds old and no mutation occurred
+              if (cacheAge < 30000 && !hasMutation) {
+                console.log("[VIEW_VEHICLE] Using fresh cache for vehicle:", found.VehicleId);
+                setVehicle(found);
+                setLoading(false);
+              } else {
+                console.log("[VIEW_VEHICLE] Cache is stale, fetching fresh data");
+              }
+            }
           }
         }
+      } catch {
+        // Ignore cache errors
       }
-    } catch {
-      // Ignore cache errors
+    } else {
+      console.log("[VIEW_VEHICLE] Skipping cache due to refresh parameter");
     }
 
     // Fetch fresh data in background

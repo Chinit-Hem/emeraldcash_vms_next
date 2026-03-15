@@ -21,8 +21,11 @@ import { NextRequest, NextResponse } from "next/server";
 // Configuration
 // ============================================================================
 
-/** Maximum allowed file size in bytes (5MB) */
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+/** Maximum allowed file size in bytes (4MB) 
+ * NOTE: Vercel serverless functions have a 4.5MB body size limit.
+ * We use 4MB to leave room for headers and other form data.
+ */
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
 
 /** Allowed MIME types for image uploads */
 const ALLOWED_IMAGE_TYPES = [
@@ -295,11 +298,38 @@ export async function OPTIONS(req: NextRequest): Promise<NextResponse> {
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const corsHeaders = buildCorsHeaders(req);
+  const requestStartTime = Date.now();
+  
+  // Log request start with environment info
+  console.log("[POST /api/upload] Request started:", {
+    timestamp: new Date().toISOString(),
+    contentLength: req.headers.get("content-length"),
+    contentType: req.headers.get("content-type"),
+    userAgent: req.headers.get("user-agent")?.substring(0, 50),
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.VERCEL_ENV,
+  });
+
+  // Check content length before processing
+  const contentLength = req.headers.get("content-length");
+  if (contentLength) {
+    const size = parseInt(contentLength, 10);
+    if (size > MAX_FILE_SIZE) {
+      console.error(`[POST /api/upload] Request body too large: ${size} bytes`);
+      return createErrorResponse(
+        `Request body too large. Maximum size: ${MAX_FILE_SIZE / (1024 * 1024)}MB. Please compress your image or use a smaller file.`,
+        413,
+        `Received ${(size / 1024 / 1024).toFixed(2)}MB, max allowed is ${(MAX_FILE_SIZE / 1024 / 1024).toFixed(2)}MB`,
+        corsHeaders
+      );
+    }
+  }
   
   // Step 1: Authentication
   try {
     const session = requireSession(req);
     if (!session) {
+      console.error("[POST /api/upload] Authentication failed: No valid session");
       return createErrorResponse(
         "Invalid or expired session", 
         401, 
@@ -309,6 +339,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     if (session.role !== "Admin") {
+      console.error(`[POST /api/upload] Authorization failed: User ${session.username} is not Admin`);
       return createErrorResponse(
         "Forbidden", 
         403, 
@@ -316,6 +347,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         corsHeaders
       );
     }
+    
+    console.log(`[POST /api/upload] Authenticated as ${session.username} (${session.role})`);
   } catch (error) {
     console.error("[POST /api/upload] Authentication error:", error);
     return createErrorResponse(
@@ -330,12 +363,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   let formData: FormData;
   try {
     formData = await req.formData();
+    console.log("[POST /api/upload] Form data parsed successfully");
   } catch (error) {
     console.error("[POST /api/upload] Form data parsing error:", error);
+    
+    // Check if this is a 413 error (Payload Too Large)
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes("413") || errorMessage.includes("Payload Too Large") || errorMessage.includes("exceeds")) {
+      return createErrorResponse(
+        `File too large for serverless function. Maximum size: ${MAX_FILE_SIZE / (1024 * 1024)}MB`,
+        413,
+        "Vercel serverless functions have a 4.5MB limit. Please compress your image before uploading.",
+        corsHeaders
+      );
+    }
+    
     return createErrorResponse(
       "Invalid form data", 
       400, 
-      error instanceof Error ? error.message : undefined, 
+      errorMessage, 
       corsHeaders
     );
   }
@@ -345,8 +391,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const vehicleId = formData.get("vehicleId") as string | null;
   const category = formData.get("category") as string | null;
 
+  console.log("[POST /api/upload] Extracted form fields:", {
+    hasImageFile: !!imageFile,
+    imageFileSize: imageFile?.size,
+    imageFileType: imageFile?.type,
+    vehicleId,
+    category,
+  });
+
   // Step 3: Validate inputs
   if (!vehicleId) {
+    console.error("[POST /api/upload] Validation failed: Vehicle ID is required");
     return createErrorResponse(
       "Vehicle ID is required", 
       400, 
@@ -356,6 +411,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   if (!category) {
+    console.error("[POST /api/upload] Validation failed: Category is required");
     return createErrorResponse(
       "Category is required", 
       400, 
@@ -367,6 +423,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Validate image file
   const validation = validateImageFile(imageFile);
   if (!validation.isValid) {
+    console.error("[POST /api/upload] Validation failed:", validation.error);
     return createErrorResponse(
       validation.error!, 
       400, 
@@ -375,30 +432,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Step 4: Convert file to base64
-  let base64Image: string;
-  try {
-    base64Image = await fileToBase64(imageFile!);
-  } catch (error) {
-    console.error("[POST /api/upload] File conversion error:", error);
-    return createErrorResponse(
-      "File processing failed", 
-      500, 
-      error instanceof Error ? error.message : undefined, 
-      corsHeaders
-    );
-  }
+  console.log("[POST /api/upload] File validation passed:", {
+    fileSize: imageFile?.size,
+    fileType: imageFile?.type,
+  });
 
-  // Step 5: Upload to Cloudinary
+  // Step 4: Upload to Cloudinary (pass File directly - more efficient than base64)
   const folder = getCloudinaryFolder(category);
   let uploadResult;
   
+  console.log("[POST /api/upload] Starting Cloudinary upload to folder:", folder);
+  
   try {
-    uploadResult = await uploadImage(base64Image, {
+    const uploadStartTime = Date.now();
+    // Pass the File object directly - uploadImage handles compression and streaming
+    uploadResult = await uploadImage(imageFile!, {
       folder: folder,
       publicId: `vehicle_${vehicleId}_${Date.now()}`,
       tags: [category],
+      timeout: 55000, // 55 seconds - just under Vercel's 60s limit
+      retryAttempts: 2,
+      compress: true,
+      maxWidth: 1200, // Slightly larger for better quality
+      quality: 0.85, // Better quality
     });
+    console.log(`[POST /api/upload] Cloudinary upload completed in ${Date.now() - uploadStartTime}ms`);
   } catch (error) {
     console.error("[POST /api/upload] Cloudinary upload error:", error);
     return createErrorResponse(
@@ -411,6 +469,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // Check upload result
   if (!uploadResult.success) {
+    console.error("[POST /api/upload] Cloudinary upload failed:", uploadResult.error);
     return createErrorResponse(
       `Upload failed: ${uploadResult.error}`, 
       502, 
@@ -421,6 +480,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const secureUrl = uploadResult.url;
   if (!secureUrl) {
+    console.error("[POST /api/upload] No secure_url returned from Cloudinary");
     return createErrorResponse(
       "No URL returned from Cloudinary", 
       502, 
@@ -429,9 +489,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
+  console.log("[POST /api/upload] Cloudinary upload successful:", {
+    publicId: uploadResult.publicId,
+    url: secureUrl.substring(0, 100) + "...",
+  });
+
   // Step 6: Update database
   const vehicleIdNum = parseInt(vehicleId, 10);
   if (isNaN(vehicleIdNum)) {
+    console.error("[POST /api/upload] Invalid vehicle ID format:", vehicleId);
     return createErrorResponse(
       "Invalid vehicle ID format", 
       400, 
@@ -441,7 +507,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    const dbStartTime = Date.now();
     await updateVehicleImage(vehicleIdNum, secureUrl);
+    console.log(`[POST /api/upload] Database updated in ${Date.now() - dbStartTime}ms`);
   } catch (error) {
     console.error("[POST /api/upload] Database update error:", error);
     return createErrorResponse(
@@ -453,7 +521,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // Step 7: Return success
-  console.log(`[POST /api/upload] Success: Vehicle ${vehicleIdNum} image uploaded to ${folder}`);
+  const totalDuration = Date.now() - requestStartTime;
+  console.log(`[POST /api/upload] Success: Vehicle ${vehicleIdNum} image uploaded to ${folder} in ${totalDuration}ms`);
   
   return createSuccessResponse(
     {

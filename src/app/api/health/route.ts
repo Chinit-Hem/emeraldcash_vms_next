@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withErrorHandling, createSuccessResponse, createErrorResponse } from "@/lib/api-error-wrapper";
 import { isDatabaseHealthy, getConnectionStats, testConnection } from "@/lib/db-singleton";
 import { getCachedVehicles } from "../vehicles/_cache";
+import { testCloudinaryConnection } from "@/lib/cloudinary";
 
 interface HealthMetrics {
   timestamp: string;
@@ -28,6 +29,11 @@ interface HealthMetrics {
     status: "connected" | "disconnected" | "unknown";
     lastSync: string | null;
     error?: string;
+  };
+  cloudinary: {
+    status: "connected" | "disconnected" | "error";
+    cloudName?: string;
+    message: string;
   };
   uptime: number;
 }
@@ -152,11 +158,34 @@ const healthHandler = withErrorHandling(async (req, { logger, requestId, startTi
     }
   }
   
+  // Check Cloudinary connectivity
+  let cloudinaryStatus: "connected" | "disconnected" | "error" = "disconnected";
+  let cloudinaryMessage = "";
+  let cloudinaryCloudName = "";
+  
+  try {
+    const cloudinaryTest = await testCloudinaryConnection();
+    if (cloudinaryTest.success) {
+      cloudinaryStatus = "connected";
+      cloudinaryMessage = cloudinaryTest.message;
+      cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME || "unknown";
+      logger.info("Cloudinary connection healthy", { cloudName: cloudinaryCloudName });
+    } else {
+      cloudinaryStatus = "error";
+      cloudinaryMessage = cloudinaryTest.message;
+      logger.error("Cloudinary connection failed", new Error(cloudinaryTest.message));
+    }
+  } catch (error) {
+    cloudinaryStatus = "error";
+    cloudinaryMessage = error instanceof Error ? error.message : "Unknown Cloudinary error";
+    logger.error("Cloudinary health check error", error);
+  }
+  
   // Determine overall health
   let status: "healthy" | "degraded" | "unhealthy" = "healthy";
   if (dbStatus === "error" && sheetsStatus === "disconnected") {
     status = "unhealthy";
-  } else if (dbStatus === "error" || sheetsStatus === "disconnected") {
+  } else if (dbStatus === "error" || sheetsStatus === "disconnected" || cloudinaryStatus === "error") {
     status = "degraded";
   }
   
@@ -189,6 +218,11 @@ const healthHandler = withErrorHandling(async (req, { logger, requestId, startTi
       lastSync: LAST_SYNC_TIME,
       error: LAST_SYNC_ERROR || undefined,
     },
+    cloudinary: {
+      status: cloudinaryStatus,
+      cloudName: cloudinaryCloudName,
+      message: cloudinaryMessage,
+    },
     uptime,
   };
   
@@ -197,6 +231,7 @@ const healthHandler = withErrorHandling(async (req, { logger, requestId, startTi
     dbStatus, 
     dbHost,
     sheetsStatus,
+    cloudinaryStatus,
     uptime 
   });
   

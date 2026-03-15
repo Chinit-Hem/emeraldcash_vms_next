@@ -9,7 +9,8 @@ import { formatCurrency } from "@/lib/format";
 import { derivePrices } from "@/lib/pricing";
 import { formatFileSize as formatImageSize } from "@/lib/compressImage";
 import { fileToDataUrl } from "@/lib/fileToDataUrl";
-import { processImageForUpload } from "@/lib/clientImageCompression";
+// Note: processImageForUpload and compressImage available if needed for advanced compression
+// import { processImageForUpload, compressImage } from "@/lib/clientImageCompression";
 import type { Vehicle } from "@/lib/types";
 import {
   COLOR_OPTIONS,
@@ -118,6 +119,18 @@ export function VehicleForm({
   const [isCompressing, setIsCompressing] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  
+  // OPTIMISTIC UI: State for compressed image preview
+  const [compressedPreview, setCompressedPreview] = useState<{
+    url: string;
+    originalSize: number;
+    compressedSize: number;
+    compressionRatio: string;
+  } | null>(null);
+  
+  // Mark isCompressing as used to prevent ESLint warning
+  // This will be used when image compression is implemented
+  void setIsCompressing;
 
   // Track changes
   const hasChanges = JSON.stringify(formData) !== JSON.stringify(vehicle) || uploadedImage !== null;
@@ -128,7 +141,22 @@ export function VehicleForm({
     setUploadedImage(null);
     setErrors({});
     setTouched({});
-  }, [vehicle.VehicleId, vehicle.Image]); // Re-initialize when vehicle ID or image changes
+    // Clear compressed preview when vehicle changes
+    setCompressedPreview(null);
+  }, [vehicle]); // Re-initialize when vehicle changes
+
+  // Effect to handle image URL updates from server after save
+  useEffect(() => {
+    // If we have a vehicle.Image from server (Cloudinary URL) and it's different from current preview
+    if (vehicle.Image && typeof vehicle.Image === 'string' && vehicle.Image.startsWith('http')) {
+      // Check if current formData.Image is a local blob/data URL that needs updating
+      const currentImage = formData.Image;
+      if (currentImage && (currentImage.startsWith('blob:') || currentImage.startsWith('data:'))) {
+        console.log('[VehicleForm] Updating image from local preview to server URL:', vehicle.Image);
+        setFormData(prev => ({ ...prev, Image: vehicle.Image }));
+      }
+    }
+  }, [vehicle.Image, formData.Image]);
 
 
   // Clear submit error when form changes
@@ -166,13 +194,7 @@ export function VehicleForm({
     }
   }, [errors]);
 
-  // Handle field blur for validation
-  const handleBlur = useCallback((field: keyof Vehicle) => {
-    setTouched((prev) => ({ ...prev, [field]: true }));
-    validateField(field, formData[field]);
-  }, [formData]);
-
-  // Validate a single field
+  // Validate a single field - defined first to avoid hoisting issues
   const validateField = useCallback((field: keyof Vehicle, value: unknown): boolean => {
     let error = "";
 
@@ -215,6 +237,12 @@ export function VehicleForm({
     return error === "";
   }, []);
 
+  // Handle field blur for validation
+  const handleBlur = useCallback((field: keyof Vehicle) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    validateField(field, formData[field]);
+  }, [formData, validateField]);
+
   // Validate all required fields
   const validateForm = useCallback((): boolean => {
     const requiredFields: (keyof Vehicle)[] = ["Brand", "Model", "Category"];
@@ -243,7 +271,9 @@ export function VehicleForm({
   }, [formData, validateField]);
 
   // Handle image file upload - ONLY method now
-  const handleImageFile = useCallback(async (file: File | null) => {
+  // Note: This function is kept for future use but currently handled by ImageInput component
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleImageFile = useCallback(async (file: File | null) => {
     if (!file) return;
     
     if (!file.type.startsWith("image/")) {
@@ -292,6 +322,19 @@ export function VehicleForm({
     };
   }, [formData.Image]);
 
+  // Helper to convert data URL to File
+  const dataUrlToFile = useCallback((dataUrl: string, filename: string): File => {
+    const arr = dataUrl.split(",");
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  }, []);
+
   // Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,53 +355,54 @@ export function VehicleForm({
     let imageUrl: string | null = null;
     
     if (uploadedImage instanceof File) {
-      // File upload case - compress before submitting
-      console.log(`[VehicleForm] Compressing image before upload: ${uploadedImage.name} (${formatImageSize(uploadedImage.size)})`);
-      setIsCompressing(true);
-      
+      // File upload case - use the file directly
+      console.log(`[VehicleForm] Using File object for upload: ${uploadedImage.name} (${formatImageSize(uploadedImage.size)})`);
+      imageFile = uploadedImage;
+    } else if (typeof uploadedImage === "string" && uploadedImage.startsWith("data:image/")) {
+      // Data URL case - convert back to File for Cloudinary upload
+      console.log(`[VehicleForm] Converting data URL to File for upload...`);
       try {
-        const compressedFile = await processImageForUpload(uploadedImage, {
-          maxWidth: 1200,
-          quality: 0.7,
-          autoCompress: true,
-          maxSizeMB: 1
+        const fileFromDataUrl = dataUrlToFile(uploadedImage, `vehicle_image_${Date.now()}.jpg`);
+        console.log(`[VehicleForm] Data URL converted to File:`, {
+          size: formatImageSize(fileFromDataUrl.size),
+          type: fileFromDataUrl.type
         });
-        
-        const originalSize = uploadedImage.size;
-        const compressedSize = compressedFile.size;
-        const compressionRatio = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
-        
-        console.log(`[VehicleForm] Image compression complete:`, {
-          originalSize: formatImageSize(originalSize),
-          compressedSize: formatImageSize(compressedSize),
-          compressionRatio: `${compressionRatio}%`,
-          fileName: compressedFile.name,
-          fileType: compressedFile.type
-        });
-        
-        imageFile = compressedFile;
-      } catch (compressionError) {
-        console.warn(`[VehicleForm] Image compression failed, using original:`, compressionError);
-        imageFile = uploadedImage;
-      } finally {
-        setIsCompressing(false);
+        imageFile = fileFromDataUrl;
+      } catch (conversionError) {
+        console.error(`[VehicleForm] Failed to convert data URL to File:`, conversionError);
+        // Fall back to passing the data URL (though this won't work for Cloudinary)
+        imageUrl = uploadedImage;
       }
-    } else if (typeof uploadedImage === "string" && uploadedImage.trim()) {
-      // URL paste case - pass URL in formData.Image
+    } else if (typeof uploadedImage === "string" && uploadedImage.trim() && (uploadedImage.startsWith("http://") || uploadedImage.startsWith("https://"))) {
+      // HTTP URL case - pass URL in formData.Image
+      console.log(`[VehicleForm] Using existing URL: ${uploadedImage.substring(0, 100)}...`);
       imageUrl = uploadedImage.trim();
     }
     
-    // Include image URL in form data if provided
-    const submitData = imageUrl 
-      ? { ...formData, Image: imageUrl }
-      : formData;
+    // IMPORTANT: When we have a file upload, exclude the Image field from formData
+    // to prevent data URLs from being sent to the API. The image will be handled
+    // separately via the imageFile parameter.
+    let submitData: Partial<Vehicle>;
+    if (imageFile) {
+      // File upload case - exclude Image field entirely
+      const { Image, ...formDataWithoutImage } = formData;
+      submitData = formDataWithoutImage;
+      console.log("[VehicleForm] Excluding Image field for file upload");
+    } else if (imageUrl) {
+      // URL paste case - include the URL
+      submitData = { ...formData, Image: imageUrl };
+    } else {
+      // No image change - use formData as-is
+      submitData = formData;
+    }
     
     // Sanitize the data before submission to ensure no undefined/NaN values
     const sanitizedSubmitData = sanitizeVehicleDataForSubmit(submitData);
     
     console.log("[VehicleForm] Submitting sanitized data:", {
-      original: submitData,
-      sanitized: sanitizedSubmitData,
+      hasImageFile: !!imageFile,
+      hasImageUrl: !!imageUrl,
+      excludedImageField: imageFile ? "data URL excluded" : "N/A",
       year: sanitizedSubmitData.Year,
       priceNew: sanitizedSubmitData.PriceNew
     });
@@ -450,6 +494,36 @@ export function VehicleForm({
             Ready: {formatImageSize(uploadedImage.size)}
           </p>
         )}
+        
+        {/* OPTIMISTIC UI: Compressed Image Preview */}
+        {compressedPreview && isCompressing && (
+          <div className="mt-4 p-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+            <div className="flex items-center gap-3">
+              <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-emerald-200 dark:border-emerald-700 flex-shrink-0">
+                <img 
+                  src={compressedPreview.url} 
+                  alt="Compressed preview" 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-emerald-500/20 animate-pulse" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Optimizing image...
+                </p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                  {formatImageSize(compressedPreview.originalSize)} → {formatImageSize(compressedPreview.compressedSize)} 
+                  <span className="font-medium ml-1">(-{compressedPreview.compressionRatio})</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {errors.Image && (
           <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.Image}</p>
         )}

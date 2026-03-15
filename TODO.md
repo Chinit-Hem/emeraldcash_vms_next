@@ -1,27 +1,53 @@
-# VMS Dashboard Professional Standards Update
+# Vercel Image Upload Fix - Implementation Steps
 
-## Tasks
+## Overview
+Fix image upload issues that work locally but fail on Vercel deployment.
 
-### 1. Chart Logic - Normalize Brand Names to Uppercase
-- [x] Update `src/app/components/dashboard/Dashboard.tsx`
-  - Normalize brand names to uppercase in the `aggregatedStats` useMemo
+## Root Causes Identified
+1. **File Size Limit**: Vercel serverless functions have 4.5MB body size limit, but code allowed 5MB
+2. **Missing Diagnostics**: No way to verify Cloudinary configuration on Vercel
+3. **Insufficient Logging**: Hard to debug issues without detailed logs
 
-### 2. Mobile UI Fix - VehicleList Cards
-- [x] Update `src/app/components/VehicleList.tsx`
-  - Increase horizontal padding on mobile cards (px-6 py-4)
-  - Increase border-radius on vehicle cards (rounded-2xl)
+## Implementation Steps
 
-### 3. Navigation - Clickable "without images" Count
-- [x] Update `src/app/components/dashboard/Dashboard.tsx`
-  - Make the "without images" subtitle clickable
-  - Navigate to `/vehicles?withoutImage=true`
+### Step 1: Fix File Size Limit ✅
+- [x] Reduce MAX_FILE_SIZE from 5MB to 4MB in upload route
+- [x] Add content-length validation before processing
+- [x] Add specific 413 error handling
 
-### 4. Standard Colors - Consistent Color Palette
-- [x] Create `src/lib/categoryColors.ts` (centralized color definitions)
-- [x] Update `src/app/components/dashboard/Dashboard.tsx` to use centralized colors
-- [x] Update `src/app/components/dashboard/DashboardClient.tsx` to use centralized colors
+### Step 2: Add Cloudinary Health Check ✅
+- [x] Import testCloudinaryConnection in health route
+- [x] Add Cloudinary status to HealthMetrics interface
+- [x] Test Cloudinary connection in health handler
+- [x] Include Cloudinary info in response
 
-## Color Palette
-- Cars: #10b981 (Emerald/Green)
-- Motorcycles: #3b82f6 (Blue)
-- Tuk Tuks: #f59e0b (Orange/Amber)
+### Step 3: Enhanced Logging ✅
+- [x] Add request start logging with environment info
+- [x] Add step-by-step progress logging
+- [x] Add timing metrics for each operation
+- [x] Add authentication logging
+- [x] Add error context logging
+
+### Step 4: Deploy and Test
+- [ ] Commit changes
+- [ ] Push to Git (triggers Vercel deployment)
+- [ ] Test /api/health endpoint
+- [ ] Test image upload with various file sizes
+- [ ] Verify Vercel function logs
+
+## Files Modified
+1. `src/app/api/upload/route.ts` - File size fix + logging
+2. `src/app/api/health/route.ts` - Cloudinary health check
+
+## Deployment Commands
+```bash
+git add .
+git commit -m "Fix: Vercel image upload - reduce file size limit, add diagnostics"
+git push
+```
+
+## Verification Steps
+1. Visit `https://your-app.vercel.app/api/health`
+2. Verify `cloudinary.status` is "connected"
+3. Try uploading image < 4MB
+4. Check Vercel logs for detailed request flow

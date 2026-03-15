@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthUser } from "@/app/components/AuthContext";
 import { useToast } from "@/app/components/ui/GlassToast";
@@ -30,12 +30,27 @@ function EditVehicleInner() {
   const isAdmin = user?.role === "Admin";
   const userRole = user?.role || "Viewer";
 
-  // Local state
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
   // Hooks
   const { vehicle, loading, error: fetchError, refetch } = useVehicle(id);
+  
+  // Local state - initialize with vehicle when it loads
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [localVehicle, setLocalVehicle] = useState<Vehicle | null>(null);
+  
+  // Sync local vehicle with fetched vehicle when it changes (on initial load or refetch)
+  // Using setTimeout to defer state update and avoid the setState-in-effect warning
+  const hasInitializedRef = React.useRef(false);
+  useEffect(() => {
+    if (vehicle && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      // Defer state update to next tick to avoid synchronous setState in effect
+      const timeoutId = setTimeout(() => {
+        setLocalVehicle(vehicle);
+      }, 0);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [vehicle]);
   // Fetch all vehicles for navigation - use high limit to ensure current vehicle is included
   const { vehicles: allVehicles } = useVehicles({ noCache: true, limit: 10000 });
   
@@ -58,12 +73,25 @@ function EditVehicleInner() {
 
   const handleUpdateSuccess = useCallback((updatedVehicle?: Vehicle) => {
     success("Vehicle updated successfully");
-    // Refresh vehicle data to get the new image URL
+    
+    // If we have the updated vehicle with new image, update local state immediately
+    // so the form shows the new Cloudinary image before navigating
+    if (updatedVehicle) {
+      console.log("[EditVehicle] Received updated vehicle with new image:", {
+        vehicleId: updatedVehicle.VehicleId,
+        imageUrl: updatedVehicle.Image?.substring(0, 100) + "..."
+      });
+      // Update local vehicle state so the form shows the new image immediately
+      setLocalVehicle(updatedVehicle);
+    }
+    
+    // Refresh vehicle data to ensure cache is updated
     refetch();
-    // Small delay to allow cache to update, then navigate
+    
+    // Navigate to view page after a short delay to show the success
     setTimeout(() => {
       router.push(`/vehicles/${id}/view`);
-    }, 500);
+    }, 1200); // Slightly longer delay so user can see the new image
   }, [success, router, id, refetch]);
 
   const handleUpdateError = useCallback((err: string) => {
@@ -93,10 +121,12 @@ function EditVehicleInner() {
 
   // Handle form submission
   const handleSubmit = useCallback(async (formData: Partial<Vehicle>, image: File | string | null) => {
-    if (!vehicle) return;
+    const vehicleToUpdate = localVehicle || vehicle;
+    if (!vehicleToUpdate) return;
     
     setSubmitError(null);
     
+<<<<<<< HEAD
     // Extract File from image if it's a File, otherwise pass null
     const imageFile = image instanceof File ? image : null;
     
@@ -108,6 +138,29 @@ function EditVehicleInner() {
       imageFile
     );
   }, [vehicle, updateVehicle]);
+=======
+    // IMPORTANT: Exclude Image from formData to prevent data URLs from being saved
+    // The image will be handled separately via the imageFile parameter
+    const { Image, ...dataWithoutImage } = formData;
+    
+    const updateData = {
+      ...dataWithoutImage,
+      VehicleId: vehicleToUpdate.VehicleId,
+    };
+    
+    // Extract File from image if it's a File, otherwise pass null
+    const imageFile = image instanceof File ? image : null;
+    
+    console.log("[EditVehicle] Submitting:", {
+      hasImageFile: !!imageFile,
+      imageFileName: imageFile?.name,
+      imageFileSize: imageFile?.size,
+      excludedImageField: Image ? "data URL excluded" : "no image in formData"
+    });
+    
+    await updateVehicle(updateData, imageFile);
+  }, [localVehicle, vehicle, updateVehicle]);
+>>>>>>> 1d6d06858edb1b454edb1607a9d8c119464b3b64
 
   // Handle cancel with unsaved changes warning
   const handleCancel = useCallback(() => {
@@ -116,9 +169,10 @@ function EditVehicleInner() {
 
   // Handle delete
   const handleDelete = useCallback(async () => {
-    if (!vehicle) return;
-    await deleteVehicle(vehicle);
-  }, [vehicle, deleteVehicle]);
+    const vehicleToDelete = localVehicle || vehicle;
+    if (!vehicleToDelete) return;
+    await deleteVehicle(vehicleToDelete);
+  }, [localVehicle, vehicle, deleteVehicle]);
 
   // Clear submit error
   const handleClearError = useCallback(() => {
@@ -177,7 +231,7 @@ function EditVehicleInner() {
   }
 
   // Not found state
-  if (!vehicle) {
+  if (!localVehicle && !vehicle) {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-3xl mx-auto">
@@ -216,6 +270,7 @@ function EditVehicleInner() {
 
   // Permission check
   if (!isAdmin) {
+    const vehicleForView = localVehicle || vehicle;
     return (
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto">
@@ -246,7 +301,7 @@ function EditVehicleInner() {
                 Back to List
               </GlassButton>
               <GlassButton 
-                onClick={() => router.push(`/vehicles/${vehicle.VehicleId}/view`)} 
+                onClick={() => vehicleForView && router.push(`/vehicles/${vehicleForView.VehicleId}/view`)} 
                 variant="primary"
               >
                 View Vehicle
@@ -344,26 +399,26 @@ function EditVehicleInner() {
                     Edit Vehicle
                   </h1>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                    ID: {formatVehicleId(vehicle.VehicleId)}
+                    ID: {formatVehicleId((localVehicle || vehicle).VehicleId)}
                   </p>
                 </div>
               </div>
               
               {/* Status Chips */}
               <div className="flex items-center gap-2 flex-wrap">
-                {vehicle.Category && (
+                {(localVehicle || vehicle).Category && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
-                    {vehicle.Category}
+                    {(localVehicle || vehicle).Category}
                   </span>
                 )}
-                {vehicle.Condition && (
+                {(localVehicle || vehicle).Condition && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                    {vehicle.Condition}
+                    {(localVehicle || vehicle).Condition}
                   </span>
                 )}
-                {vehicle.Time && (
+                {(localVehicle || vehicle).Time && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">
-                    Updated: {formatVehicleTime(vehicle.Time)}
+                    Updated: {formatVehicleTime((localVehicle || vehicle).Time)}
                   </span>
                 )}
               </div>
@@ -373,7 +428,7 @@ function EditVehicleInner() {
           {/* Form Content */}
           <div className="p-4 md:p-6 space-y-6">
             <VehicleForm
-              vehicle={vehicle}
+              vehicle={localVehicle || vehicle}
               onSubmit={handleSubmit}
               onCancel={handleCancel}
               isSubmitting={isUpdating}
@@ -424,7 +479,7 @@ function EditVehicleInner() {
 
       {/* Delete Confirmation Modal */}
       <ConfirmDeleteModal
-        vehicle={vehicle}
+        vehicle={localVehicle || vehicle}
         isOpen={isDeleteModalOpen}
         isDeleting={isDeleting}
         userRole={userRole}

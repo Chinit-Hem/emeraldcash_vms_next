@@ -146,47 +146,71 @@ function VehicleDetailInner() {
 
     setIsSaving(true);
     try {
-      let body: string | FormData;
-      const headers: Record<string, string> = {};
-
+      let cloudinaryImageUrl: string | null = null;
+      
+      // Step 1: Upload image to Cloudinary if provided
       if (formData.imageFile) {
-        // Use FormData for image uploads
-        const formDataToSend = new FormData();
+        console.log(`[handleSave] Uploading image to Cloudinary...`);
         
-        // Add vehicle data
-        Object.entries(formData).forEach(([key, value]) => {
-          if (value != null && key !== "Image" && key !== "imageFile") {
-            formDataToSend.append(key, String(value));
-          }
+        // Upload to Cloudinary using unsigned upload preset
+        const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+        const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+        
+        if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+          throw new Error("Cloudinary configuration missing");
+        }
+        
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", formData.imageFile);
+        uploadFormData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        uploadFormData.append("folder", "vms/vehicles");
+        
+        const uploadRes = await fetch(url, {
+          method: "POST",
+          body: uploadFormData,
         });
-        formDataToSend.append("VehicleId", vehicle.VehicleId);
-
-        // Add the image file directly - compression happens once in the form component
-        // The API will handle the upload to Cloudinary
-        formDataToSend.append("image", formData.imageFile);
-
-        body = formDataToSend;
-      } else {
-        // Use JSON for non-image updates
-        headers["Content-Type"] = "application/json";
-        const { imageFile: _imageFile, ...dataWithoutFile } = formData;
         
-        // Calculate derived prices
-
-        const derived = derivePrices(dataWithoutFile.PriceNew);
+        if (!uploadRes.ok) {
+          const errorData = await uploadRes.json().catch(() => ({}));
+          throw new Error(errorData.error?.message || "Failed to upload image to Cloudinary");
+        }
         
-        body = JSON.stringify({
-          ...dataWithoutFile,
-          VehicleId: vehicle.VehicleId,
-          Price40: derived.Price40,
-          Price70: derived.Price70,
+        const uploadData = await uploadRes.json();
+        cloudinaryImageUrl = uploadData.secure_url;
+        
+        console.log(`[handleSave] Image uploaded to Cloudinary:`, {
+          url: cloudinaryImageUrl?.substring(0, 100) + "..."
         });
       }
 
+      // Step 2: Prepare JSON payload with Cloudinary URL
+      // IMPORTANT: Exclude Image from formData if we're uploading a new image
+      // to prevent data URLs from being saved to the database
+      const { imageFile: _imageFile, Image: _imageFromForm, ...dataWithoutFile } = formData;
+      
+      const derived = derivePrices(dataWithoutFile.PriceNew);
+      
+      const payload = {
+        ...dataWithoutFile,
+        VehicleId: vehicle.VehicleId,
+        Price40: derived.Price40,
+        Price70: derived.Price70,
+        // Include the Cloudinary URL if image was uploaded, otherwise keep existing
+        Image: cloudinaryImageUrl || vehicle.Image,
+      };
+
+      console.log(`[handleSave] Sending update to API:`, {
+        hasImage: !!cloudinaryImageUrl,
+        imageUrl: cloudinaryImageUrl?.substring(0, 100) + "..."
+      });
+
       const res = await fetch(`/api/vehicles/${encodeURIComponent(vehicle.VehicleId)}`, {
         method: "PUT",
-        headers,
-        body,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       if (res.status === 401) {
@@ -200,13 +224,24 @@ function VehicleDetailInner() {
         throw new Error(json.error || "Failed to save vehicle");
       }
 
-      // Update local state optimistically
+      // Get the updated vehicle from API response (includes Cloudinary URL)
+      const responseData = json.data || json.vehicle || {};
+      
+      // Update local state with API response data (includes new Cloudinary URL)
       const updatedVehicle: Vehicle = {
         ...vehicle,
         ...formData,
+        ...responseData, // API response takes precedence (includes Image URL)
         Price40: derivePrices(formData.PriceNew).Price40,
         Price70: derivePrices(formData.PriceNew).Price70,
       };
+      
+      console.log("[VehicleDetailPage] Vehicle updated:", {
+        id: updatedVehicle.VehicleId,
+        hasImage: !!updatedVehicle.Image,
+        imageUrl: updatedVehicle.Image?.substring(0, 100)
+      });
+      
       setVehicle(updatedVehicle);
 
       // Update cache
@@ -228,6 +263,9 @@ function VehicleDetailInner() {
 
       await refreshVehicleCache();
       setIsEditModalOpen(false);
+      
+      // Redirect to view page with refresh parameter to skip cache
+      router.push(`/vehicles/${vehicle.VehicleId}/view?refresh=1`);
       
       // Show success toast (you can integrate with your toast system)
       // toast.success("Vehicle updated successfully");
