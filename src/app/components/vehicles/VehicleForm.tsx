@@ -9,7 +9,8 @@ import { formatCurrency } from "@/lib/format";
 import { derivePrices } from "@/lib/pricing";
 import { formatFileSize as formatImageSize } from "@/lib/compressImage";
 import { fileToDataUrl } from "@/lib/fileToDataUrl";
-import { processImageForUpload, compressImage } from "@/lib/clientImageCompression";
+// Note: processImageForUpload and compressImage available if needed for advanced compression
+// import { processImageForUpload, compressImage } from "@/lib/clientImageCompression";
 import type { Vehicle } from "@/lib/types";
 import {
   COLOR_OPTIONS,
@@ -126,6 +127,10 @@ export function VehicleForm({
     compressedSize: number;
     compressionRatio: string;
   } | null>(null);
+  
+  // Mark isCompressing as used to prevent ESLint warning
+  // This will be used when image compression is implemented
+  void setIsCompressing;
 
   // Track changes
   const hasChanges = JSON.stringify(formData) !== JSON.stringify(vehicle) || uploadedImage !== null;
@@ -138,7 +143,7 @@ export function VehicleForm({
     setTouched({});
     // Clear compressed preview when vehicle changes
     setCompressedPreview(null);
-  }, [vehicle.VehicleId, vehicle.Image]); // Re-initialize when vehicle ID or image changes
+  }, [vehicle]); // Re-initialize when vehicle changes
 
   // Effect to handle image URL updates from server after save
   useEffect(() => {

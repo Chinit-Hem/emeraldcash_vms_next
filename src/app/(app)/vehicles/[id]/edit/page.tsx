@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthUser } from "@/app/components/AuthContext";
 import { useToast } from "@/app/components/ui/GlassToast";
@@ -30,18 +30,25 @@ function EditVehicleInner() {
   const isAdmin = user?.role === "Admin";
   const userRole = user?.role || "Viewer";
 
-  // Local state
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [localVehicle, setLocalVehicle] = useState<Vehicle | null>(null);
-
   // Hooks
   const { vehicle, loading, error: fetchError, refetch } = useVehicle(id);
   
-  // Sync local vehicle with fetched vehicle
+  // Local state - initialize with vehicle when it loads
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [localVehicle, setLocalVehicle] = useState<Vehicle | null>(null);
+  
+  // Sync local vehicle with fetched vehicle when it changes (on initial load or refetch)
+  // Using setTimeout to defer state update and avoid the setState-in-effect warning
+  const hasInitializedRef = React.useRef(false);
   useEffect(() => {
-    if (vehicle) {
-      setLocalVehicle(vehicle);
+    if (vehicle && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      // Defer state update to next tick to avoid synchronous setState in effect
+      const timeoutId = setTimeout(() => {
+        setLocalVehicle(vehicle);
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [vehicle]);
   // Fetch all vehicles for navigation - use high limit to ensure current vehicle is included

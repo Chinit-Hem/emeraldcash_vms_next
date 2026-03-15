@@ -215,7 +215,7 @@ export function ImageInput({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const validateFile = (file: File): string | null => {
+  const validateFile = useCallback((file: File): string | null => {
     if (!file.type.startsWith("image/")) {
       return "Please upload an image file (JPG, PNG, GIF, etc.)";
     }
@@ -226,7 +226,7 @@ export function ImageInput({
     }
     
     return null;
-  };
+  }, [maxSizeMB]);
 
   const readFileAsDataUrl = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -298,7 +298,7 @@ export function ImageInput({
     } finally {
       setIsLoading(false);
     }
-  }, [onChange, maxSizeMB]);
+  }, [onChange, maxSizeMB, validateFile]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
