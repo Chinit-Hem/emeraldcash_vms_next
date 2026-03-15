@@ -194,13 +194,7 @@ export function VehicleForm({
     }
   }, [errors]);
 
-  // Handle field blur for validation
-  const handleBlur = useCallback((field: keyof Vehicle) => {
-    setTouched((prev) => ({ ...prev, [field]: true }));
-    validateField(field, formData[field]);
-  }, [formData]);
-
-  // Validate a single field
+  // Validate a single field - defined first to avoid hoisting issues
   const validateField = useCallback((field: keyof Vehicle, value: unknown): boolean => {
     let error = "";
 
@@ -243,6 +237,12 @@ export function VehicleForm({
     return error === "";
   }, []);
 
+  // Handle field blur for validation
+  const handleBlur = useCallback((field: keyof Vehicle) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    validateField(field, formData[field]);
+  }, [formData, validateField]);
+
   // Validate all required fields
   const validateForm = useCallback((): boolean => {
     const requiredFields: (keyof Vehicle)[] = ["Brand", "Model", "Category"];
@@ -271,7 +271,9 @@ export function VehicleForm({
   }, [formData, validateField]);
 
   // Handle image file upload - ONLY method now
-  const handleImageFile = useCallback(async (file: File | null) => {
+  // Note: This function is kept for future use but currently handled by ImageInput component
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleImageFile = useCallback(async (file: File | null) => {
     if (!file) return;
     
     if (!file.type.startsWith("image/")) {
