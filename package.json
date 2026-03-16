@@ -11,7 +11,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "preview": "npm run build && next start",
-    "lint": "next lint --dir src"
+    "lint": "eslint src --ext .ts,.tsx --max-warnings 100"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
