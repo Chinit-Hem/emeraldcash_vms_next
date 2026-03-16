@@ -234,7 +234,7 @@ export function LiquidGlassModal({
 }
 
 // Re-export all components as default export for convenience
-export default {
+const LiquidGlassComponents = {
   LiquidGlass,
   LiquidGlassCard,
   LiquidGlassPanel,
@@ -243,3 +243,5 @@ export default {
   LiquidGlassChart,
   LiquidGlassModal,
 };
+
+export default LiquidGlassComponents;

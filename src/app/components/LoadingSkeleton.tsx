@@ -158,9 +158,11 @@ export function DashboardSkeleton({ kpiCount = 4 }: DashboardSkeletonProps) {
   );
 }
 
-export default {
+const LoadingSkeleton = {
   VehicleListSkeleton,
   TableSkeleton,
   CardSkeleton,
   DashboardSkeleton,
 };
+
+export default LoadingSkeleton;

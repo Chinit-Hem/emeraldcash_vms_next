@@ -300,15 +300,6 @@ interface FilterState {
   withoutImage: boolean;
 }
 
-// Helper function to safely create Cloudinary image URLs
-// Returns null for invalid paths (empty, "undefined", "null")
-const getSafeImageUrl = (imagePath: string | undefined | null) => {
-  // បើ path ទទេ ឬជា string "undefined" មិនបាច់បង្កើត URL ទេ
-  if (!imagePath || imagePath === "undefined" || imagePath === "null") {
-    return null; // ឬ return default placeholder image
-  }
-  return `https://res.cloudinary.com/dgntrakv6/image/upload/${imagePath}`;
-};
 
 // Helper function to compute meta from vehicle array
 // Defensive programming: handles undefined/null inputs safely
@@ -449,7 +440,7 @@ export default function VehiclesClient() {
   ]);
 
   // Use the robust vehicles hook with server-side filtering
-  const { vehicles: fetchedVehicles, meta, loading, error, refetch, lastSyncTime, isFiltering } = useVehicles({
+  const { vehicles: fetchedVehicles, meta, loading, error, refetch, lastSyncTime } = useVehicles({
     noCache: true,
     filters: apiFilters,
   });
@@ -505,25 +496,9 @@ export default function VehiclesClient() {
     progress: number;
   }>({ stage: null, progress: 0 });
 
-  // Helper to get progress message
-  const getProgressMessage = (stage: string | null, progress: number): string => {
-    switch (stage) {
-      case 'compressing':
-        return `Compressing image... ${progress}%`;
-      case 'uploading':
-        return `Uploading to Cloudinary... ${progress}%`;
-      case 'processing':
-        return `Processing image... ${progress}%`;
-      case 'saving':
-        return `Saving vehicle data... ${progress}%`;
-      default:
-        return 'Updating...';
-    }
-  };
-
   // Optimistic update/delete hooks with toast notifications
 
-  const { updateVehicle, isUpdating } = useUpdateVehicleOptimistic({
+  const { updateVehicle } = useUpdateVehicleOptimistic({
     onSuccess: (updatedVehicle) => {
       optimisticUpdateInProgress.current = false;
       setUploadProgress({ stage: null, progress: 0 }); // Reset progress
@@ -899,97 +874,6 @@ export default function VehiclesClient() {
   };
 
 
-  // Safe error message extraction to prevent circular reference issues
-  const getSafeErrorMessage = (errorData: unknown): string => {
-    if (errorData === null || errorData === undefined) {
-      return "Failed to save vehicle";
-    }
-    if (typeof errorData === "string") {
-      return errorData || "Failed to save vehicle";
-    }
-    if (typeof errorData === "object") {
-      // Handle { error: "message" } format
-      if (errorData && "error" in errorData) {
-        const err = (errorData as { error: unknown }).error;
-        if (typeof err === "string") return err;
-        if (err === null || err === undefined) return "Failed to save vehicle";
-        try {
-          return String(err);
-        } catch {
-          return "Failed to save vehicle";
-        }
-      }
-      // Handle { message: "message" } format
-      if ("message" in errorData) {
-        const msg = (errorData as { message: unknown }).message;
-        if (typeof msg === "string") return msg;
-        try {
-          return String(msg);
-        } catch {
-          return "Failed to save vehicle";
-        }
-      }
-      // Try to stringify safely
-      try {
-        const str = JSON.stringify(errorData);
-        return str || "Failed to save vehicle";
-      } catch {
-        return "Failed to save vehicle";
-      }
-    }
-    try {
-      return String(errorData);
-    } catch {
-      return "Failed to save vehicle";
-    }
-  };
-
-  // Helper function to sanitize vehicle data before sending to API
-  // Converts undefined/NaN values to null for number fields
-  const sanitizeVehicleData = (data: Partial<Vehicle>): Partial<Vehicle> => {
-    const sanitized = { ...data };
-    
-    // List of number fields that need sanitization
-    const numberFields: (keyof Vehicle)[] = ['Year', 'PriceNew', 'Price40', 'Price70'];
-    
-    numberFields.forEach((field) => {
-      const value = sanitized[field];
-      // Convert undefined, NaN, empty string, or the string "undefined"/"NaN" to null
-      if (
-        value === undefined || 
-        Number.isNaN(value) || 
-        value === '' ||
-        value === 'undefined' ||
-        value === 'NaN'
-      ) {
-        (sanitized as Record<string, unknown>)[field] = null;
-      }
-    });
-    
-    // Remove any remaining undefined values from the object
-    Object.keys(sanitized).forEach((key) => {
-      const k = key as keyof Vehicle;
-      if (sanitized[k] === undefined) {
-        delete (sanitized as Record<string, unknown>)[k];
-      }
-    });
-    
-    return sanitized;
-  };
-
-  // Helper function to check if a value is safe to append to FormData
-  // Returns true only for valid non-null, non-undefined values that aren't the string "undefined"
-  const isSafeFormDataValue = (value: unknown): boolean => {
-    if (value === null || value === undefined) return false;
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      // Reject empty strings, "undefined", and "NaN"
-      if (trimmed === '' || trimmed === 'undefined' || trimmed === 'NaN') return false;
-    }
-    if (typeof value === 'number' && Number.isNaN(value)) return false;
-    return true;
-  };
-
   // Handle adding a new vehicle (POST /api/vehicles)
   const handleSaveVehicle = async (data: Partial<Vehicle>, imageFile?: File): Promise<void> => {
     const formData = new FormData();
@@ -1109,7 +993,7 @@ export default function VehiclesClient() {
     try {
       await deleteVehicle(selectedVehicle);
       removeToast(loadingToastId);
-    } catch (err) {
+    } catch {
       removeToast(loadingToastId);
       // Error is handled by onError callback (restore happens there)
     }

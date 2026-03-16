@@ -139,7 +139,7 @@ function EditVehicleInner() {
     
     // IMPORTANT: Exclude Image from formData to prevent data URLs from being saved
     // The image will be handled separately via the imageFile parameter
-    const { Image, ...dataWithoutImage } = formData;
+    const { Image: _Image, ...dataWithoutImage } = formData;
     
     const updateData = {
       ...dataWithoutImage,

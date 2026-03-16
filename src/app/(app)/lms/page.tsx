@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, GraduationCap, Clock, Award, Users } from "lucide-react";
+import { BookOpen, GraduationCap } from "lucide-react";
 
 // Icons
 const Icons = {

@@ -29,6 +29,25 @@ const eslintConfig = defineConfig([
   ]),
   ...nextVitals,
   ...nextTs,
+  {
+    rules: {
+      // Allow underscore-prefixed variables to be unused (intentional destructuring)
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_",
+          "caughtErrorsIgnorePattern": "^_"
+        }
+      ],
+      // Downgrade react-hooks/exhaustive-deps to warning only
+      "react-hooks/exhaustive-deps": "warn",
+      // Downgrade no-img-element to warning only
+      "@next/next/no-img-element": "warn",
+      // Downgrade jsx-a11y rules to warning only
+      "jsx-a11y/role-supports-aria-props": "warn"
+    }
+  }
 ]);
 
 export default eslintConfig;

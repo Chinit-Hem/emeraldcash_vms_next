@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Shield, Users, Settings, BarChart3 } from "lucide-react";
+import { Shield } from "lucide-react";
 
 // Icons
 const Icons = {
