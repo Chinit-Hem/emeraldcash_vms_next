@@ -31,4 +31,4 @@ jobs:
       - name: Run ESLint
         # Added timeout to prevent hanging on large file sets
         run: npx eslint src --ext .ts,.tsx --max-warnings 200
-        timeout-minutes: 3
+        timeout-minutes: 5
