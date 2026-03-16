@@ -4,25 +4,22 @@ import nextTs from "eslint-config-next/typescript";
 
 const eslintConfig = defineConfig([
   // Global ignores - must be first to prevent processing
-  {
-    // This tells ESLint to completely ignore these folders
-    ignores: [
-      "scripts/**",
-      "apps-script/**",
-      ".next/**",
-      ".next_old/**",
-      "out/**",
-      "build/**",
-      "dist/**",
-      "node_modules/**",
-      "coverage/**",
-      "next-env.d.ts",
-      "**/*.test.ts",
-      "**/*.test.tsx",
-      "**/*.spec.ts",
-      "**/*.spec.tsx",
-    ],
-  },
+  globalIgnores([
+    "scripts/**",
+    "apps-script/**",
+    ".next/**",
+    ".next_old/**",
+    "out/**",
+    "build/**",
+    "dist/**",
+    "node_modules/**",
+    "coverage/**",
+    "next-env.d.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+  ]),
   ...nextVitals,
   ...nextTs,
   {
