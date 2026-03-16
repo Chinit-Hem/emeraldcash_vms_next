@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { compressImage } from "@/lib/clientImageCompression";
-import { getCloudinaryFolder } from "@/lib/cloudinary-folders";
 import { recordMutation } from "@/lib/vehicleCache";
 import type { Vehicle } from "@/lib/types";
 
@@ -23,20 +22,14 @@ interface UseAddVehicleOptimisticReturn {
 // Maximum retry attempts for transient errors - ULTRA-OPTIMIZED for minimal delay
 const MAX_RETRY_ATTEMPTS = 1; // Single retry for fastest response
 const RETRY_DELAY_MS = 100; // Minimal retry delay - reduced from 300ms
-const MAX_CLOUDINARY_RETRIES = 1; // Single retry
-const CLOUDINARY_RETRY_DELAY = 100; // Minimal retry delay - reduced from 200ms
 
 // Image compression settings - ULTRA-OPTIMIZED for speed
 const COMPRESSION_MAX_WIDTH = 800; // Optimized width
 const COMPRESSION_QUALITY = 0.7; // Optimized quality
-const COMPRESSION_TIMEOUT = 10000; // 10 second max compression time
 
 // Skip compression if file is already small enough (under 800KB)
 // This prevents double compression when VehicleForm already compressed the image
 const SKIP_COMPRESSION_THRESHOLD_KB = 800;
-
-// Parallel processing settings
-const ENABLE_PARALLEL_UPLOAD = true; // Upload while compressing when possible
 
 // Server-side upload configuration - uses /api/upload endpoint
 // This keeps Cloudinary credentials secure on the server
