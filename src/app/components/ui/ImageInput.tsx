@@ -108,6 +108,9 @@ export function ImageInput({
       return;
     }
 
+    // Force cache key update to prevent browser caching old image
+    setCacheKey(prev => prev + 1);
+
     // Check if it's a URL or base64
     const isUrl = value.startsWith("http://") || value.startsWith("https://");
     const isDataUrl = value.startsWith("data:image/");
