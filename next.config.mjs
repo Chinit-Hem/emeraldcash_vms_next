@@ -20,9 +20,9 @@ const contentSecurityPolicy = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob:",
   "worker-src 'self' blob:",
   "style-src 'self' 'unsafe-inline' https:",
-  "img-src 'self' data: blob: https://drive.google.com https://*.googleusercontent.com https://*.googleapis.com https:",
+  "img-src 'self' data: blob: https://drive.google.com https://*.googleusercontent.com https://*.googleapis.com https://res.cloudinary.com https:",
   "font-src 'self' data: https:",
-  "connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.googleusercontent.com https:",
+  "connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.googleusercontent.com https://api.cloudinary.com https:",
 ].join("; ");
 
 const securityHeaders = [
