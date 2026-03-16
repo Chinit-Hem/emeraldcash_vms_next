@@ -41,7 +41,7 @@ async function getAllFolders() {
       try {
         const subResult = await cloudinary.api.sub_folders(folder.path);
         allFolders.push(...(subResult.folders || []));
-      } catch (e) {
+      } catch (_e) {
         // Folder might not have subfolders
       }
     }

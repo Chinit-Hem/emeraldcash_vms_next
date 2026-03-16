@@ -20,15 +20,30 @@ export default function EditVehiclePage() {
   return <EditVehicleInner />;
 }
 
+// Reserved words that cannot be used as vehicle IDs
+const RESERVED_IDS = ['edit', 'add', 'view', 'new', 'create', 'delete'];
+
 function EditVehicleInner() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const id = typeof params?.id === "string" ? params.id : "";
+  const rawId = typeof params?.id === "string" ? params.id : "";
+  
+  // Check if the ID is a reserved word (e.g., someone navigated to /vehicles/edit)
+  const isReservedId = RESERVED_IDS.includes(rawId.toLowerCase());
+  const id = isReservedId ? "" : rawId;
+  
   const user = useAuthUser();
   const { success, error: showError } = useToast();
   
   const isAdmin = user?.role === "Admin";
   const userRole = user?.role || "Viewer";
+
+  // Redirect to vehicles list if ID is a reserved word
+  useEffect(() => {
+    if (isReservedId) {
+      router.push("/vehicles");
+    }
+  }, [isReservedId, router]);
 
   // Hooks
   const { vehicle, loading, error: fetchError, refetch } = useVehicle(id);

@@ -9,6 +9,8 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    # Prevent indefinite hanging - fail fast if ESLint takes too long
+    timeout-minutes: 5
     
     steps:
       - name: Checkout code
@@ -24,7 +26,9 @@ jobs:
         run: npm ci
       
       - name: Run ESLint
+        # Added timeout to prevent hanging on large file sets
         run: npm run lint
+        timeout-minutes: 3
       
       - name: Notify Vercel
         if: always()

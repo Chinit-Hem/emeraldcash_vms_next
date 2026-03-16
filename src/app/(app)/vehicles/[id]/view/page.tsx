@@ -41,6 +41,9 @@ const forceTextVisibleStyles = `
   }
 `;
 
+// Reserved words that cannot be used as vehicle IDs
+const RESERVED_IDS = ['edit', 'add', 'view', 'new', 'create', 'delete'];
+
 export default function ViewVehiclePage() {
   return <ViewVehicleInner />;
 }
@@ -49,9 +52,21 @@ function ViewVehicleInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const params = useParams<{ id: string }>();
-  const id = typeof params?.id === "string" ? params.id : "";
+  const rawId = typeof params?.id === "string" ? params.id : "";
+  
+  // Check if the ID is a reserved word (e.g., someone navigated to /vehicles/view)
+  const isReservedId = RESERVED_IDS.includes(rawId.toLowerCase());
+  const id = isReservedId ? "" : rawId;
+  
   const user = useAuthUser();
   const isMounted = useMounted();
+  
+  // Redirect to vehicles list if ID is a reserved word
+  useEffect(() => {
+    if (isReservedId) {
+      router.push("/vehicles");
+    }
+  }, [isReservedId, router]);
   
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);

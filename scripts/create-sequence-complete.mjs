@@ -26,7 +26,7 @@ async function createSequenceComplete() {
     try {
       await sql.unsafe(`DROP SEQUENCE IF EXISTS cleaned_vehicles_id_seq CASCADE`);
       console.log("   ✅ Dropped existing sequence");
-    } catch (e) {
+    } catch (_e) {
       console.log("   ℹ️ No existing sequence to drop");
     }
 

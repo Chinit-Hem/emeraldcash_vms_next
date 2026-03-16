@@ -203,7 +203,6 @@ export function middleware(request: NextRequest) {
   } catch (error) {
     // Global middleware error handler
     const duration = Date.now() - startTime;
-    const errorMessage = error instanceof Error ? error.message : "Unknown middleware error";
     
     globalLogger.error("Middleware error", error, {
       pathname,

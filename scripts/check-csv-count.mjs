@@ -1,5 +1,4 @@
 import fs from 'fs';
-import path from 'path';
 
 const csvPath = 'C:/Users/Chinit Hem/Downloads/cleaned_vehicles_for_google_sheets.csv';
 

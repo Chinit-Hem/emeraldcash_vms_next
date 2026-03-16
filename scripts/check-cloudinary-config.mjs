@@ -55,7 +55,7 @@ try {
   try {
     const account = await cloudinary.api.usage();
     console.log(`   Plan: ${account.plan || "Unknown"}`);
-  } catch (e) {
+  } catch (_e) {
     // Ignore account info errors
   }
   

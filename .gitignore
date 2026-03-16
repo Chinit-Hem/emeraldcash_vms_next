@@ -40,5 +40,40 @@ next-env.d.ts
 *.swp
 *.swo
 
-.vercel
-.env*.local
+# TODO files (development only)
+TODO*.md
+
+# Documentation files (development only)
+*_SUMMARY.md
+*_COMPLETE.md
+*_REPORT.md
+CRUD_*.md
+ESLINT_*.md
+OOAD_*.md
+CLOUDINARY_*.md
+DASHBOARD_*.md
+IMAGE_*.md
+PERFORMANCE_*.md
+SECURITY_*.md
+ERROR_*.md
+NETWORK_*.md
+IOS_*.md
+SEARCH_*.md
+CATEGORY_*.md
+WITHOUT_*.md
+DEPLOYMENT.md
+ECVMS_*.md
+MANUAL_*.md
+NEON_*.md
+QUICK_*.md
+TESTING.md
+LIQUID_GLASS*.md
+
+# Build logs
+build.log
+
+# Scripts (development only)
+/scripts/
+
+# Apps Script (Google integration)
+/apps-script/

@@ -5,7 +5,7 @@
  */
 
 import { config } from 'dotenv';
-import { readFileSync, existsSync } from 'fs';
+import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 

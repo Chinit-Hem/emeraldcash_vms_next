@@ -48,8 +48,8 @@ function makeRequest(path, method = 'GET', postData = null) {
       });
     });
 
-    req.on('error', (error) => {
-      reject(error);
+    req.on('error', (_error) => {
+      reject(_error);
     });
 
     if (postData) {

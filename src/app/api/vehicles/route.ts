@@ -397,20 +397,23 @@ const postHandler = withErrorHandling(async (req, { logger, requestId, startTime
     brand: vehicleData.brand,
   });
   
-  const result = await vehicleService.createVehicle({
+  // Build vehicle data with proper null handling
+  const createData: Parameters<typeof vehicleService.createVehicle>[0] = {
     category: vehicleData.category as string,
     brand: vehicleData.brand as string,
     model: vehicleData.model as string,
     year: year,
     plate: vehicleData.plate as string,
-    market_price: marketPrice as number,
-    tax_type: (vehicleData.tax_type as string) || (vehicleData.taxType as string),
-    condition: vehicleData.condition as "New" | "Used" | "Other",
-    body_type: (vehicleData.body_type as string) || (vehicleData.bodyType as string),
-    color: vehicleData.color as string,
-    image_id: (vehicleData.image_id as string) || (vehicleData.imageId as string),
-    thumbnail_url: (vehicleData.thumbnail_url as string) || (vehicleData.thumbnailUrl as string),
-  });
+    market_price: marketPrice ?? 0,
+    tax_type: (vehicleData.tax_type as string) || (vehicleData.taxType as string) || null,
+    condition: (vehicleData.condition as "New" | "Used" | "Other") || "Other",
+    body_type: (vehicleData.body_type as string) || (vehicleData.bodyType as string) || null,
+    color: (vehicleData.color as string) || null,
+    image_id: (vehicleData.image_id as string) || (vehicleData.imageId as string) || null,
+    thumbnail_url: (vehicleData.thumbnail_url as string) || (vehicleData.thumbnailUrl as string) || null,
+  };
+  
+  const result = await vehicleService.createVehicle(createData);
   
   if (!result.success) {
     logger.error("Failed to create vehicle", new Error(result.error || "Unknown error"), {
@@ -445,115 +448,6 @@ const postHandler = withErrorHandling(async (req, { logger, requestId, startTime
 export { postHandler as POST };
 
 // ============================================================================
-// PUT Handler - Update Vehicle
-// ============================================================================
-
-/**
- * PUT /api/vehicles?id={number}
- * 
- * Query Parameters:
- * - id: number (required)
- * 
- * Body: Partial<VehicleDB>
- * 
- * Returns:
- * - success: boolean
- * - data: Vehicle (updated)
- * - meta: { durationMs, queryCount }
- */
-export async function PUT(req: NextRequest) {
-  const startTime = Date.now();
-
-  try {
-    const { searchParams } = new URL(req.url);
-    const id = parseInt(searchParams.get("id") || "", 10);
-
-    if (!id || isNaN(id)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Valid vehicle ID is required",
-          meta: {
-            durationMs: Date.now() - startTime,
-            queryCount: 0,
-          },
-        },
-        {
-          status: 400,
-          headers: buildCorsHeaders(req),
-        }
-      );
-    }
-
-    const body = await req.json();
-
-    // Update vehicle through service layer
-    const result = await vehicleService.updateVehicle(id, {
-      category: body.category,
-      brand: body.brand,
-      model: body.model,
-      year: body.year,
-      plate: body.plate,
-      market_price: body.market_price || body.marketPrice,
-      tax_type: body.tax_type || body.taxType,
-      condition: body.condition,
-      body_type: body.body_type || body.bodyType,
-      color: body.color,
-      image_id: body.image_id || body.imageId,
-      thumbnail_url: body.thumbnail_url || body.thumbnailUrl,
-    });
-
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: result.error || "Failed to update vehicle",
-          meta: {
-            durationMs: Date.now() - startTime,
-            queryCount: result.meta?.queryCount || 0,
-          },
-        },
-        {
-          status: result.error?.includes("not found") ? 404 : 500,
-          headers: buildCorsHeaders(req),
-        }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: true,
-        data: result.data,
-        meta: {
-          durationMs: Date.now() - startTime,
-          queryCount: result.meta?.queryCount || 0,
-        },
-      },
-      {
-        headers: buildCorsHeaders(req),
-      }
-    );
-  } catch (error) {
-    console.error("[API /vehicles PUT] Error:", error);
-    
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
-        meta: {
-          durationMs: Date.now() - startTime,
-          queryCount: 0,
-        },
-      },
-      {
-        status: 500,
-        headers: buildCorsHeaders(req),
-      }
-    );
-  }
-}
-
-// ============================================================================
 // DELETE Handler - Delete Vehicle
 // ============================================================================
 
@@ -567,80 +461,53 @@ export async function PUT(req: NextRequest) {
  * - success: boolean
  * - data: boolean (true if deleted)
  * - meta: { durationMs, queryCount }
+ * 
+ * NOTE: PUT /api/vehicles is deprecated. Use PUT /api/vehicles/[id] instead.
  */
-export async function DELETE(req: NextRequest) {
-  const startTime = Date.now();
+const deleteHandler = withErrorHandling(async (req, { logger, requestId, startTime }) => {
+  const { searchParams } = new URL(req.url);
+  const id = parseInt(searchParams.get("id") || "", 10);
 
-  try {
-    const { searchParams } = new URL(req.url);
-    const id = parseInt(searchParams.get("id") || "", 10);
-
-    if (!id || isNaN(id)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Valid vehicle ID is required",
-          meta: {
-            durationMs: Date.now() - startTime,
-            queryCount: 0,
-          },
-        },
-        {
-          status: 400,
-          headers: buildCorsHeaders(req),
-        }
-      );
-    }
-
-    // Delete vehicle through service layer
-    const result = await vehicleService.deleteVehicle(id);
-
-    if (!result.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: result.error || "Failed to delete vehicle",
-          meta: {
-            durationMs: Date.now() - startTime,
-            queryCount: result.meta?.queryCount || 0,
-          },
-        },
-        {
-          status: 500,
-          headers: buildCorsHeaders(req),
-        }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: true,
-        data: result.data,
-        meta: {
-          durationMs: Date.now() - startTime,
-          queryCount: result.meta?.queryCount || 0,
-        },
-      },
-      {
-        headers: buildCorsHeaders(req),
-      }
-    );
-  } catch (error) {
-    console.error("[API /vehicles DELETE] Error:", error);
-    
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
-        meta: {
-          durationMs: Date.now() - startTime,
-          queryCount: 0,
-        },
-      },
-      {
-        status: 500,
-        headers: buildCorsHeaders(req),
-      }
+  if (!id || isNaN(id)) {
+    return createErrorResponse(
+      "Valid vehicle ID is required",
+      requestId,
+      Date.now() - startTime,
+      400,
+      buildCorsHeaders(req)
     );
   }
-}
+
+  logger.info("Deleting vehicle", { vehicleId: id });
+
+  // Delete vehicle through service layer
+  const result = await vehicleService.deleteVehicle(id);
+
+  if (!result.success) {
+    logger.error("Failed to delete vehicle", new Error(result.error || "Unknown error"), {
+      vehicleId: id,
+    });
+    
+    return createErrorResponse(
+      result.error || "Failed to delete vehicle",
+      requestId,
+      Date.now() - startTime,
+      500,
+      buildCorsHeaders(req)
+    );
+  }
+
+  logger.info("Vehicle deleted successfully", { vehicleId: id });
+
+  return createSuccessResponse(
+    result.data,
+    requestId,
+    Date.now() - startTime,
+    {
+      queryCount: result.meta?.queryCount || 0,
+    },
+    buildCorsHeaders(req)
+  );
+}, { context: "vehicles-api-delete", timeoutMs: 30000 });
+
+export { deleteHandler as DELETE };

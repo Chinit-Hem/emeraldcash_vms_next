@@ -62,7 +62,7 @@ async function createFolder(folderPath) {
     try {
       await cloudinary.uploader.destroy(`${folderPath}/.folder_placeholder`);
       console.log(`   Cleaned up placeholder file`);
-    } catch (deleteError) {
+    } catch (_deleteError) {
       // Ignore deletion errors
     }
     
@@ -99,7 +99,7 @@ async function main() {
   
   // Test connection first
   try {
-    const ping = await cloudinary.api.ping();
+    await cloudinary.api.ping();
     console.log('✅ Cloudinary connection successful');
   } catch (error) {
     console.error('❌ Cloudinary connection failed:', error.message);

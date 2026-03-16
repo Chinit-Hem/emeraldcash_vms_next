@@ -47,7 +47,7 @@ async function fixEmptyThumbnailUrls() {
     });
 
     // Test connection
-    const testResult = await sql`SELECT 1 as connection_test`;
+    await sql`SELECT 1 as connection_test`;
     console.log("✅ Database connection successful\n");
     
     // Find vehicles with empty or invalid thumbnail_url
