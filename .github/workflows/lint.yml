@@ -32,9 +32,3 @@ jobs:
         # Added timeout to prevent hanging on large file sets
         run: npx eslint src --ext .ts,.tsx --max-warnings 100
         timeout-minutes: 3
-      
-      - name: Notify Vercel
-        if: always()
-        uses: vercel/repository-dispatch/actions/status@v1
-        with:
-          name: "Vercel - emeraldcash-vms-next: lint"
