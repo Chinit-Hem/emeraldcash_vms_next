@@ -9,6 +9,7 @@ import type { Vehicle } from "@/lib/types";
 interface UseUpdateVehicleOptimisticOptions {
   onSuccess?: (vehicle: Vehicle) => void;
   onError?: (error: Error, originalVehicle: Vehicle) => void;
+  onProgress?: (stage: 'compressing' | 'uploading' | 'processing' | 'saving', progress: number) => void;
 }
 
 interface UseUpdateVehicleOptimisticReturn {
@@ -322,7 +323,7 @@ function base64ToFile(base64String: string, filename: string): File {
 export function useUpdateVehicleOptimistic(
   options: UseUpdateVehicleOptimisticOptions = {}
 ): UseUpdateVehicleOptimisticReturn {
-  const { onSuccess, onError } = options;
+  const { onSuccess, onError, onProgress } = options;
   const [isUpdating, setIsUpdating] = useState(false);
 
   const updateVehicle = useCallback(
@@ -338,6 +339,11 @@ export function useUpdateVehicleOptimistic(
       let attempts = 0;
       let cloudinaryImageUrl: string | null = null;
 
+      // Helper to report progress
+      const reportProgress = (stage: 'compressing' | 'uploading' | 'processing' | 'saving', progress: number) => {
+        onProgress?.(stage, progress);
+      };
+
       // Step 1: Handle image upload to Cloudinary (OUTSIDE retry loop - do this once)
       try {
         // Case A: We have a File object from file input
@@ -349,34 +355,46 @@ export function useUpdateVehicleOptimistic(
           
           if (fileSizeKB < SKIP_COMPRESSION_THRESHOLD_KB) {
             fileToUpload = imageFile;
+            reportProgress('compressing', 100); // Skip compression, mark as complete
           } else {
+            reportProgress('compressing', 0);
             const compressedResult = await compressImage(imageFile, {
               maxWidth: COMPRESSION_MAX_WIDTH,
               quality: COMPRESSION_QUALITY,
             });
-            
             fileToUpload = compressedResult.file;
+            reportProgress('compressing', 100);
           }
 
+          reportProgress('uploading', 0);
           cloudinaryImageUrl = await uploadImageToCloudinaryWithRetry(
             fileToUpload,
             data.Category || originalVehicle.Category || "Cars",
             vehicleId
           );
+          reportProgress('uploading', 100);
         }
         // Case B: We have a Base64 string in data.Image
         else if (data.Image && data.Image.startsWith("data:image/")) {
+          reportProgress('compressing', 50); // Converting base64
           const fileFromBase64 = base64ToFile(data.Image, `vehicle_${vehicleId}_${Date.now()}.jpg`);
+          reportProgress('compressing', 100);
 
+          reportProgress('uploading', 0);
           cloudinaryImageUrl = await uploadImageToCloudinaryWithRetry(
             fileFromBase64,
             data.Category || originalVehicle.Category || "Cars",
             vehicleId
           );
+          reportProgress('uploading', 100);
         }
         // Case C: We have an existing URL in data.Image
         else if (data.Image && (data.Image.startsWith("http://") || data.Image.startsWith("https://"))) {
           cloudinaryImageUrl = data.Image;
+          reportProgress('uploading', 100); // No upload needed
+        } else {
+          // No image to upload
+          reportProgress('uploading', 100);
         }
       } catch (uploadError) {
         setIsUpdating(false);
@@ -451,10 +469,15 @@ export function useUpdateVehicleOptimistic(
       }
 
       // Step 4: Send to API with retry logic (only for the API call, not upload)
+      reportProgress('processing', 0); // Cloudinary processing + API preparation
+      await delay(100); // Small delay to allow Cloudinary processing to start
+      reportProgress('processing', 50);
+      
       while (attempts < MAX_RETRY_ATTEMPTS) {
         attempts++;
 
         try {
+          reportProgress('saving', 0);
           const res = await fetch(`/api/vehicles/${encodeURIComponent(vehicleId)}`, {
             method: "PUT",
             headers: {
@@ -476,6 +499,7 @@ export function useUpdateVehicleOptimistic(
             throw new Error(result.error || "API returned error");
           }
 
+          reportProgress('saving', 100);
           const updatedVehicle = result.data || { ...originalVehicle, ...data, Image: cloudinaryImageUrl };
 
           // Record mutation to trigger auto-refresh - ASYNC to not block success response
@@ -513,7 +537,7 @@ export function useUpdateVehicleOptimistic(
         throw enhancedError;
       }
     },
-    [onSuccess, onError]
+    [onSuccess, onError, onProgress]
   );
 
   return {

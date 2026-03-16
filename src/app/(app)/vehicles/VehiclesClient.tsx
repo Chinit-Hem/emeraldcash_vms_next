@@ -499,12 +499,34 @@ export default function VehiclesClient() {
   // Toast hook
   const { success: toastSuccess, error: toastError, addToast, removeToast } = useToast();
 
+  // Upload progress state
+  const [uploadProgress, setUploadProgress] = useState<{
+    stage: 'compressing' | 'uploading' | 'processing' | 'saving' | null;
+    progress: number;
+  }>({ stage: null, progress: 0 });
+
+  // Helper to get progress message
+  const getProgressMessage = (stage: string | null, progress: number): string => {
+    switch (stage) {
+      case 'compressing':
+        return `Compressing image... ${progress}%`;
+      case 'uploading':
+        return `Uploading to Cloudinary... ${progress}%`;
+      case 'processing':
+        return `Processing image... ${progress}%`;
+      case 'saving':
+        return `Saving vehicle data... ${progress}%`;
+      default:
+        return 'Updating...';
+    }
+  };
 
   // Optimistic update/delete hooks with toast notifications
 
   const { updateVehicle, isUpdating } = useUpdateVehicleOptimistic({
     onSuccess: (updatedVehicle) => {
       optimisticUpdateInProgress.current = false;
+      setUploadProgress({ stage: null, progress: 0 }); // Reset progress
       toastSuccess(`${updatedVehicle.Brand} ${updatedVehicle.Model} updated successfully!`, 2000);
       // Update local state with server-confirmed data (includes new image URL)
       setVehicles((prev) =>
@@ -515,11 +537,15 @@ export default function VehiclesClient() {
     },
     onError: (error, originalVehicle) => {
       optimisticUpdateInProgress.current = false;
+      setUploadProgress({ stage: null, progress: 0 }); // Reset progress
       toastError(`Failed to update ${originalVehicle.Brand}: ${error.message}`, 4000);
       // Rollback: restore original vehicle
       setVehicles((prev) =>
         prev.map((v) => (v.VehicleId === originalVehicle.VehicleId ? originalVehicle : v))
       );
+    },
+    onProgress: (stage, progress) => {
+      setUploadProgress({ stage, progress });
     },
   });
 
@@ -1609,6 +1635,7 @@ export default function VehiclesClient() {
         vehicle={selectedVehicle}
         onClose={() => setIsAddEditModalOpen(false)}
         onSave={handleSubmitVehicle}
+        uploadProgress={uploadProgress}
       />
 
       <DeleteConfirmationModal

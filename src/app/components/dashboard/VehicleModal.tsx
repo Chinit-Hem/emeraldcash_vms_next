@@ -11,6 +11,10 @@ interface VehicleModalProps {
   vehicle: Vehicle | null;
   onClose: () => void;
   onSave: (vehicle: Partial<Vehicle>, imageFile?: File) => Promise<void>;
+  uploadProgress?: {
+    stage: 'compressing' | 'uploading' | 'processing' | 'saving' | null;
+    progress: number;
+  };
 }
 
 /**
@@ -22,7 +26,7 @@ interface VehicleModalProps {
  * The VehicleForm component handles both modal and inline modes,
  * providing a unified user experience for adding and editing vehicles.
  */
-export default function VehicleModal({ isOpen, vehicle, onClose, onSave }: VehicleModalProps) {
+export default function VehicleModal({ isOpen, vehicle, onClose, onSave, uploadProgress }: VehicleModalProps) {
   const { setIsModalOpen } = useUI();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +85,11 @@ export default function VehicleModal({ isOpen, vehicle, onClose, onSave }: Vehic
 
   if (!isOpen) return null;
 
+  // Get progress message for display
+  const progressMessage = uploadProgress?.stage 
+    ? `${uploadProgress.stage.charAt(0).toUpperCase() + uploadProgress.stage.slice(1)}... ${uploadProgress.progress}%`
+    : undefined;
+
   return (
     <VehicleForm
       vehicle={formVehicle}
@@ -91,6 +100,7 @@ export default function VehicleModal({ isOpen, vehicle, onClose, onSave }: Vehic
       onClearError={handleClearError}
       isModal={true}
       modalTitle={vehicle ? "Edit Vehicle" : "Add New Vehicle"}
+      uploadProgress={uploadProgress}
     />
   );
 }

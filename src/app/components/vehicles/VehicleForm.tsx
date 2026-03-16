@@ -32,6 +32,11 @@ interface VehicleFormProps {
   isModal?: boolean;
   /** Modal title (only used when isModal is true) */
   modalTitle?: string;
+  /** Upload progress for image operations */
+  uploadProgress?: {
+    stage: 'compressing' | 'uploading' | 'processing' | 'saving' | null;
+    progress: number;
+  };
 }
 
 interface FormErrors {
@@ -111,6 +116,7 @@ export function VehicleForm({
   onClearError,
   isModal = false,
   modalTitle = "Edit Vehicle",
+  uploadProgress,
 }: VehicleFormProps) {
   // Form state
   const [formData, setFormData] = useState<Partial<Vehicle>>(vehicle);
@@ -686,17 +692,51 @@ export function VehicleForm({
 
       {/* Sticky Footer */}
       <div className="sticky bottom-0 -mx-4 md:-mx-6 -mb-4 md:-mb-6 mt-8 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 p-4 md:p-6 rounded-b-2xl">
+        {/* Upload Progress Indicator */}
+        {uploadProgress?.stage && (
+          <div className="mb-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <svg className="animate-spin h-5 w-5 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-300 capitalize">
+                  {uploadProgress.stage}...
+                </p>
+                <div className="mt-1.5 h-2 w-full bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-600 dark:bg-blue-400 transition-all duration-300 ease-out"
+                    style={{ width: `${uploadProgress.progress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  {uploadProgress.progress}%
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="flex flex-col sm:flex-row gap-3">
           <GlassButton
             type="submit"
             variant="primary"
             size="lg"
             fullWidth
-            isLoading={isSubmitting || isCompressing}
-            disabled={!hasChanges || isSubmitting || isCompressing}
+            isLoading={isSubmitting || isCompressing || !!uploadProgress?.stage}
+            disabled={!hasChanges || isSubmitting || isCompressing || !!uploadProgress?.stage}
             className="order-1 sm:order-2"
           >
-            {isCompressing ? "Processing Image..." : isSubmitting ? "Saving Changes..." : "Save Changes"}
+            {uploadProgress?.stage 
+              ? `${uploadProgress.stage.charAt(0).toUpperCase() + uploadProgress.stage.slice(1)}... ${uploadProgress.progress}%`
+              : isCompressing 
+                ? "Processing Image..." 
+                : isSubmitting 
+                  ? "Saving Changes..." 
+                  : "Save Changes"}
           </GlassButton>
           <GlassButton
             type="button"
@@ -704,13 +744,13 @@ export function VehicleForm({
             size="lg"
             fullWidth
             onClick={onCancel}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !!uploadProgress?.stage}
             className="order-2 sm:order-1"
           >
             {isModal ? "Cancel" : "Back"}
           </GlassButton>
         </div>
-        {hasChanges && !isSubmitting && (
+        {hasChanges && !isSubmitting && !uploadProgress?.stage && (
           <p className="text-center text-sm text-amber-600 dark:text-amber-400 mt-2">
             You have unsaved changes
           </p>
