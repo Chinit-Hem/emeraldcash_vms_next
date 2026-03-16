@@ -83,6 +83,42 @@ function normalizeCategoryToSheet(value: unknown): string {
   return raw;
 }
 
+// Apps Script URL builder
+export function appsScriptUrl(baseUrl: string, action?: string): string {
+  const url = new URL(baseUrl);
+  if (action) {
+    url.searchParams.set("action", action);
+  }
+  return url.toString();
+}
+
+// Apps Script fetch helper with timeout
+interface FetchAppsScriptOptions extends RequestInit {
+  timeoutMs?: number;
+}
+
+export async function fetchAppsScript(
+  url: string,
+  options: FetchAppsScriptOptions = {}
+): Promise<Response> {
+  const { timeoutMs = 30000, ...fetchOptions } = options;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
 export function toVehicle(row: Record<string, unknown>): Vehicle {
   const vehicleId = toStringValue(pick(row, ["VehicleId", "VehicleID", "Id", "id"]));
 

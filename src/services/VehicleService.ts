@@ -21,7 +21,6 @@ import type { Vehicle } from "@/lib/types";
 import { 
   getCategorySearchPattern 
 } from "@/lib/categoryMapping";
-import { normalizeImageUrl } from "@/lib/cloudinary";
 
 // ============================================================================
 // Types & Interfaces
@@ -155,7 +154,7 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
     const normalizedCategory = VehicleService.normalizeCategory(dbVehicle.category);
 
     // Use thumbnail_url if available and is a valid URL (pre-computed Google Drive thumbnail), 
-    // otherwise fall back to normalizeImageUrl for Cloudinary or runtime URL generation
+    // otherwise fall back to image_id (which may be a Cloudinary public_id or Drive ID)
     // Check if thumbnail_url is a valid URL (starts with http://, https://, or data:)
     const thumbnailUrl = dbVehicle.thumbnail_url?.trim();
     const hasValidThumbnail = thumbnailUrl && (
@@ -163,9 +162,17 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
       thumbnailUrl.startsWith("https://") || 
       thumbnailUrl.startsWith("data:")
     );
+    
+    // Synchronous normalization - just check if image_id is already a URL
+    const imageId = dbVehicle.image_id?.trim() || "";
+    const isImageIdUrl = imageId && (
+      imageId.startsWith("http://") || 
+      imageId.startsWith("https://") || 
+      imageId.startsWith("data:")
+    );
     const normalizedImage = hasValidThumbnail 
       ? thumbnailUrl 
-      : normalizeImageUrl(dbVehicle.image_id);
+      : (isImageIdUrl ? imageId : imageId); // Return as-is, Cloudinary URL generation happens elsewhere
 
     // Create entity with both BaseEntity and Vehicle properties
     const vehicle: VehicleEntity = {
