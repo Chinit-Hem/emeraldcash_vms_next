@@ -77,10 +77,6 @@ function EditVehicleInner() {
     // If we have the updated vehicle with new image, update local state immediately
     // so the form shows the new Cloudinary image before navigating
     if (updatedVehicle) {
-      console.log("[EditVehicle] Received updated vehicle with new image:", {
-        vehicleId: updatedVehicle.VehicleId,
-        imageUrl: updatedVehicle.Image?.substring(0, 100) + "..."
-      });
       // Update local vehicle state so the form shows the new image immediately
       setLocalVehicle(updatedVehicle);
     }
@@ -126,19 +122,6 @@ function EditVehicleInner() {
     
     setSubmitError(null);
     
-<<<<<<< HEAD
-    // Extract File from image if it's a File, otherwise pass null
-    const imageFile = image instanceof File ? image : null;
-    
-    // useUpdateVehicleOptimistic expects: vehicleId, data, originalVehicle, imageFile?
-    await updateVehicle(
-      vehicle.VehicleId,
-      formData,
-      vehicle,
-      imageFile
-    );
-  }, [vehicle, updateVehicle]);
-=======
     // IMPORTANT: Exclude Image from formData to prevent data URLs from being saved
     // The image will be handled separately via the imageFile parameter
     const { Image, ...dataWithoutImage } = formData;
@@ -151,16 +134,14 @@ function EditVehicleInner() {
     // Extract File from image if it's a File, otherwise pass null
     const imageFile = image instanceof File ? image : null;
     
-    console.log("[EditVehicle] Submitting:", {
-      hasImageFile: !!imageFile,
-      imageFileName: imageFile?.name,
-      imageFileSize: imageFile?.size,
-      excludedImageField: Image ? "data URL excluded" : "no image in formData"
-    });
-    
-    await updateVehicle(updateData, imageFile);
+    // Call updateVehicle with all required parameters: vehicleId, data, originalVehicle, imageFile
+    await updateVehicle(
+      vehicleToUpdate.VehicleId,
+      updateData,
+      vehicleToUpdate,
+      imageFile
+    );
   }, [localVehicle, vehicle, updateVehicle]);
->>>>>>> 1d6d06858edb1b454edb1607a9d8c119464b3b64
 
   // Handle cancel with unsaved changes warning
   const handleCancel = useCallback(() => {

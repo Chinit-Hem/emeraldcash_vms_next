@@ -58,13 +58,10 @@ function validateConfig(): { valid: boolean; error?: string } {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const startTime = performance.now();
-  
   try {
     // Validate configuration
     const configValidation = validateConfig();
     if (!configValidation.valid) {
-      console.error("[cloudinary-signature] Configuration error:", configValidation.error);
       return NextResponse.json(
         { 
           ok: false, 
@@ -109,16 +106,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     // Generate signature
     const signature = generateSignature(signatureParams, CLOUDINARY_API_SECRET!);
 
-    const duration = performance.now() - startTime;
-    
-    console.log("[cloudinary-signature] Signature generated:", {
-      timestamp,
-      folder,
-      hasPublicId: !!publicId,
-      hasTags: !!tags,
-      duration: `${duration.toFixed(2)}ms`,
-    });
-
     // Return signature and required params
     return NextResponse.json({
       ok: true,
@@ -134,9 +121,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
 
   } catch (error) {
-    const duration = performance.now() - startTime;
-    console.error("[cloudinary-signature] Error generating signature:", error);
-    
     return NextResponse.json(
       { 
         ok: false, 

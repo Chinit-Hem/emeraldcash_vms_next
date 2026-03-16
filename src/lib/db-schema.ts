@@ -94,6 +94,7 @@ export async function deleteVehicle(id: number): Promise<boolean> {
 }
 
 // Normalize condition to proper case
+// Note: Currently unused but kept for future use in data validation
 function normalizeCondition(condition: string): "New" | "Used" | "Other" {
   const lower = condition?.toLowerCase().trim();
   if (lower === "new") return "New";

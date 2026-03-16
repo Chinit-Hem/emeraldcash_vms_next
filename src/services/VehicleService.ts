@@ -19,9 +19,7 @@ import { BaseService, BaseFilters, ServiceResult } from "./BaseService";
 import { dbManager } from "@/lib/db-singleton";
 import type { Vehicle } from "@/lib/types";
 import { 
-  getCategorySearchPattern, 
-  buildIlikePattern,
-  normalizeCategoryToDisplay 
+  getCategorySearchPattern 
 } from "@/lib/categoryMapping";
 import { normalizeImageUrl } from "@/lib/cloudinary";
 

@@ -13,7 +13,7 @@ export type SessionPayload = {
   fingerprint: string;
 };
 
-let ephemeralSessionSecret: string | null = null;
+const ephemeralSessionSecret: string | null = null;
 
 /**
  * Generate a session fingerprint
@@ -24,10 +24,7 @@ let ephemeralSessionSecret: string | null = null;
  * - Carrier-grade NAT
  * - Browser privacy features
  */
-function getRequestFingerprint(
-  _userAgent: string,
-  _ip: string
-): string {
+function getRequestFingerprint(): string {
   // Use a completely static fingerprint - no userAgent or IP dependency
   // This ensures sessions work consistently across all devices and networks
   const data = `ec-vms-static|v${SESSION_VERSION}`;
@@ -48,7 +45,7 @@ export function createSessionCookie(
     ...payload,
     ts: Date.now(),
     version: SESSION_VERSION,
-    fingerprint: getRequestFingerprint(userAgent, ip),
+    fingerprint: getRequestFingerprint(),
   };
 
   const encodedPayload = base64UrlEncode_(JSON.stringify(fullPayload));
@@ -92,7 +89,7 @@ export function parseSessionCookie(
 
     // Validate fingerprint (session binding) - MOBILE FIX: Be lenient with fingerprint mismatches
     // Mobile browsers often change user-agent or network conditions between requests
-    const currentFingerprint = getRequestFingerprint(userAgent, ip);
+    const currentFingerprint = getRequestFingerprint();
     const fingerprintValid = timingSafeEqual_(payload.fingerprint, currentFingerprint);
     
     if (!fingerprintValid) {

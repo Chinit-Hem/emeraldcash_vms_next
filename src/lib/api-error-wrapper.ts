@@ -318,7 +318,7 @@ export function withSimpleErrorHandling(
   handler: (req: NextRequest) => Promise<NextResponse>,
   options?: { timeoutMs?: number; context?: string }
 ) {
-  return withErrorHandling(async (req, _context) => handler(req), options);
+  return withErrorHandling(async (req) => handler(req), options);
 }
 
 /**

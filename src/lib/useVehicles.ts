@@ -1,8 +1,8 @@
 
 
 import { useCallback, useEffect, useState, useRef } from "react";
-import { vehicleApi, isApiError, isConfigError, isNetworkError, getErrorDetails, NetworkError, type VehicleFilters } from "./api";
-import { onVehicleCacheUpdate, shouldUseCache, isCacheStale, getCacheAge, clearAllVehicleCache } from "./vehicleCache";
+import { vehicleApi, isApiError, isConfigError, isNetworkError, type VehicleFilters } from "./api";
+import { onVehicleCacheUpdate, isCacheStale, getCacheAge, clearAllVehicleCache } from "./vehicleCache";
 import type { Vehicle, VehicleMeta } from "./types";
 import { isIOSSafariBrowser } from "./platform";
 

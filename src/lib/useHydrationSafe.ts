@@ -254,14 +254,19 @@ export function useLocalStorage<T>(
   useEffect(() => {
     if (!isMounted) return;
     
-    try {
-      const item = getItem(key);
-      if (item !== null) {
-        setStoredValue(JSON.parse(item) as T);
+    // Use setTimeout to avoid synchronous setState in effect
+    const timeoutId = setTimeout(() => {
+      try {
+        const item = getItem(key);
+        if (item !== null) {
+          setStoredValue(JSON.parse(item) as T);
+        }
+      } catch {
+        // Ignore parse errors
       }
-    } catch {
-      // Ignore parse errors
-    }
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
   }, [isMounted, key, getItem]);
 
   return [storedValue, setValue, remove];
@@ -298,9 +303,14 @@ export function useIsIOSSafari(): boolean {
   const isMounted = useMounted();
 
   useEffect(() => {
-    if (isMounted) {
+    if (!isMounted) return;
+    
+    // Use setTimeout to avoid synchronous setState in effect
+    const timeoutId = setTimeout(() => {
       setIsIOSSafariState(isIOSSafari());
-    }
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
   }, [isMounted]);
 
   return isIOSSafariState;

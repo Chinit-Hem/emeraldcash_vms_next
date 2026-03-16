@@ -2,6 +2,9 @@
 // This saves ~2-3MB of memory per function instance
 let cloudinaryInstance: typeof import("cloudinary").v2 | null = null;
 
+// Import folder utilities
+import { getCloudinaryFolder } from "./cloudinary-folders";
+
 // Environment variables
 const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
@@ -31,7 +34,7 @@ async function getCloudinary(): Promise<typeof import("cloudinary").v2> {
         timeout: 25000, // 25 seconds
       });
       
-      console.log('[Cloudinary] SDK lazy-loaded with optimized timeout');
+      // SDK loaded successfully
     }
     
     cloudinaryInstance = cloudinary;
@@ -45,8 +48,7 @@ export { getCloudinary };
 
 // Backward compatibility - warns about eager import
 export const cloudinary = new Proxy({} as typeof import("cloudinary").v2, {
-  get: (target, prop) => {
-    console.warn('[Cloudinary] Using deprecated eager import. Use getCloudinary() for lazy loading.');
+  get: () => {
     throw new Error("Cloudinary SDK must be loaded lazily using getCloudinary(). Eager imports are deprecated for memory optimization.");
   }
 });
@@ -109,11 +111,10 @@ async function compressImageForUpload(
       })
       .toBuffer();
     
-    console.log(`[Cloudinary] Image compressed: ${buffer.length} -> ${processed.length} bytes (${((1 - processed.length / buffer.length) * 100).toFixed(1)}% reduction)`);
-    
+    // Image compressed successfully
     return processed;
   } catch (error) {
-    console.warn('[Cloudinary] Compression failed, using original:', error);
+    // Compression failed, use original
     const arrayBuffer = await imageData.arrayBuffer();
     return Buffer.from(arrayBuffer);
   }
@@ -170,13 +171,7 @@ export async function uploadImage(
     attempts++;
     const attemptStartTime = Date.now();
     
-    console.log(`[Cloudinary] Upload attempt ${attempts}/${maxRetries}:`, {
-      hasFolder: !!options.folder,
-      hasPublicId: !!options.publicId,
-      hasUploadPreset: !!options.uploadPreset,
-      timeoutMs,
-      dataType: imageData instanceof File ? 'File' : imageData instanceof Blob ? 'Blob' : 'string',
-    });
+    // Upload attempt started
 
     try {
       // Determine folder based on category or use provided folder
@@ -216,7 +211,6 @@ export async function uploadImage(
       const uploadPreset = options.uploadPreset || DEFAULT_UPLOAD_PRESET;
       if (uploadPreset) {
         uploadOptions.upload_preset = uploadPreset;
-        console.log(`[Cloudinary] Using upload preset: ${uploadPreset}`);
       }
 
       let result;
@@ -245,21 +239,13 @@ export async function uploadImage(
         let buffer: Buffer;
         
         if (shouldCompress) {
-          const compressStartTime = Date.now();
           buffer = await compressImageForUpload(
             imageData, 
             options.maxWidth || 1280, 
             options.quality || 0.8
           );
-          const compressDuration = Date.now() - compressStartTime;
           compressedSize = buffer.length;
           wasCompressed = compressedSize < originalSize;
-          
-          console.log(`[Cloudinary] Compression completed in ${compressDuration}ms:`, {
-            originalSize: `${(originalSize / 1024).toFixed(2)}KB`,
-            compressedSize: `${(compressedSize / 1024).toFixed(2)}KB`,
-            reduction: `${((1 - compressedSize / originalSize) * 100).toFixed(1)}%`,
-          });
         } else {
           // No compression - convert directly to buffer
           const arrayBuffer = await imageData.arrayBuffer();
@@ -316,9 +302,6 @@ export async function uploadImage(
         ]);
       }
 
-      const uploadDuration = Date.now() - attemptStartTime;
-      console.log(`[Cloudinary] Upload completed in ${uploadDuration}ms on attempt ${attempts}`);
-
       // Ensure we return the secure_url from Cloudinary
       const secureUrl = result.secure_url;
       if (!secureUrl) {
@@ -371,15 +354,12 @@ export async function uploadImage(
         (lastError as Error & { error_code?: string }).error_code = cloudinaryError.error_code;
       }
       
-      console.error(`[Cloudinary] Upload attempt ${attempts} failed after ${attemptDuration}ms:`, {
-        message: lastError.message,
-        http_code: (lastError as Error & { http_code?: number }).http_code,
-      });
+      // Log error for debugging
+      console.error(`[Cloudinary] Upload attempt ${attempts} failed:`, lastError.message);
 
       // Check if this is a transient error that we should retry
       if (attempts < maxRetries && isTransientError(lastError)) {
         const retryDelayMs = initialRetryDelay * Math.pow(2, attempts - 1); // Exponential backoff
-        console.log(`[Cloudinary] Retrying after ${retryDelayMs}ms...`);
         await delay(retryDelayMs);
         continue;
       }
@@ -618,8 +598,7 @@ Original error: ${errorMessage}`,
 }
 
 
-// Re-export folder utilities
-export { getCloudinaryFolder } from "./cloudinary-folders";
+// Re-export folder utilities (already imported at top)
 
 // Default placeholder image URL for when image identifier is invalid
 // Using a standard Cloudinary placeholder image
@@ -682,39 +661,24 @@ export function getCloudinaryUrlFromPublicId(
     crop?: string;
     quality?: number;
     format?: string;
-    callerContext?: string; // Optional context for debug logging (e.g., "VehicleCard", "Upload")
   } = {}
 ): string {
-  // Debug log before URL construction
-  const callerContext = options.callerContext || "unknown";
-  console.log(`[getCloudinaryUrlFromPublicId] Called from ${callerContext} with publicId:`, {
-    publicId,
-    type: typeof publicId,
-    isNull: publicId === null,
-    isUndefined: publicId === undefined,
-    isEmptyString: publicId === "",
-  });
-
   // Defensive check: if publicId is null, undefined, or empty string, return placeholder
   if (!publicId || typeof publicId !== "string" || publicId.trim() === "") {
-    console.warn(`[getCloudinaryUrlFromPublicId] ${callerContext}: Invalid publicId (null/undefined/empty), returning placeholder`);
     return DEFAULT_PLACEHOLDER_URL;
   }
 
   // Check for the literal string "undefined" or "null"
   if (publicId === "undefined" || publicId === "null") {
-    console.warn(`[getCloudinaryUrlFromPublicId] ${callerContext}: publicId is string "${publicId}", returning placeholder`);
     return DEFAULT_PLACEHOLDER_URL;
   }
 
   if (!isCloudinaryPublicId(publicId)) {
     // If it's not a public_id, return as-is (might already be a URL)
-    console.log(`[getCloudinaryUrlFromPublicId] ${callerContext}: Not a valid public_id, returning as-is`);
     return publicId;
   }
 
   if (!isCloudinaryConfigured || !CLOUDINARY_CLOUD_NAME) {
-    console.warn(`[getCloudinaryUrlFromPublicId] ${callerContext}: Cloudinary not configured, cannot convert public_id to URL`);
     return DEFAULT_PLACEHOLDER_URL;
   }
 
@@ -734,17 +698,11 @@ export function getCloudinaryUrlFromPublicId(
   if (options.quality) transformation.quality = options.quality;
   if (options.format) transformation.fetch_format = options.format;
 
-  const url = cloudinary.url(publicId, {
+  return cloudinary.url(publicId, {
     transformation: Object.keys(transformation).length > 0 ? transformation : undefined,
     secure: true,
     sdk_semver: "2.0.0", // Required by Cloudinary SDK
   });
-
-  console.log(`[getCloudinaryUrlFromPublicId] ${callerContext}: Successfully generated URL:`, {
-    url: url.substring(0, 100) + (url.length > 100 ? "..." : ""),
-  });
-
-  return url;
 }
 
 /**

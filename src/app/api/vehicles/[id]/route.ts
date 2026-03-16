@@ -110,26 +110,10 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // Enhanced debugging for mobile
-  const userAgent = req.headers.get("user-agent") || "";
-  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  const mobilePrefix = isMobile ? "[MOBILE] " : "";
-  
-  // Log all cookies for debugging
-  const allCookies = req.cookies.getAll();
-  console.log(`[VEHICLE_API] ${mobilePrefix}GET request cookies:`, {
-    count: allCookies.length,
-    names: allCookies.map(c => c.name),
-    hasSession: allCookies.some(c => c.name === "session"),
-  });
-  
   const session = requireSession(req);
   if (!session) {
-    console.log(`[VEHICLE_API] ${mobilePrefix}Session check failed - returning 401`);
     return NextResponse.json({ ok: false, error: "Invalid or expired session" }, { status: 401 });
   }
-  
-  console.log(`[VEHICLE_API] ${mobilePrefix}Session valid for user: ${session.username}`);
 
   const { id } = await params;
 
@@ -188,9 +172,6 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const requestStartTime = Date.now();
-  console.log("[PUT /api/vehicles/[id]] Handler started - Lightweight version (no image processing)");
-  
   // Set up total request timeout
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error(`Request timeout after ${TOTAL_TIMEOUT_MS}ms`)), TOTAL_TIMEOUT_MS);
@@ -202,13 +183,9 @@ export async function PUT(
       timeoutPromise
     ]);
     
-    const duration = Date.now() - requestStartTime;
-    console.log(`[PUT /api/vehicles/[id]] Request completed in ${duration}ms`);
     return result;
   } catch (error) {
-    const duration = Date.now() - requestStartTime;
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error(`[PUT /api/vehicles/[id]] Request failed after ${duration}ms:`, errorMessage);
     
     // Check if it's a timeout error
     if (errorMessage.includes("timeout")) {
@@ -218,7 +195,6 @@ export async function PUT(
           error: "Request timeout. The database operation took too long to complete. Please try again.",
           details: {
             type: "timeout_error",
-            duration: duration,
             message: errorMessage
           }
         },
@@ -231,8 +207,7 @@ export async function PUT(
         ok: false, 
         error: errorMessage,
         details: {
-          type: "request_error",
-          duration: duration
+          type: "request_error"
         }
       },
       { status: 500 }
@@ -244,23 +219,16 @@ async function handlePutRequest(
   req: NextRequest,
   params: Promise<{ id: string }>
 ) {
-  const requestStartTime = Date.now();
-  console.log(`[PUT /api/vehicles/[id]] [TIMING] Request started at ${requestStartTime}`);
-
   const session = requireSession(req);
   if (!session) {
-    console.log("[PUT /api/vehicles/[id]] No session found");
     return NextResponse.json({ ok: false, error: "Invalid or expired session" }, { status: 401 });
   }
-
-  console.log(`[PUT /api/vehicles/[id]] Session valid for user: ${session.username}, role: ${session.role}`);
 
   if (session.role !== "Admin") {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }
 
   const { id } = await params;
-  console.log(`[PUT /api/vehicles/[id]] Vehicle ID: ${id}`);
 
   // Validate ID format
   const safeId = sanitizeString(id, 100);
@@ -276,7 +244,6 @@ async function handlePutRequest(
   // This API now only accepts JSON (no FormData)
   // Image uploads are handled directly by the frontend to Cloudinary
   const contentType = req.headers.get("content-type") || "";
-  console.log(`[PUT /api/vehicles/${id}] Content-Type: ${contentType}`);
   
   if (!contentType.includes("application/json")) {
     return NextResponse.json(
@@ -324,13 +291,6 @@ async function handlePutRequest(
                   sanitizeString(body.Image) || 
                   null;
 
-  if (imageId) {
-    console.log(`[PUT /api/vehicles/${vehicleId}] Received image URL from frontend:`, {
-      url: imageId.substring(0, 100) + (imageId.length > 100 ? "..." : ""),
-      isCloudinary: imageId.includes('cloudinary.com'),
-    });
-  }
-
   // Prepare update data (check both capitalized and lowercase keys)
   const updateData: Parameters<typeof updateVehicle>[1] = {
     category,
@@ -352,9 +312,6 @@ async function handlePutRequest(
   }
 
   // Update vehicle in database with timeout
-  const dbStartTime = Date.now();
-  console.log(`[PUT /api/vehicles/${vehicleId}] [TIMING] Starting database update at ${dbStartTime}`);
-  
   let updatedVehicle;
   
   try {
@@ -364,13 +321,8 @@ async function handlePutRequest(
         setTimeout(() => reject(new Error(`Database timeout after ${DB_TIMEOUT_MS}ms`)), DB_TIMEOUT_MS)
       )
     ]);
-    
-    const dbDuration = Date.now() - dbStartTime;
-    console.log(`[PUT /api/vehicles/${vehicleId}] [TIMING] Database update completed in ${dbDuration}ms`);
   } catch (dbError) {
-    const dbDuration = Date.now() - dbStartTime;
     const errorMessage = dbError instanceof Error ? dbError.message : "Unknown database error";
-    console.error(`[PUT /api/vehicles/${vehicleId}] [TIMING] Database update failed after ${dbDuration}ms:`, errorMessage);
     
     return NextResponse.json(
       { 
@@ -378,8 +330,7 @@ async function handlePutRequest(
         error: `Database update failed: ${errorMessage}`,
         details: {
           type: "database_error",
-          message: errorMessage,
-          dbDuration: dbDuration
+          message: errorMessage
         }
       },
       { status: 503 }
@@ -390,29 +341,18 @@ async function handlePutRequest(
     return NextResponse.json({ ok: false, error: "Vehicle not found" }, { status: 404 });
   }
 
-  // Convert to API format and log the response
+  // Convert to API format
   const responseVehicle = dbToVehicle(updatedVehicle);
-  const imageUrl = typeof responseVehicle.Image === "string" ? responseVehicle.Image : "";
-  console.log(`[PUT /api/vehicles/${vehicleId}] Response:`, {
-    vehicleId: responseVehicle.VehicleId,
-    hasImage: !!imageUrl,
-    imageUrl: imageUrl.substring(0, 100) + "..."
-  });
 
   // Clear server-side cache and revalidate
-  const cacheStartTime = Date.now();
   clearCachedVehicles();
   
   // Revalidate Next.js cache tags
   try {
     revalidateTag('vehicles', {});
-    console.log(`[PUT /api/vehicles/${vehicleId}] [TIMING] Cache revalidation completed in ${Date.now() - cacheStartTime}ms`);
   } catch (e) {
-    console.error(`[PUT /api/vehicles/${vehicleId}] Failed to revalidate:`, e);
+    // Silently handle revalidation errors
   }
-  
-  const totalRequestTime = Date.now() - requestStartTime;
-  console.log(`[PUT /api/vehicles/${vehicleId}] [TIMING] ✅ Request completed in ${totalRequestTime}ms`);
   
   return NextResponse.json({ ok: true, data: responseVehicle });
 }
@@ -421,11 +361,8 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log("[DELETE /api/vehicles/[id]] Handler started");
-  
   const session = requireSession(req);
   if (!session) {
-    console.log("[DELETE /api/vehicles/[id]] No session found");
     return NextResponse.json({ ok: false, error: "Invalid or expired session" }, { status: 401 });
   }
 
@@ -434,7 +371,6 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  console.log(`[DELETE /api/vehicles/[id]] Vehicle ID: ${id}`);
 
   // Validate ID format
   const safeId = sanitizeString(id, 100);
@@ -452,15 +388,8 @@ export async function DELETE(
     const vehicle = await getVehicleById(vehicleId);
     
     if (!vehicle) {
-      console.log(`[DELETE /api/vehicles/${vehicleId}] Vehicle not found`);
       return NextResponse.json({ ok: false, error: "Vehicle not found" }, { status: 404 });
     }
-
-    console.log(`[DELETE /api/vehicles/${vehicleId}] Found vehicle:`, {
-      brand: vehicle.brand,
-      model: vehicle.model,
-      hasImage: !!vehicle.image_id
-    });
 
     // If vehicle has a Cloudinary image, delete it
     if (vehicle.image_id) {
@@ -476,17 +405,8 @@ export async function DELETE(
         const folder = urlParts[urlParts.length - 2];
         const fullPublicId = `${folder}/${publicId}`;
         
-        console.log(`[DELETE /api/vehicles/${vehicleId}] Deleting Cloudinary image: ${fullPublicId}`);
-        
-        const deleteResult = await deleteImage(fullPublicId);
-        if (deleteResult.success) {
-          console.log(`[DELETE /api/vehicles/${vehicleId}] Cloudinary image deleted successfully`);
-        } else {
-          console.warn(`[DELETE /api/vehicles/${vehicleId}] Failed to delete Cloudinary image: ${deleteResult.error}`);
-          // Continue with vehicle deletion even if image deletion fails
-        }
-      } else {
-        console.log(`[DELETE /api/vehicles/${vehicleId}] Image is not a Cloudinary URL, skipping image deletion`);
+        // Delete image from Cloudinary (continue even if it fails)
+        await deleteImage(fullPublicId);
       }
     }
 
@@ -494,28 +414,22 @@ export async function DELETE(
     const deleted = await deleteVehicle(vehicleId);
     
     if (!deleted) {
-      console.log(`[DELETE /api/vehicles/${vehicleId}] Database deletion failed`);
       return NextResponse.json({ ok: false, error: "Failed to delete vehicle" }, { status: 500 });
     }
 
-    console.log(`[DELETE /api/vehicles/${vehicleId}] Vehicle deleted successfully`);
-    
     // Clear server-side cache and revalidate
     clearCachedVehicles();
     
     // Revalidate Next.js cache tags
     try {
       revalidateTag('vehicles', {});
-      console.log(`[DELETE /api/vehicles/${vehicleId}] Revalidated vehicles tag`);
     } catch (e) {
-      console.error(`[DELETE /api/vehicles/${vehicleId}] Failed to revalidate:`, e);
+      // Silently handle revalidation errors
     }
     
     return NextResponse.json({ ok: true, data: null });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
-    console.error("[DELETE /api/vehicles/[id]] Error:", message);
-    console.error("[DELETE /api/vehicles/[id]] Stack:", e instanceof Error ? e.stack : "No stack trace");
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

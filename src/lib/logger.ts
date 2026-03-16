@@ -68,7 +68,7 @@ class Logger {
   /**
    * Create a child logger with additional context
    */
-  child(context: string, additionalData?: Record<string, unknown>): Logger {
+  child(context: string): Logger {
     const childLogger = new Logger({
       requestId: this.requestId,
       userId: this.userId,

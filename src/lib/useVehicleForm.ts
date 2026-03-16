@@ -110,6 +110,7 @@ export function useVehicleForm(options: UseVehicleFormOptions): UseVehicleFormRe
   const submitAttemptedRef = useRef(false);
   
   // Update form when initial vehicle changes (but not on every render)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (initialVehicle.VehicleId !== initialVehicleRef.current.VehicleId) {
       setFormData(initialVehicle);

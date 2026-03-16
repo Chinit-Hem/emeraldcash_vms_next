@@ -114,7 +114,7 @@ export interface ServiceStats {
 
 export abstract class BaseService<TEntity extends BaseEntity, TDB extends BaseDBRecord> {
   // Singleton instance storage (static map to support multiple service types)
-  private static instances: Map<string, BaseService<any, any>> = new Map();
+  private static instances: Map<string, BaseService<BaseEntity, BaseDBRecord>> = new Map();
   
   // Instance-level cache
   private cache: Map<string, CacheEntry<unknown>> = new Map();
@@ -157,7 +157,7 @@ export abstract class BaseService<TEntity extends BaseEntity, TDB extends BaseDB
    * Get singleton instance - must be implemented by subclasses
    * Subclasses should override this method with their own implementation
    */
-  public static getInstance(): BaseService<any, any> {
+  public static getInstance(): BaseService<BaseEntity, BaseDBRecord> {
     throw new Error("Subclasses must implement getInstance()");
   }
 
@@ -227,7 +227,6 @@ export abstract class BaseService<TEntity extends BaseEntity, TDB extends BaseDB
    */
   public clearCache(): void {
     this.cache.clear();
-    console.log(`[${this.serviceName}] Cache cleared`);
   }
 
   /**
@@ -393,8 +392,6 @@ export abstract class BaseService<TEntity extends BaseEntity, TDB extends BaseDB
     }
 
     try {
-      const sql = dbManager.getClient();
-      
       // Build base query
       let query = `SELECT * FROM ${this.tableName}`;
       let params: (string | number | null)[] = [];
@@ -441,18 +438,11 @@ export abstract class BaseService<TEntity extends BaseEntity, TDB extends BaseDB
         finalQuery = finalQuery.replace(placeholderRegex, replacement);
       }
 
-      console.log(`[${this.serviceName}.getAll] Final Query:`, finalQuery);
-      
       // Execute query using executeUnsafe with detailed error handling
       let dbRecords: TDB[];
       try {
         dbRecords = await dbManager.executeUnsafe<TDB>(finalQuery);
       } catch (dbError) {
-        console.error(`[${this.serviceName}.getAll] Database query failed:`, {
-          query: finalQuery,
-          error: dbError instanceof Error ? dbError.message : String(dbError),
-          stack: dbError instanceof Error ? dbError.stack : undefined,
-        });
         throw dbError;
       }
       
@@ -476,13 +466,6 @@ export abstract class BaseService<TEntity extends BaseEntity, TDB extends BaseDB
     } catch (error) {
       const duration = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : "Failed to fetch records";
-      const errorStack = error instanceof Error ? error.stack : undefined;
-      
-      console.error(`[${this.serviceName}.getAll] Error:`, {
-        message: errorMessage,
-        stack: errorStack,
-        filters: filters,
-      });
       
       this.logError(error instanceof Error ? error : new Error(String(error)), "getAll");
       
@@ -847,7 +830,7 @@ export abstract class BaseService<TEntity extends BaseEntity, TDB extends BaseDB
 
     try {
       const existsQuery = `SELECT 1 FROM ${this.tableName} WHERE id = ${id} LIMIT 1`;
-      const result = await dbManager.executeUnsafe<any>(existsQuery);
+      const result = await dbManager.executeUnsafe<Record<string, unknown>>(existsQuery);
 
       const exists = result.length > 0;
 

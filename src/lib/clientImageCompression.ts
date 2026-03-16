@@ -20,14 +20,9 @@ const COMPRESSION_TIMEOUT = 15000; // 15 second timeout
 /**
  * Compress an image file using canvas (main thread fallback)
  * @param file - The image file to compress
-<<<<<<< HEAD
- * @param maxWidth - Maximum width in pixels (default: 1200)
+ * @param maxWidth - Maximum width in pixels (default: 800)
  * @param quality - JPEG quality 0-1 (default: 0.6 for speed)
  * @param timeoutMs - Timeout in milliseconds (default: 5000)
-=======
- * @param maxWidth - Maximum width in pixels
- * @param quality - JPEG quality 0-1
->>>>>>> 1d6d06858edb1b454edb1607a9d8c119464b3b64
  * @returns Promise with compressed file and metadata
  */
 async function compressImageMainThread(
@@ -114,14 +109,6 @@ async function compressImageMainThread(
             const originalSize = file.size;
             const compressedSize = blob.size;
             const compressionRatio = ((originalSize - compressedSize) / originalSize) * 100;
-            
-            console.log('[ClientCompression] Image compressed:', {
-              originalSize: `${(originalSize / 1024).toFixed(2)}KB`,
-              compressedSize: `${(compressedSize / 1024).toFixed(2)}KB`,
-              compressionRatio: `${compressionRatio.toFixed(1)}%`,
-              dimensions: `${width}x${height}`,
-              quality: quality
-            });
             
             resolve({
               file: compressedFile,
@@ -216,10 +203,6 @@ export async function processImageForUpload(
 
   // Check if compression is needed
   if (!autoCompress || !shouldCompressImage(file, maxSizeMB)) {
-    console.log('[ClientCompression] Image size OK, no compression needed:', {
-      size: `${(file.size / 1024).toFixed(2)}KB`,
-      maxSize: `${maxSizeMB}MB`
-    });
     return file;
   }
 
@@ -232,14 +215,11 @@ export async function processImageForUpload(
 
     // Only use compressed if it's actually smaller
     if (result.compressedSize < result.originalSize) {
-      console.log('[ClientCompression] Using compressed image');
       return result.file;
     } else {
-      console.log('[ClientCompression] Compressed image not smaller, using original');
       return file;
     }
   } catch (error) {
-    console.warn('[ClientCompression] Compression failed, using original:', error);
     return file;
   }
 }
@@ -272,8 +252,6 @@ export async function compressImage(
   width: number;
   height: number;
 }> {
-  const startTime = performance.now();
-  
   const {
     maxWidth = DEFAULT_MAX_WIDTH,
     maxHeight = DEFAULT_MAX_HEIGHT,
@@ -285,21 +263,12 @@ export async function compressImage(
   // Check if we should use Web Worker
   const workerSupported = isWorkerCompressionSupported();
   const shouldUseWorker = useWorker && workerSupported;
-  
-  console.log('[ClientCompression] Starting compression:', {
-    fileName: file.name,
-    fileSize: `${(file.size / 1024).toFixed(2)}KB`,
-    useWorker: shouldUseWorker,
-    workerSupported,
-    settings: { maxWidth, maxHeight, quality }
-  });
 
   try {
     let result;
     
     if (shouldUseWorker) {
       // Use Web Worker for non-blocking compression
-      console.log('[ClientCompression] Using Web Worker for compression');
       result = await compressImageInWorker(file, {
         maxWidth,
         maxHeight,
@@ -308,12 +277,6 @@ export async function compressImage(
       });
     } else {
       // Fallback to main thread
-      if (!workerSupported) {
-        console.log('[ClientCompression] Web Worker not supported, using main thread');
-      } else {
-        console.log('[ClientCompression] Worker disabled for compatibility, using main thread');
-      }
-      
       result = await compressImageMainThread(file, {
         maxWidth,
         maxHeight,
@@ -322,27 +285,12 @@ export async function compressImage(
       });
     }
 
-    const totalTime = performance.now() - startTime;
-    
-    console.log('[ClientCompression] Compression complete:', {
-      method: shouldUseWorker ? 'Web Worker' : 'Main Thread',
-      totalTime: `${totalTime.toFixed(0)}ms`,
-      originalSize: `${(result.originalSize / 1024).toFixed(2)}KB`,
-      compressedSize: `${(result.compressedSize / 1024).toFixed(2)}KB`,
-      compressionRatio: `${result.compressionRatio.toFixed(1)}%`,
-      dimensions: `${result.width}x${result.height}`
-    });
-
     return result;
     
   } catch (error) {
-    const errorTime = performance.now() - startTime;
-    console.error(`[ClientCompression] Compression failed after ${errorTime.toFixed(0)}ms:`, error);
-    
     // If worker failed, try main thread as fallback
     if (shouldUseWorker && error instanceof Error && 
         (error.message.includes('Worker') || error.message.includes('timeout'))) {
-      console.log('[ClientCompression] Worker failed, falling back to main thread');
       try {
         return await compressImageMainThread(file, {
           maxWidth,
@@ -350,8 +298,8 @@ export async function compressImage(
           quality,
           type
         });
-      } catch (fallbackError) {
-        console.error('[ClientCompression] Main thread fallback also failed:', fallbackError);
+      } catch {
+        // Main thread fallback also failed
       }
     }
     
@@ -432,7 +380,6 @@ export function compressImageProgressive(
   }>;
 } {
   // Quick compression for immediate use (lower quality, smaller size)
-  // useWorker defaults to false in compressImage for compatibility
   const quick = compressImage(file, {
     maxWidth: 400, // Small for fast processing
     maxHeight: 400,
@@ -440,7 +387,6 @@ export function compressImageProgressive(
   });
   
   // Full compression for upload (higher quality, larger size)
-  // useWorker defaults to false in compressImage for compatibility
   const full = compressImage(file, {
     maxWidth: DEFAULT_MAX_WIDTH,
     maxHeight: DEFAULT_MAX_HEIGHT,
