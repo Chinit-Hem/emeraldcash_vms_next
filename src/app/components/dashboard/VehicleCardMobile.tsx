@@ -37,7 +37,7 @@ export default function VehicleCardMobile({
   const price70 = vehicle.Price70 ?? derived.Price70;
 
   // Check if it's a Cloudinary URL first (guard against "undefined" string)
-  const isCloudinary = vehicle.Image && 
+  const isCloudinary = typeof vehicle.Image === 'string' && 
     vehicle.Image !== 'undefined' && 
     vehicle.Image !== 'null' &&
     vehicle.Image.includes('res.cloudinary.com');

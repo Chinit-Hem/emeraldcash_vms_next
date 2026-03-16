@@ -229,7 +229,7 @@ export default function VehicleTable({
               const vehicleId = vehicle.VehicleId;
               
               // Check if it's a Cloudinary URL first (guard against "undefined" string)
-              const isCloudinary = vehicle.Image && 
+              const isCloudinary = typeof vehicle.Image === 'string' && 
                 vehicle.Image !== 'undefined' && 
                 vehicle.Image !== 'null' &&
                 vehicle.Image.includes('res.cloudinary.com');

@@ -780,7 +780,7 @@ export default function VehicleList({ category }: VehicleListProps) {
             const vehicleId = vehicle.VehicleId;
             const displayNo = vehicleId || String(index + 1);
                 // Check if it's a Cloudinary URL first (guard against "undefined" string)
-                const isCloudinary = vehicle.Image && 
+                const isCloudinary = typeof vehicle.Image === 'string' && 
                   vehicle.Image !== 'undefined' && 
                   vehicle.Image !== 'null' &&
                   vehicle.Image.includes('res.cloudinary.com');
@@ -963,7 +963,7 @@ export default function VehicleList({ category }: VehicleListProps) {
                 const displayNo = vehicleId || String(index + 1);
                 
                 // Check if it's a Cloudinary URL first (guard against "undefined" string)
-                const isCloudinaryDesktop = vehicle.Image && 
+                const isCloudinaryDesktop = typeof vehicle.Image === 'string' && 
                   vehicle.Image !== 'undefined' && 
                   vehicle.Image !== 'null' &&
                   vehicle.Image.includes('res.cloudinary.com');
