@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     # Prevent indefinite hanging - fail fast if ESLint takes too long
     timeout-minutes: 5
+    permissions:
+      contents: read
+      statuses: write
     
     steps:
       - name: Checkout code
