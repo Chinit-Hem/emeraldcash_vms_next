@@ -333,20 +333,15 @@ class DatabaseManager {
         
         try {
           // For Neon SDK, we need to use the template literal syntax properly
-          // Split the query into parts and use the tagged template literal
-          const queryParts = query.split('?');
-          if (queryParts.length === 1) {
-            // No placeholders, use simple query
-            const strings = Object.assign([query], { raw: [query] }) as TemplateStringsArray;
-            const result = await sql(strings);
-            return result as T[];
-          } else {
-            // Has placeholders - this shouldn't happen with our current usage
-            // but handle it just in case
-            const strings = Object.assign(queryParts, { raw: queryParts }) as TemplateStringsArray;
-            const result = await sql(strings);
-            return result as T[];
-          }
+          // The Neon SDK's sql function expects a TemplateStringsArray with a 'raw' property
+          // We create a proper template strings array from the raw query string
+          const strings = Object.assign(
+            [query],
+            { raw: [query] }
+          ) as TemplateStringsArray;
+          
+          const result = await sql(strings);
+          return result as T[];
         } catch (execError) {
           // Enhanced error logging with proper serialization
           const errorMessage = execError instanceof Error ? execError.message : String(execError);

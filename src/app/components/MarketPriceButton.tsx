@@ -3,6 +3,7 @@
 import { formatMarketPrice, getConfidenceColor, getConfidenceLabel } from "@/lib/market-price";
 import type { Vehicle } from "@/lib/types";
 import { useState } from "react";
+import { safeToLocaleString, safeNowISO } from "@/lib/safeDate";
 
 interface MarketPriceButtonProps {
   vehicle: Vehicle;
@@ -66,7 +67,7 @@ export function MarketPriceButton({ vehicle, onPriceUpdate, variant = "button" }
         source: result.sources?.[0] || "unknown",
         samples: result.sampleCount || 0,
         confidence: result.confidence || "Unknown",
-        fetchedAt: result.fetchedAt || new Date().toISOString(),
+        fetchedAt: result.fetchedAt || safeNowISO(),
       };
 
       setMarketData(newMarketData);
@@ -173,7 +174,7 @@ export function MarketPriceButton({ vehicle, onPriceUpdate, variant = "button" }
                 <div className="flex justify-between">
                   <span className="text-gray-600">Updated:</span>
                   <span className="font-medium">
-                    {new Date(marketData.fetchedAt).toLocaleString()}
+                    {safeToLocaleString(marketData.fetchedAt, "N/A")}
                   </span>
                 </div>
               </div>

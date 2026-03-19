@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       lastSyncTime: LAST_SYNC_TIME,
       lastSyncError: LAST_SYNC_ERROR,
     });
-  } catch (err) {
+  } catch (_err) {
     return NextResponse.json(
       { error: 'Invalid JSON body' },
       { status: 400 }

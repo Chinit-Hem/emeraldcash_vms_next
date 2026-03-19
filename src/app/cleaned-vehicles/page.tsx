@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthUser } from "@/app/components/AuthContext";
 import TopBar from "@/app/components/TopBar";
 import Sidebar from "@/app/components/Sidebar";
 import MobileBottomNav from "@/app/components/MobileBottomNav";
-import LoadingSkeleton from "@/app/components/LoadingSkeleton";
 import ImageModal from "@/app/components/ImageModal";
 import { GlassToast, useToast } from "@/app/components/ui/GlassToast";
 import { driveThumbnailUrl } from "@/lib/drive";
@@ -40,17 +39,7 @@ export default function CleanedVehiclesPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [filter, setFilter] = useState({ category: "", brand: "" });
 
-  useEffect(() => {
-    if (user === null) {
-      router.push("/login");
-      return;
-    }
-    if (user && user.role) {
-      fetchVehicles();
-    }
-  }, [user, router, filter]);
-
-  const fetchVehicles = async () => {
+  const fetchVehicles = useCallback(async () => {
     setIsLoading(true);
     setError("");
     
@@ -80,7 +69,18 @@ export default function CleanedVehiclesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filter, showErrorToast]);
+
+  useEffect(() => {
+    if (user === null) {
+      router.push("/login");
+      return;
+    }
+    if (user && user.role) {
+      fetchVehicles();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, router]);
 
   // Check if image_id is a Cloudinary URL (guard against "undefined" string)
   const isCloudinaryUrl = (imageId: string | null): boolean => {

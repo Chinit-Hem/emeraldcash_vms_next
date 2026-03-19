@@ -33,14 +33,7 @@ function sanitizeNumber(value: unknown): number | null {
   return null;
 }
 
-function toIntOrNull(value: unknown): number | null {
-  if (typeof value === "number") return Number.isFinite(value) ? Math.trunc(value) : null;
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = Number.parseInt(trimmed, 10);
-  return Number.isFinite(parsed) ? parsed : null;
-}
+// Helper function removed - was not used
 
 export async function GET(
   req: NextRequest,
@@ -81,9 +74,9 @@ export async function GET(
 
     // If not found in database or cache, return 404
     return NextResponse.json({ ok: false, error: "Vehicle not found" }, { status: 404 });
-  } catch (e) {
+  } catch (_e) {
     return NextResponse.json(
-      { ok: false, error: e instanceof Error ? e.message : "Unknown error" },
+      { ok: false, error: _e instanceof Error ? _e.message : "Unknown error" },
       { status: 500 }
     );
   }
@@ -277,7 +270,7 @@ async function handlePutRequest(
   // Revalidate Next.js cache tags
   try {
     revalidateTag('vehicles', {});
-  } catch (e) {
+  } catch {
     // Silently handle revalidation errors
   }
   
@@ -350,13 +343,13 @@ export async function DELETE(
     // Revalidate Next.js cache tags
     try {
       revalidateTag('vehicles', {});
-    } catch (e) {
-      // Silently handle revalidation errors
-    }
+  } catch (_e) {
+    // Silently handle revalidation errors
+  }
     
     return NextResponse.json({ ok: true, data: null });
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Unknown error";
+  } catch (_e: unknown) {
+    const message = _e instanceof Error ? _e.message : "Unknown error";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

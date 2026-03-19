@@ -18,6 +18,7 @@ import type { Vehicle } from "@/lib/types";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { normalizeCategoryLabel } from "@/lib/analytics";
 import { CATEGORY_COLORS } from "@/lib/categoryColors";
+import { safeGetMonthKey } from "@/lib/safeDate";
 
 // ============================================================================
 // Dynamic Chart Imports (ssr: false prevents hydration errors)
@@ -307,6 +308,9 @@ const Icons = {
   ),
 };
 
+// Filter out invalid/placeholder brands that aren't real vehicle brands
+const INVALID_BRANDS = ['DIRECT_DB', 'TEST', 'UNKNOWN', 'N/A', 'NULL', 'NONE', ''];
+
 // ============================================================================
 // Main Dashboard Component
 // ============================================================================
@@ -369,11 +373,12 @@ export default function Dashboard({
       const brand = (vehicle.Brand || "Unknown").toUpperCase();
       stats.byBrand[brand] = (stats.byBrand[brand] || 0) + 1;
 
-      // Monthly aggregation
+      // Monthly aggregation - Safari-safe date parsing
       if (vehicle.Time) {
-        const date = new Date(vehicle.Time);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-        stats.byMonth[monthKey] = (stats.byMonth[monthKey] || 0) + 1;
+        const monthKey = safeGetMonthKey(vehicle.Time);
+        if (monthKey) {
+          stats.byMonth[monthKey] = (stats.byMonth[monthKey] || 0) + 1;
+        }
       }
 
       // Price aggregation (use Price40 as the main price)
@@ -470,9 +475,6 @@ export default function Dashboard({
     ].filter((item) => item.value > 0);
   }, [meta]);
 
-  // Filter out invalid/placeholder brands that aren't real vehicle brands
-  const INVALID_BRANDS = ['DIRECT_DB', 'TEST', 'UNKNOWN', 'N/A', 'NULL', 'NONE', ''];
-
   const brandChartData = useMemo(() => {
     if (!aggregatedStats) return [];
     return Object.entries(aggregatedStats.byBrand)
@@ -501,7 +503,7 @@ export default function Dashboard({
     setIsRefreshing(true);
     try {
       window.location.reload();
-    } catch (err) {
+    } catch {
       setError("Failed to refresh data");
     } finally {
       setIsRefreshing(false);
@@ -529,9 +531,6 @@ export default function Dashboard({
   }
 
   // D. Show data immediately from initialMeta, skeleton only for charts
-  // Fixed: Always show data, meta is now guaranteed to be non-null
-  const showKpiData = !isRefreshing;
-  
   // iOS fix: Use actual data values directly
   const totalVehicles = meta.total;
   const carsCount = meta.countsByCategory.Cars;

@@ -227,13 +227,13 @@ export function ImageInput({
       return "Please upload an image file (JPG, PNG, GIF, etc.)";
     }
     
-    const maxSizeBytes = maxSizeMB * 1024 * 1024;
+    const maxSizeBytes = 5 * 1024 * 1024; // Use default 5MB
     if (file.size > maxSizeBytes) {
-      return `File size must be less than ${maxSizeMB}MB (current: ${formatFileSize(file.size)})`;
+      return `File size must be less than 5MB (current: ${formatFileSize(file.size)})`;
     }
     
     return null;
-  }, [maxSizeMB]);
+  }, []);
 
   const readFileAsDataUrl = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {

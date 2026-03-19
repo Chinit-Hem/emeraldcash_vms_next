@@ -8,8 +8,7 @@
  * @module DashboardServer
  */
 
-import { vehicleService } from "@/services/VehicleService";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import DashboardClient from "./DashboardClient";
 
 // Cache tag for dashboard data
@@ -26,16 +25,16 @@ async function getDashboardData() {
   try {
     console.log("[DashboardServer] Fetching dashboard data...");
     
-    // Use public API endpoint for stats (no auth required)
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    // Use relative URLs to avoid hardcoded base URL issues
+    // This works correctly regardless of how the app is accessed (localhost, IP address, or domain)
     
     // Fetch vehicles and stats in parallel
     const [vehiclesRes, statsRes] = await Promise.all([
-      fetch(`${baseUrl}/api/cleaned-vehicles?limit=1000`, { 
+      fetch("/api/cleaned-vehicles?limit=1000", { 
         cache: "no-store",
         next: { revalidate: 0 }
       }),
-      fetch(`${baseUrl}/api/cleaned-vehicles?stats=full`, { 
+      fetch("/api/cleaned-vehicles?stats=full", { 
         cache: "no-store",
         next: { revalidate: 0 }
       }),

@@ -1,0 +1,235 @@
+/**
+ * LMS Categories API Route
+ * 
+ * GET /api/lms/categories - List all categories (Admin & Staff can view)
+ * POST /api/lms/categories - Create new category (Admin only)
+ * 
+ * @module api/lms/categories
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { lmsService } from "@/services/LmsService";
+import { canAccessLMS, canManageLMS, getSession } from "@/lib/auth-helpers";
+
+// ============================================================================
+// GET /api/lms/categories - Both Admin and Staff can view
+// ============================================================================
+
+export async function GET(request: NextRequest) {
+  const session = getSession(request);
+  
+  if (!session) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized - Please log in" },
+      { status: 401 }
+    );
+  }
+
+  // Both Admin and Staff can view categories for learning
+  if (!canAccessLMS(session)) {
+    return NextResponse.json(
+      { success: false, error: "Access denied - LMS access required" },
+      { status: 403 }
+    );
+  }
+
+  const result = await lmsService.getCategories();
+
+  if (!result.success) {
+    return NextResponse.json(
+      { success: false, error: result.error },
+      { status: 500 }
+    );
+  }
+
+  // Log the first category to debug
+  if (result.data && result.data.length > 0) {
+    console.log("[API /lms/categories] First category from DB:", JSON.stringify(result.data[0], null, 2));
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: result.data,
+    meta: result.meta,
+  });
+}
+
+// ============================================================================
+// POST /api/lms/categories - Admin only
+// ============================================================================
+
+export async function POST(request: NextRequest) {
+  const session = getSession(request);
+  
+  if (!session) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized - Please log in" },
+      { status: 401 }
+    );
+  }
+
+  // Only Admin can create categories
+  if (!canManageLMS(session)) {
+    return NextResponse.json(
+      { success: false, error: "Admin access required to create categories" },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const body = await request.json();
+
+    // Validate required fields
+    if (!body.name || typeof body.name !== "string") {
+      return NextResponse.json(
+        { success: false, error: "Name is required and must be a string" },
+        { status: 400 }
+      );
+    }
+
+    const result = await lmsService.createCategory({
+      name: body.name,
+      description: body.description,
+      icon: body.icon,
+      color: body.color,
+      order_index: body.order_index,
+    });
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: result.data,
+      meta: result.meta,
+    }, { status: 201 });
+  } catch (_error) {
+    return NextResponse.json(
+      { success: false, error: "Invalid request body" },
+      { status: 400 }
+    );
+  }
+}
+
+// ============================================================================
+// PUT /api/lms/categories?id=1 - Admin only
+// ============================================================================
+
+export async function PUT(request: NextRequest) {
+  const session = getSession(request);
+  
+  if (!session) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized - Please log in" },
+      { status: 401 }
+    );
+  }
+
+  // Only Admin can update categories
+  if (!canManageLMS(session)) {
+    return NextResponse.json(
+      { success: false, error: "Admin access required to update categories" },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "id is required" },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+
+    const result = await lmsService.updateCategory(parseInt(id), {
+      name: body.name,
+      description: body.description,
+      icon: body.icon,
+      color: body.color,
+      order_index: body.order_index,
+      is_active: body.is_active,
+    });
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: result.data,
+      meta: result.meta,
+    });
+  } catch (_error) {
+    return NextResponse.json(
+      { success: false, error: "Invalid request body" },
+      { status: 400 }
+    );
+  }
+}
+
+// ============================================================================
+// DELETE /api/lms/categories?id=1 - Admin only
+// ============================================================================
+
+export async function DELETE(request: NextRequest) {
+  const session = getSession(request);
+  
+  if (!session) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized - Please log in" },
+      { status: 401 }
+    );
+  }
+
+  // Only Admin can delete categories
+  if (!canManageLMS(session)) {
+    return NextResponse.json(
+      { success: false, error: "Admin access required to delete categories" },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "id is required" },
+        { status: 400 }
+      );
+    }
+
+    const result = await lmsService.deleteCategory(parseInt(id));
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: result.data,
+      meta: result.meta,
+    });
+  } catch (_error) {
+    return NextResponse.json(
+      { success: false, error: "Failed to delete category" },
+      { status: 500 }
+    );
+  }
+}

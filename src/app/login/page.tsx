@@ -30,8 +30,7 @@ function LoginForm() {
   const [success, setSuccess] = useState("");
   const [isIOSSafari, setIsIOSSafari] = useState(false);
   
-  // Navigation guard to prevent redirect loops
-  const hasRedirected = useRef(false);
+  // Navigation guard ref removed - not needed with current implementation
 
   // Detect iOS Safari on client side
   useEffect(() => {
@@ -129,7 +128,7 @@ function LoginForm() {
           loginResponse: loginData,
           meResponse: meData,
           lastError,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toISOString(), // Safe: no arguments, creates current time
         };
         setDebugInfo(JSON.stringify(debug, null, 2));
         throw new Error(`Session verification failed: ${lastError}`);

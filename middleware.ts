@@ -102,7 +102,14 @@ export function middleware(request: NextRequest) {
   const startTime = Date.now();
   const { pathname } = request.nextUrl;
   const userAgent = getClientUserAgent(request.headers);
-  const requestId = request.headers.get("x-request-id") || crypto.randomUUID();
+  // Fallback for crypto.randomUUID on HTTP environments
+  let requestId: string;
+  try {
+    requestId = request.headers.get("x-request-id") || crypto.randomUUID();
+  } catch {
+    // Fallback when crypto.randomUUID is not available (HTTP instead of HTTPS)
+    requestId = request.headers.get("x-request-id") || `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+  }
 
   try {
     // Skip static/public assets early.

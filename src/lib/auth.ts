@@ -13,7 +13,7 @@ export type SessionPayload = {
   fingerprint: string;
 };
 
-const ephemeralSessionSecret: string | null = null;
+// Session secret is managed by getSessionSecret_() function
 
 /**
  * Generate a session fingerprint
@@ -36,8 +36,8 @@ function getRequestFingerprint(): string {
  */
 export function createSessionCookie(
   payload: Omit<SessionPayload, "ts" | "version" | "fingerprint">,
-  userAgent: string,
-  ip: string
+  _userAgent: string,
+  _ip: string
 ): string {
   const secret = getSessionSecret_();
   
@@ -58,8 +58,8 @@ export function createSessionCookie(
  */
 export function parseSessionCookie(
   session: string,
-  userAgent: string,
-  ip: string
+  _userAgent: string,
+  _ip: string
 ): SessionPayload | null {
   try {
     const secret = getSessionSecret_();
@@ -134,12 +134,12 @@ export function validateSession(payload: SessionPayload): boolean {
  * Get session from request (convenience function)
  */
 export function getSessionFromRequest(
-  userAgent: string,
-  ip: string,
+  _userAgent: string,
+  _ip: string,
   sessionCookie: string | undefined
 ): SessionPayload | null {
   if (!sessionCookie) return null;
-  return parseSessionCookie(sessionCookie, userAgent, ip);
+  return parseSessionCookie(sessionCookie, _userAgent, _ip);
 }
 
 /**

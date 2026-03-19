@@ -151,10 +151,10 @@ export async function POST(req: NextRequest) {
     message: "Login successful"
   });
 
-  // Cookie options for maximum compatibility
+  // Cookie options for maximum compatibility including Safari ITP (Intelligent Tracking Prevention)
   // - httpOnly: prevents JavaScript access (security)
-  // - sameSite: "lax" allows cookies on same-site requests and top-level navigation
-  // - secure: only send over HTTPS (disabled for HTTP dev environments)
+  // - sameSite: "lax" REQUIRED for Safari ITP - allows cookies on same-site requests and top-level navigation
+  // - secure: only send over HTTPS (disabled for HTTP dev environments, REQUIRED for Safari ITP)
   // - path: "/" makes cookie available to all routes
   // - maxAge: 8 hours session duration
   const cookieOptions: {
@@ -165,8 +165,8 @@ export async function POST(req: NextRequest) {
     maxAge: number;
   } = {
     httpOnly: true,
-    sameSite: "lax" as const,
-    secure: isSecureEnvironment,
+    sameSite: "lax" as const, // Safari ITP compatible - allows cookies in 3rd party contexts with user interaction
+    secure: isSecureEnvironment, // Must be true for Safari ITP when on HTTPS
     path: "/",
     maxAge: 60 * 60 * 8, // 8 hours
   };

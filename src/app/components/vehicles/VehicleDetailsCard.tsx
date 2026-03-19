@@ -1,14 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GlassCard } from "../ui/GlassCard";
 import { GlassButton } from "../ui/GlassButton";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import ImageModal from "../ImageModal";
 import { formatCurrency, formatVehicleTime, formatVehicleId } from "@/lib/format";
-import { normalizeCambodiaTimeString } from "@/lib/cambodiaTime";
 import { driveThumbnailUrl, extractDriveFileId } from "@/lib/drive";
 import type { Vehicle } from "@/lib/types";
 import { TAX_TYPE_METADATA } from "@/lib/types";
@@ -130,11 +128,6 @@ export function VehicleDetailsCard({
   };
 
   const displayImageUrl = getImageUrl(vehicle.Image);
-  const isCloudinaryImage = displayImageUrl && 
-    displayImageUrl !== 'undefined' && 
-    displayImageUrl !== 'null' &&
-    displayImageUrl.includes('res.cloudinary.com') || false;
-
   const taxTypeMeta = TAX_TYPE_METADATA.find((tt) => tt.value === vehicle.TaxType);
 
 

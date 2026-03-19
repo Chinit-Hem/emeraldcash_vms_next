@@ -863,3 +863,20 @@ body {
     -webkit-backdrop-filter: blur(12px);
   }
 }
+
+/* Safari iOS smooth scrolling fix for LMS containers */
+.lms-scroll-container,
+[class*="lms"] {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure all scrollable areas in LMS have smooth scrolling on iOS */
+.lms-dashboard,
+.lms-lesson-page,
+.lms-modal,
+.lms-instructions-panel,
+[class*="overflow-y-auto"],
+[class*="overflow-x-auto"],
+[class*="max-h-"] {
+  -webkit-overflow-scrolling: touch;
+}

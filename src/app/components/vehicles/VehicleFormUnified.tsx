@@ -456,7 +456,6 @@ export function VehicleFormUnified({
   modalTitle = "Edit Vehicle",
   className = "",
   children,
-  specialFields,
   disabledSections = [],
   wizardStep = 1,
   totalWizardSteps = 3,

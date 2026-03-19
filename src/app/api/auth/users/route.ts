@@ -116,8 +116,18 @@ function createSuccessResponse(data: Record<string, unknown>, status: number = 2
   );
 }
 
+// Helper to generate request ID with fallback for HTTP environments
+function generateRequestId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    // Fallback when crypto.randomUUID is not available (HTTP instead of HTTPS)
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+  }
+}
+
 export async function GET(req: NextRequest) {
-  const requestId = crypto.randomUUID();
+  const requestId = generateRequestId();
   log("INFO", "GET /api/auth/users - Request started", { requestId });
   
   try {
@@ -166,7 +176,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const requestId = crypto.randomUUID();
+  const requestId = generateRequestId();
   log("INFO", "POST /api/auth/users - Request started", { requestId });
   
   try {
@@ -306,7 +316,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const requestId = crypto.randomUUID();
+  const requestId = generateRequestId();
   log("INFO", "DELETE /api/auth/users - Request started", { requestId });
   
   try {

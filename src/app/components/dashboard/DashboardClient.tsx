@@ -176,7 +176,7 @@ export default function DashboardClient({
     try {
       await onRevalidate();
       setError(null);
-    } catch (err) {
+    } catch {
       setError("Failed to refresh data");
     } finally {
       setIsRefreshing(false);

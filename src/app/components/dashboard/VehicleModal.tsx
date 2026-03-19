@@ -85,11 +85,6 @@ export default function VehicleModal({ isOpen, vehicle, onClose, onSave, uploadP
 
   if (!isOpen) return null;
 
-  // Get progress message for display
-  const progressMessage = uploadProgress?.stage 
-    ? `${uploadProgress.stage.charAt(0).toUpperCase() + uploadProgress.stage.slice(1)}... ${uploadProgress.progress}%`
-    : undefined;
-
   return (
     <VehicleForm
       vehicle={formVehicle}

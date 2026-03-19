@@ -27,6 +27,7 @@ import { onVehicleCacheUpdate } from "@/lib/vehicleCache";
 import { driveThumbnailUrl } from "@/lib/drive";
 import { derivePrices } from "@/lib/pricing";
 import { useRouter } from "next/navigation";
+import { safeParseDate } from "@/lib/safeDate";
 
 // iOS Vehicle Card Component with Image, Expand, and Admin Actions
 interface IOSVehicleCardProps {
@@ -680,14 +681,24 @@ export default function VehiclesClient() {
     }
 
     if (filters.dateFrom) {
-      const fromDate = new Date(filters.dateFrom);
-      result = result.filter((v) => v.Time && new Date(v.Time) >= fromDate);
+      const fromDate = safeParseDate(filters.dateFrom);
+      if (fromDate) {
+        result = result.filter((v) => {
+          const vehicleDate = safeParseDate(v.Time);
+          return vehicleDate && vehicleDate >= fromDate;
+        });
+      }
     }
 
     if (filters.dateTo) {
-      const toDate = new Date(filters.dateTo);
-      toDate.setHours(23, 59, 59, 999); // End of day
-      result = result.filter((v) => v.Time && new Date(v.Time) <= toDate);
+      const toDate = safeParseDate(filters.dateTo);
+      if (toDate) {
+        toDate.setHours(23, 59, 59, 999); // End of day
+        result = result.filter((v) => {
+          const vehicleDate = safeParseDate(v.Time);
+          return vehicleDate && vehicleDate <= toDate;
+        });
+      }
     }
 
     if (filters.yearMin) {
@@ -1038,12 +1049,8 @@ export default function VehiclesClient() {
               </div>
             </div>
 
-            {loading ? (
-              <div className="flex flex-col items-center justify-center rounded-2xl bg-white p-8 shadow-sm dark:bg-gray-900">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600"></div>
-                <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">Loading...</p>
-              </div>
-            ) : error ? (
+            {/* Show content immediately - no loading blocker */}
+            {error ? (
               <div className="rounded-2xl bg-red-50 p-6 text-center shadow-sm dark:bg-red-900/20">
                 <p className="mb-3 text-sm text-red-700 dark:text-red-300">{error}</p>
                 <button
@@ -1366,16 +1373,8 @@ export default function VehiclesClient() {
 
         {/* Content */}
         <div className="ec-glassPanel rounded-2xl overflow-hidden">
-          {/* Loading State */}
-          {loading && (
-            <div className="p-12 flex flex-col items-center justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Loading vehicles...</p>
-            </div>
-          )}
-
-          {/* Error State */}
-          {!loading && error && (
+          {/* Error State - Show immediately without waiting for loading */}
+          {error && (
             <div className="p-8 text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
                 <svg

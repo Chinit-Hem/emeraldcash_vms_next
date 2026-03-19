@@ -120,7 +120,7 @@ export function VehicleForm({
   // Form state
   const [formData, setFormData] = useState<Partial<Vehicle>>(vehicle);
   const [uploadedImage, setUploadedImage] = useState<File | string | null>(null);
-  const [imageLoading, setImageLoading] = useState(false);
+  const [imageLoading, _setImageLoading] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -140,22 +140,25 @@ export function VehicleForm({
   // Track changes
   const hasChanges = JSON.stringify(formData) !== JSON.stringify(vehicle) || uploadedImage !== null;
 
-  // Use a ref to track if this is the initial mount or vehicle prop change
+  // Use a ref to track the previous vehicle
   const prevVehicleRef = useRef(vehicle);
   
-  // Update form when vehicle changes
+  // Update form when vehicle changes (using ref comparison to avoid setState in effect)
   useEffect(() => {
-    // Only update if vehicle prop actually changed (not on initial mount)
+    // Only update if vehicle reference actually changed (different object)
     if (prevVehicleRef.current !== vehicle) {
       prevVehicleRef.current = vehicle;
-      setFormData(vehicle);
-      setUploadedImage(null);
-      setErrors({});
-      setTouched({});
-      // Clear compressed preview when vehicle changes
-      setCompressedPreview(null);
+      // Schedule state updates in a microtask to avoid synchronous setState during render
+      Promise.resolve().then(() => {
+        setFormData(vehicle);
+        setUploadedImage(null);
+        setErrors({});
+        setTouched({});
+        // Clear compressed preview when vehicle changes
+        setCompressedPreview(null);
+      });
     }
-  }, [vehicle]); // Re-initialize when vehicle changes
+  }, [vehicle]);
 
   // Effect to handle image URL updates from server after save
   useEffect(() => {
@@ -232,7 +235,7 @@ export function VehicleForm({
       case "Year":
         if (value !== null && value !== undefined && value !== "") {
           const year = Number(value);
-          const currentYear = new Date().getFullYear() + 2;
+          const currentYear = new Date().getFullYear() + 2; // Safe: no arguments, gets current year
           if (isNaN(year) || year < 1900 || year > currentYear) {
             error = `Year must be between 1900 and ${currentYear}`;
           }

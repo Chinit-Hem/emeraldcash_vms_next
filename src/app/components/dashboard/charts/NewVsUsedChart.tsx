@@ -14,12 +14,6 @@ import { useEffect, useRef, useState } from "react";
 import type { PieDatum } from "@/lib/analytics";
 import { useMounted } from "@/lib/useMounted";
 
-// Dynamic import with ssr: false to prevent hydration errors
-const RechartsPieChart = dynamic(
-  () => import("./RechartsPieChart").then((mod) => mod.default),
-  { ssr: false, loading: () => <ChartSkeleton /> }
-);
-
 type NewVsUsedChartProps = {
   data: PieDatum[];
 };

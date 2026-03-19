@@ -91,7 +91,6 @@ function ViewVehicleInner() {
   })();
 
   // Load vehicle data (client-side only)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!id || !isMounted) return;
 
@@ -216,7 +215,6 @@ function ViewVehicleInner() {
   }, [shouldAutoPrint, vehicle]);
 
   // Listen for cache updates to refresh vehicle data when it changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     return onVehicleCacheUpdate((vehicles) => {
       const updatedVehicle = vehicles.find((v) => v.VehicleId === id);

@@ -84,17 +84,7 @@ function normalizeCategoryFromSheet(value: unknown): string {
   return raw;
 }
 
-function normalizeCategoryToSheet(value: unknown): string {
-  const raw = toStringValue(value).trim();
-  const normalized = raw.toLowerCase();
-  if (!normalized) return "";
-
-  if (normalized === "cars" || normalized === "car") return "Car";
-  if (normalized === "motorcycles" || normalized === "motorcycle") return "Motorcycle";
-  if (normalized === "tuktuk" || normalized === "tuk tuk" || normalized === "tuk-tuk") return "Tuk Tuk";
-
-  return raw;
-}
+// Function removed - was not used
 
 // Apps Script URL builder
 export function appsScriptUrl(baseUrl: string, action?: string): string {

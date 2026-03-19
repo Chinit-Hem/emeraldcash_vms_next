@@ -2,7 +2,8 @@
 
 import { BookOpen, Car, LayoutDashboard, Settings } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import type { LucideIcon } from "lucide-react";
 import { isIOSSafariBrowser } from "@/lib/platform";
 import { useMounted } from "@/lib/useMounted";
@@ -22,7 +23,15 @@ const navItems: NavItem[] = [
 
 export default function MobileBottomNav() {
   const pathname = usePathname() || "/";
+  const router = useRouter();
   const isIOSSafari = useMounted() && isIOSSafariBrowser();
+
+  // Prefetch all navigation routes on mount for instant navigation
+  useEffect(() => {
+    navItems.forEach((item) => {
+      router.prefetch(item.href);
+    });
+  }, [router]);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/" || pathname === "/dashboard";
@@ -48,7 +57,8 @@ export default function MobileBottomNav() {
             <Link
               key={item.label}
               href={item.href}
-              className={`flex min-w-[84px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 transition-colors duration-200 ${
+              prefetch={true}
+              className={`flex min-w-[84px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 ${
                 active
                   ? "border border-[var(--glass-border-strong)] bg-[var(--accent-green-soft)] text-[var(--accent-green)]"
                   : "text-[var(--text-secondary)] hover:text-[var(--accent-green)]"

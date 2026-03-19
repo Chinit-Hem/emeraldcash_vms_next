@@ -13,12 +13,6 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import type { PieDatum } from "@/lib/analytics";
 
-// Dynamic import with ssr: false to prevent hydration errors
-const RechartsPieChart = dynamic(
-  () => import("./RechartsPieChart").then((mod) => mod.default),
-  { ssr: false, loading: () => <ChartSkeleton /> }
-);
-
 type VehiclesByCategoryChartProps = {
   data: PieDatum[];
 };

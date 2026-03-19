@@ -11,7 +11,7 @@ function normalizeCategory(value: unknown) {
 }
 
 // Icon Components with consistent styling
-function IconVehicles({ active }: { active: boolean }) {
+function IconVehicles() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -32,7 +32,7 @@ function IconVehicles({ active }: { active: boolean }) {
   );
 }
 
-function IconDashboard({ active }: { active: boolean }) {
+function IconDashboard() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -53,7 +53,7 @@ function IconDashboard({ active }: { active: boolean }) {
   );
 }
 
-function IconCar({ active }: { active: boolean }) {
+function IconCar() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -74,7 +74,7 @@ function IconCar({ active }: { active: boolean }) {
   );
 }
 
-function IconMotorcycle({ active }: { active: boolean }) {
+function IconMotorcycle() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -96,7 +96,7 @@ function IconMotorcycle({ active }: { active: boolean }) {
   );
 }
 
-function IconTukTuk({ active }: { active: boolean }) {
+function IconTukTuk() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -117,7 +117,7 @@ function IconTukTuk({ active }: { active: boolean }) {
   );
 }
 
-function IconAdd({ active }: { active: boolean }) {
+function IconAdd() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -137,7 +137,7 @@ function IconAdd({ active }: { active: boolean }) {
   );
 }
 
-function IconSettings({ active }: { active: boolean }) {
+function IconSettings() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -156,7 +156,7 @@ function IconSettings({ active }: { active: boolean }) {
   );
 }
 
-function IconLms({ active }: { active: boolean }) {
+function IconLms() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -230,7 +230,7 @@ function NavItem({
   count,
 }: {
   href: string;
-  icon: ({ active }: { active: boolean }) => React.ReactNode;
+  icon: () => React.ReactNode;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -246,7 +246,7 @@ function NavItem({
       aria-current={active ? "page" : undefined}
       aria-label={label}
     >
-      <Icon active={active} />
+      <Icon />
       <span className="truncate flex-1 text-left">{label}</span>
       {count !== undefined && count > 0 && (
         <span className="ml-auto rounded-full border border-[var(--glass-border-strong)] bg-[var(--accent-green-soft)] px-2 py-0.5 text-xs font-medium text-[var(--accent-green)]">
@@ -266,7 +266,7 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-// Collapsible Section Component - Smooth accordion
+// Collapsible Section Component - Instant accordion (no transition delay)
 function CollapsibleSection({
   title,
   icon: Icon,
@@ -275,7 +275,7 @@ function CollapsibleSection({
   active = false,
 }: {
   title: string;
-  icon: ({ active }: { active: boolean }) => React.ReactNode;
+  icon: () => React.ReactNode;
   children: React.ReactNode;
   defaultOpen?: boolean;
   active?: boolean;
@@ -290,14 +290,14 @@ function CollapsibleSection({
         aria-expanded={isOpen}
         aria-controls={`section-${title.toLowerCase().replace(/\s+/g, "-")}`}
       >
-        <Icon active={active} />
+        <Icon />
         <span className="truncate flex-1 text-left">{title}</span>
         <IconChevron open={isOpen} />
       </button>
       <div
         id={`section-${title.toLowerCase().replace(/\s+/g, "-")}`}
-        className={`mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${
-          isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        className={`mt-1 space-y-1 overflow-hidden ${
+          isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0 hidden"
         }`}
       >
         {children}
@@ -306,12 +306,35 @@ function CollapsibleSection({
   );
 }
 
+// Main routes to prefetch for instant navigation
+const MAIN_ROUTES = [
+  "/",
+  "/lms",
+  "/vehicles",
+  "/vehicles?category=Cars",
+  "/vehicles?category=Motorcycles",
+  "/vehicles?category=Tuk+Tuk",
+  "/settings",
+  "/admin/lms",
+  "/vehicles/add",
+];
+
 export default function Sidebar({ user, onNavigate }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [meta, setMeta] = useState<VehicleMeta | null>(null);
   const isMounted = useMounted();
+
+  // Prefetch all main routes on mount for instant navigation
+  useEffect(() => {
+    if (!isMounted) return;
+    
+    // Prefetch routes in the background
+    MAIN_ROUTES.forEach((route) => {
+      router.prefetch(route);
+    });
+  }, [router, isMounted]);
 
   // Fetch meta data for category counts (client-side only)
   useEffect(() => {
@@ -375,9 +398,12 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
   const isAdminLmsActive = pathname.startsWith("/admin/lms");
   const isSettingsActive = pathname === "/settings";
 
+  // Optimized navigation handler - immediate execution
   const handleNavigate = (href: string) => {
-    router.push(href);
+    // Close sidebar immediately if callback provided
     onNavigate?.();
+    // Navigate immediately without deferral
+    router.push(href);
   };
 
   // Get counts from meta

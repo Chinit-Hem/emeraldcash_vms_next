@@ -13,12 +13,6 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import type { BarDatum } from "@/lib/analytics";
 
-// Dynamic import with ssr: false to prevent hydration errors
-const RechartsBarChart = dynamic(
-  () => import("./RechartsBarChart").then((mod) => mod.default),
-  { ssr: false, loading: () => <ChartSkeleton /> }
-);
-
 type VehiclesByBrandChartProps = {
   data: BarDatum[];
 };

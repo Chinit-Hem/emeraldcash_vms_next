@@ -119,13 +119,15 @@ function AppShellContent({ children }: AppShellProps) {
     };
   }, [router]);
 
-  // Close sidebar when pathname changes (using layout effect to avoid setState in render warning)
+  // Close sidebar when pathname changes - use flushSync for immediate effect
+  const prevPathnameRef = useRef(pathname);
   useEffect(() => {
-    // Use requestAnimationFrame to defer state update to next frame
-    const rafId = requestAnimationFrame(() => {
-      setIsSidebarOpen(false);
-    });
-    return () => cancelAnimationFrame(rafId);
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      // Schedule state update to avoid synchronous setState warning
+      const timeoutId = setTimeout(() => setIsSidebarOpen(false), 0);
+      return () => clearTimeout(timeoutId);
+    }
   }, [pathname]);
 
   // iOS-safe classes with mobile-first responsive design
@@ -186,7 +188,7 @@ function AppShellContent({ children }: AppShellProps) {
           </Suspense>
         </div>
 
-        {/* Mobile drawer - Premium glass slide-over with proper z-index */}
+        {/* Mobile drawer - Instant slide-over with proper z-index */}
         {isSidebarOpen && (
           <div 
             className="fixed inset-0 z-[60] lg:hidden"
@@ -195,12 +197,12 @@ function AppShellContent({ children }: AppShellProps) {
             }}
           >
             <div
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
+              className="absolute inset-0 bg-black/50"
               onClick={() => setIsSidebarOpen(false)}
               aria-hidden="true"
             />
             <div 
-              className="absolute inset-y-0 left-0 w-[280px] max-w-[85vw] h-full bg-white dark:bg-slate-800 overflow-hidden shadow-2xl animate-in slide-in-from-left duration-300"
+              className="absolute inset-y-0 left-0 w-[280px] max-w-[85vw] h-full bg-white dark:bg-slate-800 overflow-hidden shadow-2xl"
               role="dialog"
               aria-modal="true"
               aria-label="Navigation menu"

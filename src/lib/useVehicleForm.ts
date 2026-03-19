@@ -119,7 +119,7 @@ export function useVehicleForm(options: UseVehicleFormOptions): UseVehicleFormRe
       initialVehicleRef.current = initialVehicle;
       submitAttemptedRef.current = false;
     }
-  }, [initialVehicle.VehicleId, initialVehicle.Image]);
+  }, [initialVehicle]);
   
   // Compute derived prices
   const derivedPrices = useMemo(() => {
@@ -444,5 +444,4 @@ export function useVehicleForm(options: UseVehicleFormOptions): UseVehicleFormRe
 // Export Types
 // ============================================================================
 
-export type { Vehicle };
 export { CATEGORY_OPTIONS, REQUIRED_FIELDS };

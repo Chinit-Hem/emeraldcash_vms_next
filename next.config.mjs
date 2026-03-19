@@ -22,7 +22,9 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline' https:",
   "img-src 'self' data: blob: https://drive.google.com https://*.googleusercontent.com https://*.googleapis.com https://res.cloudinary.com https:",
   "font-src 'self' data: https:",
-  "connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.googleusercontent.com https://api.cloudinary.com https:",
+  "connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.googleusercontent.com https://api.cloudinary.com https://www.youtube.com https://*.youtube.com https:",
+  "frame-src 'self' https://www.youtube.com https://*.youtube.com",
+  "child-src 'self' https://www.youtube.com https://*.youtube.com",
 ].join("; ");
 
 const securityHeaders = [

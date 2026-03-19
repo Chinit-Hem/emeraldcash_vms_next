@@ -21,8 +21,6 @@ interface VehicleTableProps {
 
 type SortableField = "Brand" | "Model" | "Year" | "PriceNew" | "Condition" | "Category" | "Plate";
 
-const SORTABLE_FIELDS: SortableField[] = ["Brand", "Model", "Year", "PriceNew", "Condition", "Category", "Plate"];
-
 // SortHeader component - defined outside of VehicleTable to avoid "created during render" error
 interface SortHeaderProps {
   field: SortableField;
