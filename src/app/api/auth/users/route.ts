@@ -1,25 +1,19 @@
-import { requireSession } from "@/lib/auth";
-import { createUser, deleteUser, listUsers } from "@/lib/userStore";
-import type { Role } from "@/lib/types";
-import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/auth-helpers";
 import {
-  isValidationError,
   isDuplicateError,
   isNotFoundError,
+  isValidationError,
 } from "@/lib/errors";
+import { generateRequestId, log } from "@/lib/logger";
+import type { Role } from "@/lib/types";
+import { createUser, deleteUser, listUsers } from "@/lib/userStore";
+import { NextRequest, NextResponse } from "next/server";
 
 // Validation constants
 const USERNAME_REGEX = /^[a-z0-9._-]{3,32}$/;
 const MIN_PASSWORD_LENGTH = 4;
 const MAX_PASSWORD_LENGTH = 72;
 const VALID_ROLES: Role[] = ["Admin", "Staff"];
-
-// Logger utility for structured logging
-function log(level: "INFO" | "ERROR" | "DEBUG" | "WARN", message: string, meta?: Record<string, unknown>): void {
-  const timestamp = new Date().toISOString();
-  const metaStr = meta ? ` ${JSON.stringify(meta)}` : "";
-  console.log(`[${timestamp}] [${level}] [API_USERS] ${message}${metaStr}`);
-}
 
 // Security headers for all responses
 const securityHeaders = {
@@ -116,59 +110,25 @@ function createSuccessResponse(data: Record<string, unknown>, status: number = 2
   );
 }
 
-// Helper to generate request ID with fallback for HTTP environments
-function generateRequestId(): string {
-  try {
-    return crypto.randomUUID();
-  } catch {
-    // Fallback when crypto.randomUUID is not available (HTTP instead of HTTPS)
-    return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-  }
-}
+
+export const dynamic = 'force-static';
 
 export async function GET(req: NextRequest) {
-  const requestId = generateRequestId();
-  log("INFO", "GET /api/auth/users - Request started", { requestId });
-  
   try {
-    // Authenticate session
-    const session = requireSession(req);
-    if (!session) {
-      log("WARN", "GET /api/auth/users - Unauthorized access attempt", { requestId });
-      return createErrorResponse("Invalid or expired session", "unauthorized", 401);
+    // Authenticate session (minimal logging)
+    const session = getSession(req);
+    if (!session || session.role !== "Admin") {
+      return createErrorResponse("Admin access required", "forbidden", 403);
     }
 
-    // Authorize admin access
-    if (session.role !== "Admin") {
-      log("WARN", "GET /api/auth/users - Forbidden access attempt", { 
-        requestId, 
-        username: session.username,
-        role: session.role 
-      });
-      return createErrorResponse("Forbidden. Admin access required.", "forbidden", 403);
-    }
-
-    log("DEBUG", "GET /api/auth/users - Fetching users", { requestId, admin: session.username });
-    
-    // Fetch users
+    // Fetch users (cached in userStore)
     const users = await listUsers();
-    
-    log("INFO", "GET /api/auth/users - Success", { 
-      requestId, 
-      userCount: users.length,
-      admin: session.username 
-    });
     
     return createSuccessResponse({ users });
   } catch (error) {
-    log("ERROR", "GET /api/auth/users - Unexpected error", { 
-      requestId,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    });
-    
+    console.error("[GET /api/auth/users] Error:", error);
     return createErrorResponse(
-      "Failed to retrieve users from database", 
+      "Failed to retrieve users", 
       "internal_error", 
       500
     );
@@ -181,7 +141,7 @@ export async function POST(req: NextRequest) {
   
   try {
     // Authenticate session
-    const session = requireSession(req);
+    const session = getSession(req);
     if (!session) {
       log("WARN", "POST /api/auth/users - Unauthorized access attempt", { requestId });
       return createErrorResponse("Invalid or expired session", "unauthorized", 401);
@@ -315,26 +275,16 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function PUT(req: NextRequest) {
   const requestId = generateRequestId();
-  log("INFO", "DELETE /api/auth/users - Request started", { requestId });
+  log("INFO", "PUT /api/auth/users - Request started", { requestId });
   
   try {
     // Authenticate session
-    const session = requireSession(req);
+    const session = getSession(req);
     if (!session) {
-      log("WARN", "DELETE /api/auth/users - Unauthorized access attempt", { requestId });
+      log("WARN", "PUT /api/auth/users - Unauthorized access attempt", { requestId });
       return createErrorResponse("Invalid or expired session", "unauthorized", 401);
-    }
-
-    // Authorize admin access
-    if (session.role !== "Admin") {
-      log("WARN", "DELETE /api/auth/users - Forbidden access attempt", { 
-        requestId, 
-        username: session.username,
-        role: session.role 
-      });
-      return createErrorResponse("Forbidden. Admin access required.", "forbidden", 403);
     }
 
     // Parse request body
@@ -342,81 +292,71 @@ export async function DELETE(req: NextRequest) {
     try {
       body = await req.json();
     } catch (parseError) {
-      log("WARN", "DELETE /api/auth/users - Invalid JSON body", { 
+      log("WARN", "PUT /api/auth/users - Invalid JSON body", { 
         requestId,
         error: parseError instanceof Error ? parseError.message : String(parseError)
       });
       return createErrorResponse("Invalid JSON in request body", "invalid_json", 400);
     }
 
-    log("DEBUG", "DELETE /api/auth/users - Request body received", { 
-      requestId,
-      hasUsername: !!body.username
-    });
-
-    // Validate username
-    const usernameValidation = validateUsername(body.username);
-    if (usernameValidation.valid === false) {
-      log("WARN", "DELETE /api/auth/users - Username validation failed", { 
+    const targetUsername = (body.username as string) || session.username;
+    
+    // Users can only update their own profile unless they're an admin
+    if (session.username !== targetUsername && session.role !== "Admin") {
+      log("WARN", "PUT /api/auth/users - Forbidden: can only update own profile", { 
         requestId,
-        error: usernameValidation.error 
+        username: session.username,
+        targetUsername
       });
-      return createErrorResponse(usernameValidation.error, "invalid_username", 400);
+      return createErrorResponse("Can only update your own profile", "forbidden", 403);
     }
 
-    log("DEBUG", "DELETE /api/auth/users - Deleting user", { 
+    log("DEBUG", "PUT /api/auth/users - Ensuring table migrated", { requestId });
+    
+    // Ensure table has profile columns
+    const { migrateUsersTable } = await import("@/lib/user-db");
+    await migrateUsersTable();
+
+    log("DEBUG", "PUT /api/auth/users - Updating profile", { 
       requestId,
-      targetUsername: usernameValidation.value,
+      targetUsername,
       requestedBy: session.username
     });
 
-    // Delete user
-    const result = await deleteUser({
-      username: usernameValidation.value,
-      requestedBy: session.username,
+    // Update user profile
+    const { updateUserProfileInDB } = await import("@/lib/user-db");
+    const updatedUser = await updateUserProfileInDB({
+      username: targetUsername,
+      full_name: body.full_name as string | undefined,
+      email: body.email as string | undefined,
+      phone: body.phone as string | undefined,
+      bio: body.bio as string | undefined,
+      profile_picture: body.profile_picture as string | undefined,
     });
 
-    if (result.ok === false) {
-      const code = result.code;
-      const errorMessage = result.error;
-      
-      log("WARN", "DELETE /api/auth/users - User deletion failed", { 
-        requestId,
-        code,
-        error: errorMessage,
-        targetUsername: usernameValidation.value,
-        requestedBy: session.username
-      });
-      
-      // Map error codes to appropriate HTTP status codes
-      const statusMap: Record<string, number> = {
-        "not_found": 404,
-        "self_delete_forbidden": 403,
-        "last_admin_forbidden": 409,
-        "invalid_username": 400,
-        "database_error": 500,
-      };
-      
-      const status = statusMap[code] || 400;
-      return createErrorResponse(errorMessage, code, status);
-    }
-
-    log("INFO", "DELETE /api/auth/users - User deleted successfully", { 
+    log("INFO", "PUT /api/auth/users - Profile updated successfully", { 
       requestId,
-      deletedUsername: result.user.username,
-      deletedRole: result.user.role,
-      requestedBy: session.username
+      username: updatedUser.username
     });
 
-    return createSuccessResponse({ user: result.user });
+    return createSuccessResponse({ 
+      user: {
+        username: updatedUser.username,
+        role: updatedUser.role,
+        full_name: updatedUser.full_name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        bio: updatedUser.bio,
+        profile_picture: updatedUser.profile_picture,
+      }
+    });
   } catch (error) {
-    log("ERROR", "DELETE /api/auth/users - Unexpected error", { 
+    log("ERROR", "PUT /api/auth/users - Unexpected error", { 
       requestId,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     });
     
-    // Check for specific error types
     if (isNotFoundError(error)) {
       return createErrorResponse("User not found", "not_found", 404);
     }
@@ -426,9 +366,50 @@ export async function DELETE(req: NextRequest) {
     }
     
     return createErrorResponse(
-      "Failed to delete user", 
+      "Failed to update profile", 
       "internal_error", 
       500
     );
   }
+}
+
+// Simplified mutations with cache invalidation
+export async function DELETE(req: NextRequest) {
+  import("@/lib/userStore").then(m => m.invalidateUsersCache());
+  
+  const session = getSession(req);
+  if (!session || session.role !== "Admin") {
+    return createErrorResponse("Admin access required", "forbidden", 403);
+  }
+
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return createErrorResponse("Invalid JSON", "invalid_json", 400);
+  }
+
+  const usernameValidation = validateUsername(body.username);
+  if (usernameValidation.valid === false) {
+    return createErrorResponse(usernameValidation.error, "invalid_username", 400);
+  }
+
+  const result = await deleteUser({
+    username: usernameValidation.value,
+    requestedBy: session.username,
+  });
+
+  if (result.ok === false) {
+    const statusMap: Record<string, number> = {
+      "not_found": 404,
+      "self_delete_forbidden": 403,
+      "last_admin_forbidden": 409,
+      "invalid_username": 400,
+      "database_error": 500,
+    };
+    const status = statusMap[result.code || ''] || 400;
+    return createErrorResponse(result.error, result.code, status);
+  }
+
+  return createSuccessResponse({ user: result.user });
 }

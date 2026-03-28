@@ -25,8 +25,8 @@ import {
   CheckCircle2,
   X,
 } from "lucide-react";
-import { GlassCard } from "../ui/GlassCard";
-import { GlassButton } from "../ui/GlassButton";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { extractYoutubeVideoId } from "@/lib/lms-schema";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
 

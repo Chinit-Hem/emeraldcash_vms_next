@@ -11,11 +11,14 @@
     "build": "next build --webpack",
     "start": "next start",
     "preview": "npm run build && next start",
-    "lint": "eslint src --ext .ts,.tsx --max-warnings 200"
+    "lint": "eslint src --ext .ts,.tsx --max-warnings 200",
+    "test:db": "node scripts/test-neon-connection.mjs",
+    "db:check": "node scripts/test-neon-connection.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@neondatabase/serverless": "^1.0.2",
+    "@vercel/kv": "^3.0.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
     "d3-time-format": "^4.1.0",
@@ -29,7 +32,7 @@
     "react-hook-form": "^7.71.1",
     "react-player": "^3.4.0",
     "recharts": "^3.7.0",
-    "swr": "^2.4.0",
+    "swr": "^2.4.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {

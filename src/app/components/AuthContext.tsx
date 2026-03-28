@@ -2,9 +2,15 @@
 
 import type { User } from "@/lib/types";
 import type { ReactNode } from "react";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 
-const AuthUserContext = createContext<User | null>(null);
+interface AuthContextType {
+  user: User | null;
+  updateProfile: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>;
+  refreshUser: () => Promise<void>;
+}
+
+const AuthUserContext = createContext<AuthContextType | null>(null);
 
 // Safe default user to prevent crashes
 const DEFAULT_USER: User = {
@@ -12,28 +18,82 @@ const DEFAULT_USER: User = {
   role: "Staff",
 };
 
-export function AuthUserProvider({ user, children }: { user: User; children: ReactNode }) {
-  return <AuthUserContext.Provider value={user}>{children}</AuthUserContext.Provider>;
+export function AuthUserProvider({ user: initialUser, children }: { user: User; children: ReactNode }) {
+  const [user, setUser] = useState<User>(initialUser);
+
+  const updateProfile = useCallback(async (data: Partial<User>): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch("/api/auth/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: user?.username,
+          ...data,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.ok) {
+        return { success: false, error: result.error || "Failed to update profile" };
+      }
+
+      // Update local user state
+      setUser((prev) => prev ? { ...prev, ...result.user } : prev);
+      return { success: true };
+    } catch (error) {
+      console.error("[AuthContext] Error updating profile:", error);
+      return { success: false, error: "Network error" };
+    }
+  }, [user?.username]);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const response = await fetch("/api/auth/me");
+      const result = await response.json();
+      
+      if (result.ok && result.user) {
+        setUser(result.user);
+      }
+    } catch (error) {
+      console.error("[AuthContext] Error refreshing user:", error);
+    }
+  }, []);
+
+  return (
+    <AuthUserContext.Provider value={{ user, updateProfile, refreshUser }}>
+      {children}
+    </AuthUserContext.Provider>
+  );
 }
 
 export function useAuthUser(): User {
-  const user = useContext(AuthUserContext);
+  const context = useContext(AuthUserContext);
   // Return safe default instead of throwing to prevent app crashes
-  if (!user) {
+  if (!context) {
     console.warn("[AuthContext] useAuthUser called without provider, returning default user");
     return DEFAULT_USER;
   }
-  return user;
+  return context.user || DEFAULT_USER;
 }
 
 export function useOptionalAuthUser(): User | null {
-  return useContext(AuthUserContext);
+  const context = useContext(AuthUserContext);
+  return context?.user || null;
 }
 
 export function useAuthStatus(): { isAuthenticated: boolean; user: User } {
-  const user = useContext(AuthUserContext);
+  const context = useContext(AuthUserContext);
   return {
-    isAuthenticated: !!user,
-    user: user || DEFAULT_USER,
+    isAuthenticated: !!context?.user,
+    user: context?.user || DEFAULT_USER,
   };
+}
+
+export function useAuthContext(): AuthContextType {
+  const context = useContext(AuthUserContext);
+  if (!context) {
+    throw new Error("useAuthContext must be used within AuthUserProvider");
+  }
+  return context;
 }

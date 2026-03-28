@@ -73,7 +73,7 @@ export function useVehicle(id: string): UseVehicleResult {
         throw new Error(data.error || `Failed to fetch vehicle: ${res.status}`);
       }
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       const fetchedVehicle = data.data || data.vehicle;
 
       if (!fetchedVehicle) {

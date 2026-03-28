@@ -223,3 +223,81 @@ export function buildMonthlyAdded(vehicles: Vehicle[]): BarDatum[] {
   const range = monthRange(keys[0], keys[keys.length - 1]);
   return range.map((month) => ({ name: month, value: monthCounts.get(month) ?? 0 }));
 }
+
+// ============================================================================
+// Shared Vehicle Meta Computation - Eliminates duplicate code across components
+// ============================================================================
+
+import type { VehicleMeta } from "@/lib/types";
+import { extractDriveFileId } from "@/lib/drive";
+
+/**
+ * Compute vehicle metadata from an array of vehicles
+ * Defensive programming: handles undefined/null inputs safely
+ * 
+ * This function consolidates the duplicate computeVehicleMeta logic from:
+ * - VehiclesClient.tsx
+ * - DashboardClient.tsx (via aggregatedStats)
+ * 
+ * @param vehicles - Array of vehicles (or undefined/null)
+ * @returns VehicleMeta object with computed statistics
+ */
+export function computeVehicleMeta(vehicles: Vehicle[] | undefined | null): VehicleMeta {
+  // Safe default return for undefined/null input
+  const safeVehicles = vehicles ?? [];
+  
+  return {
+    total: safeVehicles.length,
+    countsByCategory: {
+      Cars: safeVehicles.filter(v => normalizeCategoryLabel(v?.Category) === "Cars").length,
+      Motorcycles: safeVehicles.filter(v => normalizeCategoryLabel(v?.Category) === "Motorcycles").length,
+      TukTuks: safeVehicles.filter(v => normalizeCategoryLabel(v?.Category) === "TukTuks").length,
+    },
+    avgPrice: safeVehicles.length > 0
+      ? safeVehicles.reduce((sum, v) => sum + (v?.PriceNew || 0), 0) / safeVehicles.length
+      : 0,
+    noImageCount: safeVehicles.filter(v => {
+      // Check both Image field and thumbnail_url (if available in the vehicle object)
+      const hasImage = v?.Image && extractDriveFileId(v.Image);
+      // For vehicles with thumbnail_url stored separately, we need to check that too
+      // The vehicle object from API should have Image field populated with thumbnail_url if available
+      return !hasImage;
+    }).length,
+    countsByCondition: {
+      New: safeVehicles.filter(v => normalizeConditionLabel(v?.Condition) === "New").length,
+      Used: safeVehicles.filter(v => normalizeConditionLabel(v?.Condition) === "Used").length,
+    },
+  };
+}
+
+/**
+ * Filter brands to exclude invalid/placeholder values
+ * Shared constant to ensure consistency across components
+ */
+export const INVALID_BRANDS = ['DIRECT_DB', 'TEST', 'UNKNOWN', 'N/A', 'NULL', 'NONE', ''];
+
+/**
+ * Compute brand statistics from vehicles
+ * Filters out invalid brands and returns top N brands
+ */
+export function computeBrandStats(
+  vehicles: Vehicle[] | undefined | null,
+  options?: { top?: number; exclude?: string[] }
+): { name: string; value: number }[] {
+  const safeVehicles = vehicles ?? [];
+  const top = options?.top ?? 10;
+  const exclude = options?.exclude ?? INVALID_BRANDS;
+
+  const counts = new Map<string, number>();
+  
+  for (const v of safeVehicles) {
+    const brand = String(v?.Brand ?? "").trim().toUpperCase();
+    if (!brand || exclude.includes(brand)) continue;
+    counts.set(brand, (counts.get(brand) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, top);
+}

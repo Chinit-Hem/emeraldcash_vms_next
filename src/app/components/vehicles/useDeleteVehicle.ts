@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { extractDriveFileId } from "@/lib/drive";
-import { refreshVehicleCache } from "@/lib/vehicleCache";
+import { invalidateAllCaches } from "@/lib/vehicleCache";
 import type { Vehicle } from "@/lib/types";
 
 interface UseDeleteVehicleResult {
@@ -53,8 +53,8 @@ export function useDeleteVehicle(
           throw new Error(json.error || "Failed to delete vehicle");
         }
 
-        // Refresh cache
-        await refreshVehicleCache();
+        // Invalidate all caches to ensure vehicle list is updated
+        invalidateAllCaches();
 
         onSuccess?.();
         return true;

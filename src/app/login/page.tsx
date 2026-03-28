@@ -1,17 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, Suspense, useRef } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { GlassButton } from "@/app/components/ui/GlassButton";
-import { isIOSSafariBrowser } from "@/lib/platform";
 
 // Safe client-side only hook to prevent hydration mismatches
 function useIsMounted() {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
-    // Use setTimeout to avoid synchronous setState in effect
-    const timeoutId = setTimeout(() => setIsMounted(true), 0);
-    return () => clearTimeout(timeoutId);
+    setIsMounted(true);
   }, []);
   return isMounted;
 }
@@ -28,15 +24,6 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [isIOSSafari, setIsIOSSafari] = useState(false);
-  
-  // Navigation guard ref removed - not needed with current implementation
-
-  // Detect iOS Safari on client side
-  useEffect(() => {
-    if (!isMounted) return;
-    setIsIOSSafari(isIOSSafariBrowser());
-  }, [isMounted]);
 
   // Load remembered username (client-side only)
   useEffect(() => {
@@ -90,9 +77,6 @@ function LoginForm() {
       let retries = 3;
       let lastError = null;
       
-      // Wait longer for cookie to be properly set (especially on mobile)
-      await new Promise(r => setTimeout(r, 500));
-      
       while (retries > 0) {
         meRes = await fetch("/api/auth/me", {
           method: "GET",
@@ -113,11 +97,6 @@ function LoginForm() {
         console.log(`[LOGIN] Session check attempt ${4 - retries} failed:`, lastError);
         console.log(`[LOGIN] Current cookies:`, document.cookie);
         retries--;
-        
-        if (retries > 0) {
-          // Wait before retry
-          await new Promise(r => setTimeout(r, 1000));
-        }
       }
       
       if (retries === 0 && (!meRes?.ok || !meData?.ok)) {
@@ -164,34 +143,24 @@ function LoginForm() {
 
 
   return (
-    <div className={`relative flex min-h-screen items-center justify-center p-4 ${
-      isIOSSafari 
-        ? 'bg-slate-50 dark:bg-slate-950' 
-        : 'bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900'
-    }`}>
-      {/* Animated Background - DISABLED on iOS Safari to prevent crashes */}
-      {!isIOSSafari && (
-        <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-          <div className="absolute left-0 top-0 h-[520px] w-[520px] rounded-full bg-gradient-to-br from-emerald-400/12 via-emerald-500/6 to-transparent blur-3xl dark:from-emerald-500/10 dark:via-transparent animate-float-slow" />
-          <div className="absolute bottom-0 right-0 h-[460px] w-[460px] rounded-full bg-gradient-to-tl from-red-400/12 via-red-500/8 to-transparent blur-3xl dark:from-red-500/10 dark:via-transparent animate-float-slow-reverse" />
-        </div>
-      )}
-
+    <div className="relative flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-200/30 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200/30 rounded-full blur-3xl" />
+      </div>
+      
       <div className="w-full max-w-[400px] relative z-10">
-        {/* Card - iOS: solid background, Others: glass effect */}
-        <div className={`relative overflow-hidden rounded-3xl border ${
-          isIOSSafari
-            ? 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 shadow-lg'
-            : 'bg-[var(--card)]/95 backdrop-blur-xl border-[var(--border)] shadow-[0_16px_36px_rgba(15,23,42,0.12)] dark:bg-slate-900/82 dark:border-slate-600/35 dark:shadow-[0_20px_40px_rgba(2,6,23,0.56)]'
-        }`}>
+        {/* Glassmorphism Card */}
+        <div className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl border border-white/40 shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
           
-          {/* Header */}
-          <div className="relative h-32 bg-gradient-to-r from-emerald-600 to-emerald-500 overflow-visible">
-            <div className="absolute inset-0 bg-gradient-to-t from-white/90 dark:from-slate-900/90 to-transparent" />
+          {/* Header - Emerald Gradient */}
+          <div className="relative h-32 bg-gradient-to-br from-emerald-500 to-emerald-600 overflow-visible">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             
             {/* Logo */}
             <div className="absolute -bottom-8 left-1/2 -translate-x-1/2">
-              <div className="w-16 h-16 rounded-2xl bg-white border border-white/70 shadow-xl flex items-center justify-center p-2">
+              <div className="w-16 h-16 rounded-2xl bg-white shadow-lg shadow-emerald-500/25 flex items-center justify-center p-2 ring-4 ring-white/50">
                 <img
                   src="/logo.png"
                   alt="Emerald Cash"
@@ -204,10 +173,10 @@ function LoginForm() {
           {/* Content */}
           <div className="pt-10 pb-6 px-6">
             <div className="text-center mb-6">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-xl font-bold text-slate-900 bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text">
                 Emerald Cash
               </h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+              <p className="text-xs text-slate-500 uppercase tracking-wider mt-1">
                 Vehicle Management System
               </p>
             </div>
@@ -215,7 +184,7 @@ function LoginForm() {
             <form onSubmit={handleLogin} className="space-y-4">
               {/* Username */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Username
                 </label>
                 <input
@@ -226,13 +195,13 @@ function LoginForm() {
                   autoComplete="username"
                   required
                   disabled={loading}
-                  className="h-11 w-full rounded-xl border border-[var(--border)] bg-white/95 px-4 text-[var(--text)] shadow-inner shadow-slate-900/5 transition-all duration-200 placeholder:text-[var(--muted)] focus:border-emerald-400/40 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 disabled:opacity-60 dark:bg-slate-800/80 dark:border-slate-500/45 dark:text-slate-100 dark:placeholder:text-slate-400"
+                  className="w-full px-4 py-3 rounded-xl bg-white/60 backdrop-blur-sm border border-slate-200 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all shadow-sm"
                 />
               </div>
 
               {/* Password */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Password
                 </label>
                 <div className="relative">
@@ -244,12 +213,12 @@ function LoginForm() {
                     autoComplete="current-password"
                     required
                     disabled={loading}
-                    className="h-11 w-full rounded-xl border border-[var(--border)] bg-white/95 px-4 pr-12 text-[var(--text)] shadow-inner shadow-slate-900/5 transition-all duration-200 placeholder:text-[var(--muted)] focus:border-emerald-400/40 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 disabled:opacity-60 dark:bg-slate-800/80 dark:border-slate-500/45 dark:text-slate-100 dark:placeholder:text-slate-400"
+                    className="w-full px-4 py-3 rounded-xl bg-white/60 backdrop-blur-sm border border-slate-200 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all shadow-sm pr-12"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-[var(--muted)] transition-all duration-200 hover:bg-emerald-50 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 dark:hover:bg-slate-700/55 dark:hover:text-emerald-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
                     tabIndex={-1}
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
@@ -297,21 +266,21 @@ function LoginForm() {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   disabled={loading}
-                  className="w-4 h-4 rounded border-gray-300 text-emerald-600 dark:border-slate-500 dark:bg-slate-800"
+                  className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20"
                 />
-                <span className="text-sm text-[var(--muted)]">Remember me</span>
+                <span className="text-sm text-slate-500">Remember me</span>
               </label>
 
               {/* Success message */}
               {success && (
-                <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm text-center">
+                <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200/50 text-emerald-700 text-sm text-center backdrop-blur-sm">
                   {success}
                 </div>
               )}
 
               {/* Error message */}
               {error && (
-                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm text-center">
+                <div className="p-3 rounded-xl bg-red-50/80 border border-red-200/50 text-red-700 text-sm text-center backdrop-blur-sm">
                   {error}
                 </div>
               )}
@@ -320,10 +289,10 @@ function LoginForm() {
               {debugInfo && (
                 <div className="mt-4">
                   <details className="text-xs">
-                    <summary className="cursor-pointer text-[var(--muted)] hover:text-[var(--text)]">
+                    <summary className="cursor-pointer text-slate-500 hover:text-slate-700">
                       Debug Info (tap to expand)
                     </summary>
-                    <pre className="mt-2 overflow-x-auto rounded border border-[var(--border)] bg-slate-100/80 p-2 text-[var(--muted)] dark:bg-slate-900/80">
+                    <pre className="mt-2 overflow-x-auto rounded-lg border border-slate-200 bg-slate-50/80 p-2 text-slate-600 backdrop-blur-sm">
                       {debugInfo}
                     </pre>
                     <button
@@ -344,38 +313,22 @@ function LoginForm() {
               )}
 
               {/* Submit */}
-              <GlassButton
+              <button
                 type="submit"
                 disabled={loading}
-                variant="primary"
-                fullWidth
-                isLoading={loading}
-                className="!py-3"
+                className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-medium rounded-xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Signing in..." : "Sign In"}
-              </GlassButton>
+              </button>
             </form>
 
             {/* Footer */}
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-slate-700/80 flex items-center justify-center">
-              <p className="text-xs text-[var(--muted)]">© 2024 Emerald Cash</p>
+            <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center">
+              <p className="text-xs text-slate-400">© 2024 Emerald Cash</p>
             </div>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes ec-float-slow {
-          0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-          50% { transform: translate3d(20px, -20px, 0) scale(1.05); }
-        }
-        @keyframes ec-float-slow-reverse {
-          0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-          50% { transform: translate3d(-20px, 20px, 0) scale(1.03); }
-        }
-        .animate-float-slow { animation: ec-float-slow 20s ease-in-out infinite; }
-        .animate-float-slow-reverse { animation: ec-float-slow-reverse 25s ease-in-out infinite; }
-      `}</style>
     </div>
   );
 }

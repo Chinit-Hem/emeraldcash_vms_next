@@ -1,9 +1,94 @@
 
-export type Role = "Admin" | "Staff";
+export type Role = "Admin" | "Staff" | string;
+
+// Role definition for custom roles
+export interface RoleDefinition {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  permissions: Permission[];
+  isSystem: boolean; // true for Admin/Staff, false for custom roles
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Permission types
+export type Permission = 
+  | "vehicles:view"
+  | "vehicles:create"
+  | "vehicles:edit"
+  | "vehicles:delete"
+  | "users:view"
+  | "users:create"
+  | "users:edit"
+  | "users:delete"
+  | "lms:view"
+  | "lms:manage"
+  | "settings:view"
+  | "settings:manage"
+  | "reports:view"
+  | "reports:manage"
+  | "roles:manage";
+
+// Default permissions for system roles
+export const DEFAULT_ROLE_PERMISSIONS: Record<string, Permission[]> = {
+  Admin: [
+    "vehicles:view", "vehicles:create", "vehicles:edit", "vehicles:delete",
+    "users:view", "users:create", "users:edit", "users:delete",
+    "lms:view", "lms:manage",
+    "settings:view", "settings:manage",
+    "reports:view", "reports:manage",
+    "roles:manage"
+  ],
+  Staff: [
+    "vehicles:view",           // Can view vehicles (read-only)
+    "users:view",              // Can view users
+    "lms:view",                // Can access LMS
+    "reports:view"             // Can view reports
+    // Note: Staff CANNOT create/edit/delete vehicles or access settings
+  ]
+};
+
+// Permission labels for UI
+export const PERMISSION_LABELS: Record<Permission, string> = {
+  "vehicles:view": "View Vehicles",
+  "vehicles:create": "Create Vehicles",
+  "vehicles:edit": "Edit Vehicles",
+  "vehicles:delete": "Delete Vehicles",
+  "users:view": "View Users",
+  "users:create": "Create Users",
+  "users:edit": "Edit Users",
+  "users:delete": "Delete Users",
+  "lms:view": "View LMS",
+  "lms:manage": "Manage LMS",
+  "settings:view": "View Settings",
+  "settings:manage": "Manage Settings",
+  "reports:view": "View Reports",
+  "reports:manage": "Manage Reports",
+  "roles:manage": "Manage Roles"
+};
+
+// Permission categories for grouping
+export const PERMISSION_CATEGORIES = {
+  "Vehicles": ["vehicles:view", "vehicles:create", "vehicles:edit", "vehicles:delete"] as Permission[],
+  "Users": ["users:view", "users:create", "users:edit", "users:delete"] as Permission[],
+  "LMS": ["lms:view", "lms:manage"] as Permission[],
+  "Settings": ["settings:view", "settings:manage"] as Permission[],
+  "Reports": ["reports:view", "reports:manage"] as Permission[],
+  "System": ["roles:manage"] as Permission[]
+};
 
 export type User = {
   username: string;
   role: Role;
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  bio?: string;
+  profile_picture?: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 // Tax type options for vehicle registration
@@ -75,6 +160,7 @@ export const COLOR_OPTIONS = [
   { value: "Navy", hex: "#000080" },
   { value: "Purple", hex: "#800080" },
   { value: "Pink", hex: "#FFC0CB" },
+  { value: "Other", hex: "#808080" },
 ] as const;
 
 // Plate number validation helper
@@ -102,10 +188,12 @@ export type Vehicle = {
   Condition: string;
   BodyType: string;
   Color: string;
+  ShadowBox?: string | null; // Shadow box/trim color
   // Image is always normalized to a string (Google Sheets arrays are converted)
   Image: string;
   Time: string;
   _deleted?: boolean;
+  Description?: string | null; // Additional notes/description about the vehicle
 
   // Market price fields (optional, populated from external sources)
   MarketPriceLow?: number | null;

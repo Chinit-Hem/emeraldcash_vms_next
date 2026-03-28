@@ -51,93 +51,96 @@ async function compressImageMainThread(
   } = options;
 
   return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    let settled = false;
+
+    const settle = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      URL.revokeObjectURL(objectUrl);
+      callback();
+    };
+
     // Set up timeout
     const timeoutId = setTimeout(() => {
-      reject(new Error(`Image compression timeout after ${timeoutMs}ms`));
+      settle(() => reject(new Error(`Image compression timeout after ${timeoutMs}ms`)));
     }, timeoutMs);
 
-    const reader = new FileReader();
-    
-    reader.onload = (event) => {
-      const img = new Image();
-      
-      img.onload = () => {
+    img.onload = () => {
+      try {
         // Calculate new dimensions while maintaining aspect ratio
         let { width, height } = img;
-        
+
         if (width > maxWidth || height > maxHeight) {
           const ratio = Math.min(maxWidth / width, maxHeight / height);
           width = Math.round(width * ratio);
           height = Math.round(height * ratio);
         }
-        
+
         // Create canvas and draw resized image
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
-        
+
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          clearTimeout(timeoutId);
-          reject(new Error('Failed to get canvas context'));
+          settle(() => reject(new Error('Failed to get canvas context')));
           return;
         }
-        
+
         // Use faster quality scaling (medium is faster than high)
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'medium'; // Changed from 'high' for speed
-        
+
         // Draw image on canvas
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         // Convert to blob with compression
         canvas.toBlob(
           (blob) => {
-            clearTimeout(timeoutId); // Clear timeout on success
-            
             if (!blob) {
-              reject(new Error('Failed to create blob from canvas'));
+              settle(() => reject(new Error('Failed to create blob from canvas')));
               return;
             }
-            
+
             // Create new file from blob
             const compressedFile = new File([blob], file.name, {
               type: type,
               lastModified: Date.now()
             });
-            
+
             const originalSize = file.size;
             const compressedSize = blob.size;
             const compressionRatio = ((originalSize - compressedSize) / originalSize) * 100;
-            
-            resolve({
-              file: compressedFile,
-              originalSize,
-              compressedSize,
-              compressionRatio,
-              width,
-              height
-            });
+
+            settle(() =>
+              resolve({
+                file: compressedFile,
+                originalSize,
+                compressedSize,
+                compressionRatio,
+                width,
+                height
+              })
+            );
           },
           type,
           quality
         );
-      };
-      
-      img.onerror = () => {
-        clearTimeout(timeoutId);
-        reject(new Error('Failed to load image for compression'));
-      };
-      
-      img.src = event.target?.result as string;
+      } catch (error) {
+        settle(() =>
+          reject(error instanceof Error ? error : new Error('Failed to compress image'))
+        );
+      }
     };
-    
-    reader.onerror = () => {
-      clearTimeout(timeoutId);
-      reject(new Error('Failed to read file for compression'));
+
+    img.onerror = () => {
+      settle(() => reject(new Error('Failed to load image for compression')));
     };
-    
-    reader.readAsDataURL(file);
+
+    img.src = objectUrl;
   });
 }
 
@@ -219,7 +222,7 @@ export async function processImageForUpload(
     } else {
       return file;
     }
-  } catch (error) {
+  } catch (_error) {
     return file;
   }
 }
@@ -333,20 +336,16 @@ export async function compressImageWithProgress(
   width: number;
   height: number;
 }> {
-  // Simulate progress since actual compression doesn't provide granular progress
+  // No artificial delays - immediate progress
   if (onProgress) {
     onProgress(0);
-    
-    // Quick initial progress
-    setTimeout(() => onProgress(25), 50);
-    setTimeout(() => onProgress(50), 100);
+    onProgress(50);
   }
   
   const result = await compressImage(file, options);
   
   if (onProgress) {
-    onProgress(75);
-    setTimeout(() => onProgress(100), 50);
+    onProgress(100);
   }
   
   return result;

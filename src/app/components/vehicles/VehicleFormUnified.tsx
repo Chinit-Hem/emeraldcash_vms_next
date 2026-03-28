@@ -18,10 +18,10 @@
 
 import React, { useMemo } from "react";
 import { useVehicleForm, type Vehicle, type UseVehicleFormOptions } from "@/lib/useVehicleForm";
-import { GlassField } from "../ui/GlassField";
-import { SectionCard } from "../ui/SectionCard";
-import { GlassButton } from "../ui/GlassButton";
-import { ImageInput } from "../ui/ImageInput";
+import { GlassField } from "@/components/ui/glass/GlassField";
+import { SectionCard } from "@/components/ui/SectionCard";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
+import { ImageInput } from "@/components/ui/ImageInput";
 import { formatCurrency } from "@/lib/format";
 import { formatFileSize as formatImageSize } from "@/lib/compressImage";
 import {

@@ -1,11 +1,12 @@
 /**
- * Dashboard Component - Complete A-to-Z Refactor
+ * Dashboard Component - Clean Professional Advanced Standard
  * 
  * Features:
- * A. Case-insensitive data counting with SQL LOWER()
- * B. O(n) Hash Map aggregation + 300ms debounced search
- * C. Fixed Recharts with proper containers + ssr: false
- * D. Skeleton loaders + 100% responsive mobile layout
+ * - Pure Neumorphism design system
+ * - Soft shadows and tactile interactions
+ * - Smooth animations and hover transitions
+ * - Professional typography hierarchy
+ * - Mobile-responsive layout
  * 
  * @module Dashboard
  */
@@ -98,6 +99,33 @@ type ChartSkeletonProps = {
 };
 
 // ============================================================================
+// Color Palette for Neumorphism
+// ============================================================================
+
+const ColorPalette = {
+  emerald: {
+    bg: "bg-emerald-100",
+    text: "text-emerald-600",
+  },
+  blue: {
+    bg: "bg-blue-100",
+    text: "text-blue-600",
+  },
+  purple: {
+    bg: "bg-purple-100",
+    text: "text-purple-600",
+  },
+  orange: {
+    bg: "bg-orange-100",
+    text: "text-orange-600",
+  },
+  red: {
+    bg: "bg-red-100",
+    text: "text-red-600",
+  },
+};
+
+// ============================================================================
 // Utility Components
 // ============================================================================
 
@@ -107,21 +135,24 @@ type ChartSkeletonProps = {
 function ChartSkeleton({ height = 300 }: ChartSkeletonProps) {
   return (
     <div 
-      className="w-full flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-lg animate-pulse"
+      className="w-full flex items-center justify-center bg-[#e6e9ef] rounded-[20px]"
       style={{ height: `${height}px` }}
     >
       <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 rounded-full border-4 border-emerald-200 dark:border-emerald-800 border-t-emerald-600 animate-spin" />
-        <span className="text-sm text-gray-400 dark:text-gray-500">Loading chart...</span>
+        <div className="w-10 h-10 rounded-full bg-[#e6e9ef] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+        <span className="text-sm text-[#4a4a5a]">Loading chart...</span>
       </div>
     </div>
   );
 }
 
 /**
- * Stat Card with Skeleton State
+ * Dashboard Stat Card - Professional Advanced Neumorphism Design
+ * (Renamed to avoid conflict with shared StatCard component)
  */
-function StatCard({
+function DashboardStatCard({
   title,
   value,
   subtitle,
@@ -132,43 +163,35 @@ function StatCard({
   onClick,
   href,
 }: StatCardProps) {
-  const colorClasses = {
-    emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400",
-    blue: "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400",
-    purple: "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400",
-    orange: "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400",
-    red: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
-  };
-
+  const colors = ColorPalette[color];
+  
   const isClickable = !!onClick || !!href;
   const clickableClasses = isClickable 
-    ? "cursor-pointer hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200" 
-    : "hover:shadow-md transition-shadow";
-
-  // If we have both href and subtitleHref, we can't nest anchors
-  // Instead, use a div with onClick for the main card and a separate anchor for subtitle
-  const hasNestedLinks = href && subtitleHref;
+    ? "cursor-pointer hover:-translate-y-1 active:translate-y-0 transition-transform" 
+    : "";
 
   const subtitleContent = subtitle && subtitleHref ? (
     <a 
       href={subtitleHref} 
-      className="text-xs text-red-500 dark:text-red-400 mt-1 truncate hover:underline cursor-pointer inline-block relative z-10"
+      className="text-xs text-red-500 mt-1 truncate hover:underline cursor-pointer inline-block relative z-10"
       onClick={(e) => e.stopPropagation()}
     >
       {subtitle}
     </a>
   ) : subtitle ? (
-    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">{subtitle}</p>
+    <p className="text-xs text-[#4a4a5a] mt-1 truncate">{subtitle}</p>
   ) : null;
 
   const innerContent = (
     <div className="flex items-center justify-between">
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{title}</p>
-        <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+        <p className="text-sm font-medium text-[#4a4a5a] truncate">{title}</p>
+        <p className="text-xl sm:text-2xl font-bold text-[#1a1a2e] mt-1">
+          {value}
+        </p>
         {subtitleContent}
       </div>
-      <div className={`p-2 sm:p-3 rounded-lg flex-shrink-0 ${colorClasses[color]}`}>
+      <div className={`p-2 sm:p-3 rounded-xl flex-shrink-0 ${colors.bg} ${colors.text} shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff]`}>
         {icon}
       </div>
     </div>
@@ -176,13 +199,13 @@ function StatCard({
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700 animate-pulse">
+      <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 animate-pulse">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
-            <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
+            <div className="h-4 w-24 bg-[#d1d5db] rounded" />
+            <div className="h-8 w-16 bg-[#d1d5db] rounded" />
           </div>
-          <div className={`p-3 rounded-lg ${colorClasses[color]} opacity-50`}>
+          <div className={`p-3 rounded-xl ${colors.bg} opacity-50`}>
             {icon}
           </div>
         </div>
@@ -190,20 +213,11 @@ function StatCard({
     );
   }
 
-  // When we have nested links (href + subtitleHref), use div with onClick instead of anchor
-  if (hasNestedLinks) {
+  const cardClasses = `bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 ${clickableClasses}`;
+
+  if (href && subtitleHref) {
     return (
-      <div 
-        className={`bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700 ${clickableClasses}`}
-        onClick={() => window.location.href = href!}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            window.location.href = href!;
-          }
-        }}
-      >
+      <div className={cardClasses} onClick={() => window.location.href = href}>
         {innerContent}
       </div>
     );
@@ -212,7 +226,7 @@ function StatCard({
   if (href) {
     return (
       <a href={href} className="block no-underline">
-        <div className={`bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700 ${clickableClasses}`}>
+        <div className={cardClasses}>
           {innerContent}
         </div>
       </a>
@@ -222,7 +236,7 @@ function StatCard({
   if (onClick) {
     return (
       <button onClick={onClick} className="w-full text-left">
-        <div className={`bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700 ${clickableClasses}`}>
+        <div className={cardClasses}>
           {innerContent}
         </div>
       </button>
@@ -230,7 +244,7 @@ function StatCard({
   }
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700 ${clickableClasses}`}>
+    <div className={cardClasses}>
       {innerContent}
     </div>
   );
@@ -320,30 +334,22 @@ export default function Dashboard({
   initialMeta,
   initialError,
 }: DashboardProps) {
-  // iOS fix: Use state for data to handle hydration issues
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(initialError);
   const [searchQuery, setSearchQuery] = useState("");
   const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
   const [meta, setMeta] = useState<DashboardMeta>(initialMeta);
   
-  // B. Debounced search (300ms) for smooth performance
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
 
-  // iOS fix: Ensure data is set on mount if initial props change
   useEffect(() => {
     setVehicles(initialVehicles);
     setMeta(initialMeta);
   }, [initialVehicles, initialMeta]);
 
-  // ============================================================================
-  // B. O(n) Hash Map Aggregation - Single Pass Algorithm
-  // ============================================================================
-  
   const aggregatedStats = useMemo(() => {
     if (!vehicles.length) return null;
 
-    // Single pass O(n) aggregation using Hash Maps
     const stats = {
       byCategory: {} as Record<string, number>,
       byCondition: {} as Record<string, number>,
@@ -355,7 +361,6 @@ export default function Dashboard({
     };
 
     for (const vehicle of vehicles) {
-      // A. Case-insensitive category counting
       const category = (vehicle.Category || "Unknown").toLowerCase().trim();
       const normalizedCategory = category.includes("car") ? "Cars" :
                                   category.includes("motor") ? "Motorcycles" :
@@ -363,17 +368,14 @@ export default function Dashboard({
       
       stats.byCategory[normalizedCategory] = (stats.byCategory[normalizedCategory] || 0) + 1;
 
-      // Condition counting
       const condition = (vehicle.Condition || "Unknown").toLowerCase().trim();
       const normalizedCondition = condition.includes("new") ? "New" :
                                    condition.includes("used") ? "Used" : "Other";
       stats.byCondition[normalizedCondition] = (stats.byCondition[normalizedCondition] || 0) + 1;
 
-      // Brand counting - normalize to uppercase for consistent grouping
       const brand = (vehicle.Brand || "Unknown").toUpperCase();
       stats.byBrand[brand] = (stats.byBrand[brand] || 0) + 1;
 
-      // Monthly aggregation - Safari-safe date parsing
       if (vehicle.Time) {
         const monthKey = safeGetMonthKey(vehicle.Time);
         if (monthKey) {
@@ -381,11 +383,9 @@ export default function Dashboard({
         }
       }
 
-      // Price aggregation (use Price40 as the main price)
       const price = parseFloat(vehicle.Price40?.toString() || "0");
       if (price > 0) stats.totalValue += price;
 
-      // Image counting
       if (vehicle.Image && vehicle.Image.length > 0) {
         stats.withImages++;
       } else {
@@ -396,34 +396,24 @@ export default function Dashboard({
     return stats;
   }, [vehicles]);
 
-  // ============================================================================
-  // B. Debounced Search Filter - Search ALL vehicle fields
-  // ============================================================================
-
   const filteredVehicles = useMemo(() => {
     let result = vehicles;
 
-    // Apply search query - Search ALL vehicle fields
     if (debouncedSearch.trim()) {
       const query = debouncedSearch.toLowerCase().trim();
       const queryNumber = parseFloat(debouncedSearch);
       
-      // Normalize search term for category matching
       const normalizedSearchCategory = normalizeCategoryLabel(query);
       
       result = result.filter((v) => {
-        // Normalize vehicle category
         const normalizedVehicleCategory = normalizeCategoryLabel(v.Category);
         
-        // Check if search matches category (using normalized values)
         const categoryMatch = 
           normalizedSearchCategory !== "Other" && normalizedSearchCategory === normalizedVehicleCategory;
         
-        // Also check raw category string for partial matches
         const categoryRaw = v.Category?.toLowerCase() || "";
         const categoryPartialMatch = categoryRaw.includes(query);
         
-        // Text fields to search
         const textMatch = 
           v.Brand?.toLowerCase().includes(query) ||
           v.Model?.toLowerCase().includes(query) ||
@@ -437,7 +427,6 @@ export default function Dashboard({
           v.VehicleId?.toString().toLowerCase().includes(query) ||
           v.Year?.toString().includes(query);
         
-        // Numeric fields - match if search is a valid number
         let numberMatch = false;
         if (!isNaN(queryNumber)) {
           numberMatch = 
@@ -453,10 +442,6 @@ export default function Dashboard({
 
     return result;
   }, [vehicles, debouncedSearch]);
-
-  // ============================================================================
-  // Chart Data Preparation
-  // ============================================================================
 
   const categoryChartData = useMemo(() => {
     if (!meta) return [];
@@ -488,16 +473,12 @@ export default function Dashboard({
     if (!aggregatedStats) return [];
     return Object.entries(aggregatedStats.byMonth)
       .sort()
-      .slice(-12) // Last 12 months
+      .slice(-12)
       .map(([month, count]) => ({
         name: month,
         value: count,
       }));
   }, [aggregatedStats]);
-
-  // ============================================================================
-  // Handlers
-  // ============================================================================
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -510,18 +491,14 @@ export default function Dashboard({
     }
   }, []);
 
-  // ============================================================================
-  // Render States
-  // ============================================================================
-
   if (error) {
     return (
       <div className="p-4 sm:p-6">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
+        <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6">
+          <p className="text-red-600">{error}</p>
           <button
             onClick={handleRefresh}
-            className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base"
+            className="mt-4 px-6 py-3 bg-[#e74c3c] text-white rounded-[16px] shadow-[6px_6px_12px_#c0392b,-6px_-6px_12px_#ff5f4d] active:shadow-[inset_4px_4px_8px_#c0392b,inset_-4px_-4px_8px_#ff5f4d] font-semibold transition-all"
           >
             Retry
           </button>
@@ -530,8 +507,6 @@ export default function Dashboard({
     );
   }
 
-  // D. Show data immediately from initialMeta, skeleton only for charts
-  // iOS fix: Use actual data values directly
   const totalVehicles = meta.total;
   const carsCount = meta.countsByCategory.Cars;
   const motorcyclesCount = meta.countsByCategory.Motorcycles;
@@ -541,39 +516,39 @@ export default function Dashboard({
   const isLoading = isRefreshing;
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-[1600px] mx-auto">
-      {/* ============================================================================
-          Header Section - Mobile Responsive
-      ============================================================================ */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-            Dashboard
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {isLoading ? (
-              <span className="inline-block w-20 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            ) : (
-              `${totalVehicles.toLocaleString()} total vehicles`
-            )}
-          </p>
+    <div className="p-4 sm:p-6 space-y-6 max-w-[1600px] mx-auto bg-[#e6e9ef] min-h-screen">
+      {/* Header Section */}
+      <div className="bg-[#e6e9ef] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6 sm:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e]">
+              Dashboard
+            </h1>
+            <p className="text-sm text-[#4a4a5a] mt-2">
+              {isLoading ? (
+                <span className="inline-block w-24 h-4 bg-[#d1d5db] rounded animate-pulse" />
+              ) : (
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  {totalVehicles.toLocaleString()} total vehicles in inventory
+                </span>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="px-6 py-3 bg-[#2ecc71] text-white font-semibold rounded-[16px] shadow-[6px_6px_12px_#27ad60,-6px_-6px_12px_#35eb82] active:shadow-[inset_4px_4px_8px_#27ad60,inset_-4px_-4px_8px_#35eb82] transition-all flex items-center gap-2 disabled:opacity-50"
+          >
+            <span className={isRefreshing ? "animate-spin" : ""}>{Icons.refresh}</span>
+            {isRefreshing ? "Refreshing..." : "Refresh Data"}
+          </button>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors text-sm sm:text-base w-full sm:w-auto"
-        >
-          <span className={isRefreshing ? "animate-spin" : ""}>{Icons.refresh}</span>
-          {isRefreshing ? "Refreshing..." : "Refresh"}
-        </button>
       </div>
 
-      {/* ============================================================================
-          Stats Grid - 2 cols mobile, 5 cols desktop
-          Fixed: Always display actual data values, never "—" on iOS
-      ============================================================================ */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-        <StatCard
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
+        <DashboardStatCard
           title="Total Vehicles"
           value={totalVehicles.toLocaleString()}
           subtitle={`${noImageCount} without images`}
@@ -583,7 +558,7 @@ export default function Dashboard({
           isLoading={isRefreshing}
           href="/vehicles"
         />
-        <StatCard
+        <DashboardStatCard
           title="Cars"
           value={carsCount.toLocaleString()}
           subtitle="All car types"
@@ -592,7 +567,7 @@ export default function Dashboard({
           isLoading={isRefreshing}
           href="/vehicles?category=Cars"
         />
-        <StatCard
+        <DashboardStatCard
           title="Motorcycles"
           value={motorcyclesCount.toLocaleString()}
           subtitle="All motorcycle types"
@@ -601,7 +576,7 @@ export default function Dashboard({
           isLoading={isRefreshing}
           href="/vehicles?category=Motorcycles"
         />
-        <StatCard
+        <DashboardStatCard
           title="Tuk Tuks"
           value={tukTuksCount.toLocaleString()}
           subtitle="All tuk tuk types"
@@ -610,7 +585,7 @@ export default function Dashboard({
           isLoading={isRefreshing}
           href="/vehicles?category=Tuk+Tuk"
         />
-        <StatCard
+        <DashboardStatCard
           title="No Images"
           value={noImageCount.toLocaleString()}
           subtitle="Click to view"
@@ -621,11 +596,9 @@ export default function Dashboard({
         />
       </div>
 
-      {/* ============================================================================
-          Search Bar - Debounced (300ms)
-      ============================================================================ */}
+      {/* Search Bar */}
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#4a4a5a]">
           {Icons.search}
         </div>
         <input
@@ -633,42 +606,39 @@ export default function Dashboard({
           placeholder="Search vehicles (Brand, Model, Category, Plate...)..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm sm:text-base"
+          className="w-full pl-12 pr-4 py-4 rounded-[20px] bg-[#e6e9ef] shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff] text-[#1a1a2e] placeholder-[#4a4a5a] focus:outline-none focus:shadow-[inset_8px_8px_16px_#bebebe,inset_-8px_-8px_16px_#ffffff] text-sm sm:text-base"
         />
         {debouncedSearch !== searchQuery && (
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-            <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+            <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
           </div>
         )}
       </div>
 
       {/* Search Results Count */}
-      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-[#4a4a5a]">
         <span>
           Showing {filteredVehicles.length.toLocaleString()} of {meta.total.toLocaleString()} vehicles
           {vehicles.length < meta.total && (
-            <span className="text-amber-600 dark:text-amber-400 ml-1">
+            <span className="text-amber-600 ml-1">
               (displaying first {vehicles.length})
             </span>
           )}
         </span>
         {debouncedSearch && (
           <span>
-            matching &quot;{debouncedSearch}&quot;
+            matching "{debouncedSearch}"
           </span>
         )}
       </div>
 
-      {/* ============================================================================
-          Charts Grid - C. Fixed Recharts with h-[300px] containers
-      ============================================================================ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Vehicles by Category */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="bg-[#e6e9ef] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6 sm:p-8">
+          <h3 className="text-base sm:text-lg font-semibold text-[#1a1a2e] mb-6">
             Vehicles by Category
           </h3>
-          {/* C. Fixed: h-[300px] container prevents width(-1) height(-1) error */}
           <div className="w-full h-[250px] sm:h-[300px]">
             {isLoading ? (
               <ChartSkeleton height={300} />
@@ -679,8 +649,8 @@ export default function Dashboard({
         </div>
 
         {/* New vs Used */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="bg-[#e6e9ef] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6 sm:p-8">
+          <h3 className="text-base sm:text-lg font-semibold text-[#1a1a2e] mb-6">
             New vs Used
           </h3>
           <div className="w-full h-[250px] sm:h-[300px]">
@@ -693,8 +663,8 @@ export default function Dashboard({
         </div>
 
         {/* Top Brands */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="bg-[#e6e9ef] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6 sm:p-8">
+          <h3 className="text-base sm:text-lg font-semibold text-[#1a1a2e] mb-6">
             Top Brands
           </h3>
           <div className="w-full h-[250px] sm:h-[300px]">
@@ -707,8 +677,8 @@ export default function Dashboard({
         </div>
 
         {/* Monthly Added */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="bg-[#e6e9ef] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6 sm:p-8">
+          <h3 className="text-base sm:text-lg font-semibold text-[#1a1a2e] mb-6">
             Monthly Added
           </h3>
           <div className="w-full h-[250px] sm:h-[300px]">
@@ -721,33 +691,31 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* ============================================================================
-          Quick Stats Footer - Use meta for accurate totals, aggregatedStats for derived metrics
-      ============================================================================ */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="text-center">
-          <p className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+      {/* Quick Stats Footer */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 pt-6">
+        <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 text-center">
+          <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
             {(meta.total - meta.noImageCount).toLocaleString()}
           </p>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">With Images</p>
+          <p className="text-xs sm:text-sm text-[#4a4a5a]">With Images</p>
         </div>
-        <div className="text-center">
-          <p className="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400">
+        <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 text-center">
+          <p className="text-2xl sm:text-3xl font-bold text-red-600">
             {meta.noImageCount.toLocaleString()}
           </p>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Without Images</p>
+          <p className="text-xs sm:text-sm text-[#4a4a5a]">Without Images</p>
         </div>
-        <div className="text-center">
-          <p className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
+        <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 text-center">
+          <p className="text-2xl sm:text-3xl font-bold text-blue-600">
             ${Math.round(meta.avgPrice).toLocaleString()}
           </p>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Avg Price</p>
+          <p className="text-xs sm:text-sm text-[#4a4a5a]">Avg Price</p>
         </div>
-        <div className="text-center">
-          <p className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">
+        <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 text-center">
+          <p className="text-2xl sm:text-3xl font-bold text-purple-600">
             {aggregatedStats ? Object.keys(aggregatedStats.byBrand).length : '-'}
           </p>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Unique Brands (sample)</p>
+          <p className="text-xs sm:text-sm text-[#4a4a5a]">Unique Brands (sample)</p>
         </div>
       </div>
     </div>

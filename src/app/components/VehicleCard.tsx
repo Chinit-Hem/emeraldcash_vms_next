@@ -1,13 +1,10 @@
-  "use client";
+"use client";
 
 import { driveThumbnailUrl, extractDriveFileId } from "@/lib/drive";
 import { derivePrices } from "@/lib/pricing";
 import type { Vehicle } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import React, { useMemo } from "react";
-
-import { GlassButton } from "@/app/components/ui/GlassButton";
-
 
 type VehicleCardProps = {
   vehicle: Vehicle;
@@ -16,6 +13,34 @@ type VehicleCardProps = {
   onDelete: (vehicle: Vehicle) => void;
   searchQuery?: string;
 };
+
+// Neumorphic Icon Button
+function NeuIconButton({
+  onClick,
+  children,
+  variant = "default",
+  className = "",
+}: {
+  onClick: (e: React.MouseEvent) => void;
+  children: React.ReactNode;
+  variant?: "default" | "primary" | "danger";
+  className?: string;
+}) {
+  const variantClasses = {
+    default: "text-[#4a4a5a] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+    primary: "text-blue-600 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+    danger: "text-red-600 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`p-2 rounded-[12px] bg-[#e6e9ef] transition-all ${variantClasses[variant]} ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function VehicleCard({
   vehicle,
@@ -32,31 +57,24 @@ export default function VehicleCard({
   const price40 = vehicle.Price40 ?? derived.Price40;
   const price70 = vehicle.Price70 ?? derived.Price70;
 
-  // Get the image URL (handle arrays from Google Sheets)
   const imageUrl = Array.isArray(vehicle.Image) 
     ? (vehicle.Image[0] || '') 
     : (vehicle.Image || '');
   
-  // Check if it's a Cloudinary URL first (guard against "undefined" string)
   const isCloudinary = typeof imageUrl === 'string' && 
     imageUrl !== 'undefined' && 
     imageUrl !== 'null' &&
     imageUrl.includes('res.cloudinary.com');
   
-  // Use useMemo to avoid calling Date.now() during render (impure function)
   const thumbUrl = useMemo(() => {
     if (isCloudinary) {
-      // Use Cloudinary URL directly
       return imageUrl;
     }
-    
-    // Try Google Drive
     const imageFileId = extractDriveFileId(imageUrl);
     return imageFileId
       ? `${driveThumbnailUrl(imageFileId, "w300-h300")}`
       : imageUrl;
   }, [isCloudinary, imageUrl]);
-
 
   const handleClick = () => {
     if (!vehicleId) return;
@@ -80,7 +98,7 @@ export default function VehicleCard({
     const parts = text.split(regex);
     return parts.map((part, i) =>
       regex.test(part) ? (
-        <mark key={i} className="bg-yellow-200 dark:bg-yellow-900/50 rounded px-0.5">
+        <mark key={i} className="bg-yellow-200/80 text-[#1a1a2e] rounded px-0.5">
           {part}
         </mark>
       ) : (
@@ -92,23 +110,20 @@ export default function VehicleCard({
   return (
     <div
       onClick={handleClick}
-      className={`p-4 flex gap-4 cursor-pointer transition-colors hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 ${
-        index % 2 === 0 ? "bg-white/50 dark:bg-gray-800/30" : "bg-gray-50/50 dark:bg-gray-800/20"
-      }`}
+      className={`p-4 sm:p-6 flex gap-4 sm:gap-6 cursor-pointer transition-all rounded-[20px] bg-[#e6e9ef] shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff] hover:shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] active:shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff]`}
     >
       {/* Image */}
       <div className="flex-shrink-0">
         {thumbUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={thumbUrl}
             alt={`${vehicle.Brand} ${vehicle.Model}`}
             loading="lazy"
             decoding="async"
-            className="h-20 w-20 rounded-xl object-cover ring-1 ring-black/10 bg-white shadow-sm"
+            className="h-20 w-20 sm:h-24 sm:w-24 rounded-[16px] object-cover bg-[#e6e9ef] shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]"
           />
         ) : (
-          <div className="h-20 w-20 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center ring-1 ring-black/10">
+          <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-[16px] bg-[#e6e9ef] shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] flex items-center justify-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -117,7 +132,7 @@ export default function VehicleCard({
               strokeWidth={1.5}
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="h-8 w-8 text-gray-400"
+              className="h-8 w-8 text-[#4a4a5a]"
             >
               <rect width="18" height="18" x="3" y="3" rx="2" />
               <circle cx="9" cy="9" r="2" />
@@ -131,20 +146,20 @@ export default function VehicleCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+            <h3 className="font-semibold text-[#1a1a2e] truncate">
               {highlightText(`${vehicle.Brand} ${vehicle.Model}`, searchQuery)}
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-[#4a4a5a]">
               {vehicle.Year || "-"} • {vehicle.Category}
             </p>
           </div>
           <span
-            className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+            className={`flex-shrink-0 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#e6e9ef] shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] ${
               vehicle.Condition === "New"
-                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                ? "text-emerald-600"
                 : vehicle.Condition === "Used"
-                ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                : "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400"
+                ? "text-blue-600"
+                : "text-orange-600"
             }`}
           >
             {vehicle.Condition || "Unknown"}
@@ -153,33 +168,32 @@ export default function VehicleCard({
 
         <div className="mt-2 flex items-center gap-4 text-sm">
           <div>
-            <span className="text-gray-500 dark:text-gray-400">Plate:</span>{" "}
-            <span className="font-mono text-gray-700 dark:text-gray-300">{vehicle.Plate || "-"}</span>
+            <span className="text-[#4a4a5a]">Plate:</span>{" "}
+            <span className="font-mono text-[#1a1a2e]">{vehicle.Plate || "-"}</span>
           </div>
           <div>
-            <span className="text-gray-500 dark:text-gray-400">Tax:</span>{" "}
-            <span className="text-gray-700 dark:text-gray-300">{vehicle.TaxType || "-"}</span>
+            <span className="text-[#4a4a5a]">Tax:</span>{" "}
+            <span className="text-[#1a1a2e]">{vehicle.TaxType || "-"}</span>
           </div>
         </div>
 
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+            <span className="text-lg font-bold text-emerald-600">
               {vehicle.PriceNew == null ? "-" : `$${vehicle.PriceNew.toLocaleString()}`}
             </span>
             {price70 != null && (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="text-xs text-[#4a4a5a]">
                 70%: ${price70.toLocaleString()}
               </span>
             )}
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-            <GlassButton
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <NeuIconButton
               onClick={handleClick}
-              variant="ghost"
-              className="!p-2 !w-auto !h-auto"
+              variant="default"
               aria-label="View"
             >
               <svg
@@ -195,13 +209,12 @@ export default function VehicleCard({
                 <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
-            </GlassButton>
+            </NeuIconButton>
             {isAdmin && (
               <>
-                <GlassButton
+                <NeuIconButton
                   onClick={handleEdit}
-                  variant="ghost"
-                  className="!p-2 !w-auto !h-auto text-blue-600"
+                  variant="primary"
                   aria-label="Edit"
                 >
                   <svg
@@ -216,11 +229,10 @@ export default function VehicleCard({
                   >
                     <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z" />
                   </svg>
-                </GlassButton>
-                <GlassButton
+                </NeuIconButton>
+                <NeuIconButton
                   onClick={handleDelete}
-                  variant="ghost"
-                  className="!p-2 !w-auto !h-auto text-red-600"
+                  variant="danger"
                   aria-label="Delete"
                 >
                   <svg
@@ -237,7 +249,7 @@ export default function VehicleCard({
                     <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
                     <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
                   </svg>
-                </GlassButton>
+                </NeuIconButton>
               </>
             )}
           </div>

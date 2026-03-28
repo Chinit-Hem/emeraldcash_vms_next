@@ -395,7 +395,7 @@ export function useVehicleForm(options: UseVehicleFormOptions): UseVehicleFormRe
       if (onError && error instanceof Error) {
         onError(error);
       }
-      console.error("[useVehicleForm] Submit error:", error);
+      // Error logging removed for production
     } finally {
       setIsSubmitting(false);
     }

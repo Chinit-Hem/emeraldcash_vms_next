@@ -27,7 +27,9 @@ export default async function DashboardPage() {
   // Fetch vehicles and stats in parallel
   // Use cache for better performance - stats don't change frequently
   const [vehiclesResult, statsResult] = await Promise.all([
-    vehicleService.getVehicles({ limit: 100 }), // Limit initial load, client can fetch more
+    // Pull enough rows to keep dashboard search/charts aligned with totals.
+    // Order newest first so freshly added vehicles appear immediately.
+    vehicleService.getVehicles({ limit: 2000, orderBy: "id", orderDirection: "DESC" }),
     vehicleService.getVehicleStats(false), // Use cache (30s TTL) - much faster
   ]);
 

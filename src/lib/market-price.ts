@@ -418,7 +418,7 @@ async function fetchFromKhmer24(input: MarketPriceInput): Promise<{ price: numbe
     });
 
     if (!response.ok) {
-      console.warn(`Khmer24 request failed: ${response.status}`);
+      // Request failure logging removed for production
       return results;
     }
 
@@ -441,7 +441,8 @@ async function fetchFromKhmer24(input: MarketPriceInput): Promise<{ price: numbe
       }
     }
   } catch (error) {
-    console.warn("Failed to fetch from Khmer24:", error instanceof Error ? error.message : error);
+    // Fetch failure logging removed for production
+    void error; // Mark error as used to prevent unused variable warning
   }
 
   return results;

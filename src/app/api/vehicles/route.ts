@@ -67,7 +67,7 @@ export async function OPTIONS(req: NextRequest) {
  * GET /api/vehicles
  * 
  * Query Parameters:
- * - limit: number (default: 100)
+ * - limit: number (default: 50)
  * - offset: number (default: 0)
  * - category: string (case-insensitive)
  * - brand: string (case-insensitive, partial match)
@@ -82,7 +82,7 @@ export async function OPTIONS(req: NextRequest) {
  * - taxType: string
  * - searchTerm: string (searches brand, model, plate)
  * - orderBy: string (default: "id")
- * - orderDirection: "ASC" | "DESC" (default: "ASC")
+ * - orderDirection: "ASC" | "DESC" (default: "DESC")
  * 
  * Returns:
  * - success: boolean
@@ -90,6 +90,10 @@ export async function OPTIONS(req: NextRequest) {
  * - meta: { total, limit, offset, durationMs, queryCount }
  */
 const getHandler = withErrorHandling(async (req, { logger, requestId, startTime }) => {
+  // Add overall timeout for the entire handler
+  // OPTIMIZED: Reduced from 45s to 30s for faster failure and better UX
+  const HANDLER_TIMEOUT_MS = 30000;
+  
   // Log request details
   logger.debug("Parsing query parameters", {
     url: req.url,
@@ -97,12 +101,14 @@ const getHandler = withErrorHandling(async (req, { logger, requestId, startTime 
 
   // Parse query parameters with validation
   const { searchParams } = new URL(req.url);
+  const hasExplicitLimit = searchParams.has("limit");
   
+  // OPTIMIZED: Reduced default limit from 100 to 50 for better performance
   const filters: VehicleFilters = {
-    limit: Math.min(parseInt(searchParams.get("limit") || "100", 10), 1000), // Max 1000
+    limit: Math.min(parseInt(searchParams.get("limit") || "50", 10), 200), // Max 200, default 50
     offset: Math.max(parseInt(searchParams.get("offset") || "0", 10), 0), // Min 0
     orderBy: searchParams.get("orderBy") || "id",
-    orderDirection: (searchParams.get("orderDirection") as "ASC" | "DESC") || "ASC",
+    orderDirection: (searchParams.get("orderDirection") as "ASC" | "DESC") || "DESC",
   };
 
   // Validate orderDirection
@@ -212,24 +218,32 @@ const getHandler = withErrorHandling(async (req, { logger, requestId, startTime 
                          yearMin || yearMax || priceMin || priceMax || 
                          color || bodyType || taxType || searchTerm || filters.withoutImage;
   
-  if (hasActiveFilters && !filters.limit) {
+  if (hasActiveFilters && !hasExplicitLimit) {
     filters.limit = 10000; // Get all matching records
   }
 
   logger.debug("Executing database queries", { filters });
 
-  // Execute queries in parallel for better performance
-  const [vehiclesResult, countResult, statsResult] = await Promise.all([
-    vehicleService.getVehicles(filters),
-    // Use filtered count to match the actual query results
-    vehicleService.countWithFilters(filters),
-    // Skip expensive stats if in lite mode (no filters except pagination)
-    (filters.category || filters.brand || filters.model || filters.condition || 
-     filters.searchTerm || filters.yearMin || filters.yearMax || 
-     filters.priceMin || filters.priceMax || filters.color || 
-     filters.bodyType || filters.taxType || filters.withoutImage)
-      ? Promise.resolve({ success: true, data: null }) // Skip stats for filtered queries
-      : vehicleService.getVehicleStats(),
+  // Create a timeout promise
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('Query timeout')), HANDLER_TIMEOUT_MS);
+  });
+
+  // Execute queries in parallel for better performance with timeout
+  const [vehiclesResult, countResult, statsResult] = await Promise.race([
+    Promise.all([
+      vehicleService.getVehicles(filters),
+      // Use filtered count to match the actual query results
+      vehicleService.countWithFilters(filters),
+      // Skip expensive stats if in lite mode (no filters except pagination)
+      (filters.category || filters.brand || filters.model || filters.condition || 
+       filters.searchTerm || filters.yearMin || filters.yearMax || 
+       filters.priceMin || filters.priceMax || filters.color || 
+       filters.bodyType || filters.taxType || filters.withoutImage)
+        ? Promise.resolve({ success: true, data: null }) // Skip stats for filtered queries
+        : vehicleService.getVehicleStats(),
+    ]),
+    timeoutPromise
   ]);
 
   if (!vehiclesResult.success) {
@@ -284,7 +298,7 @@ const getHandler = withErrorHandling(async (req, { logger, requestId, startTime 
     },
     buildCorsHeaders(req)
   );
-}, { context: "vehicles-api", timeoutMs: 30000 });
+}, { context: "vehicles-api", timeoutMs: 60000 });
 
 export { getHandler as GET };
 
@@ -444,7 +458,7 @@ const postHandler = withErrorHandling(async (req, { logger, requestId, startTime
     },
     buildCorsHeaders(req)
   );
-}, { context: "vehicles-api-create", timeoutMs: 30000 });
+}, { context: "vehicles-api-create", timeoutMs: 60000 });
 
 export { postHandler as POST };
 
@@ -509,6 +523,6 @@ const deleteHandler = withErrorHandling(async (req, { logger, requestId, startTi
     },
     buildCorsHeaders(req)
   );
-}, { context: "vehicles-api-delete", timeoutMs: 30000 });
+}, { context: "vehicles-api-delete", timeoutMs: 60000 });
 
 export { deleteHandler as DELETE };

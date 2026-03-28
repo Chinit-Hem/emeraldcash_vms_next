@@ -15,7 +15,7 @@
 
 import React from "react";
 import { Play, CheckCircle2, Clock, Lock } from "lucide-react";
-import { GlassCard } from "../ui/GlassCard";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
 
 // ============================================================================
 // Types

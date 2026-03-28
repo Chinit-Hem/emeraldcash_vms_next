@@ -5,6 +5,9 @@ let cloudinaryInstance: typeof import("cloudinary").v2 | null = null;
 // Import folder utilities
 import { getCloudinaryFolder } from "./cloudinary-folders";
 
+// Import crypto at top level for signature generation
+import crypto from "crypto";
+
 // Environment variables
 const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
@@ -16,6 +19,17 @@ const isCloudinaryConfigured = !!(
   CLOUDINARY_API_KEY && 
   CLOUDINARY_API_SECRET
 );
+
+// Log configuration status for debugging
+if (typeof window === 'undefined') {
+  // Server-side only
+  console.log('[Cloudinary] Configuration check:', {
+    cloudName: CLOUDINARY_CLOUD_NAME ? 'SET' : 'NOT_SET',
+    apiKey: CLOUDINARY_API_KEY ? 'SET' : 'NOT_SET',
+    apiSecret: CLOUDINARY_API_SECRET ? 'SET' : 'NOT_SET',
+    isConfigured: isCloudinaryConfigured,
+  });
+}
 
 /**
  * Lazy load Cloudinary SDK - only initializes when first accessed
@@ -31,7 +45,7 @@ async function getCloudinary(): Promise<typeof import("cloudinary").v2> {
         api_key: CLOUDINARY_API_KEY,
         api_secret: CLOUDINARY_API_SECRET,
         secure: true,
-        timeout: 25000, // 25 seconds
+        timeout: 120, // 120 seconds (Cloudinary expects seconds, not milliseconds)
       });
       
       // SDK loaded successfully
@@ -150,7 +164,14 @@ export async function uploadImage(
   originalSize?: number; // Original size in bytes
   compressedSize?: number; // Compressed size in bytes
 }> {
+  console.log("[Cloudinary] uploadImage called, checking configuration...");
+  console.log("[Cloudinary] CLOUDINARY_CLOUD_NAME:", CLOUDINARY_CLOUD_NAME ? "SET" : "NOT SET");
+  console.log("[Cloudinary] CLOUDINARY_API_KEY:", CLOUDINARY_API_KEY ? "SET" : "NOT SET");
+  console.log("[Cloudinary] CLOUDINARY_API_SECRET:", CLOUDINARY_API_SECRET ? "SET" : "NOT SET");
+  console.log("[Cloudinary] isCloudinaryConfigured:", isCloudinaryConfigured);
+
   if (!isCloudinaryConfigured) {
+    console.error("[Cloudinary] Not configured - missing environment variables");
     return {
       success: false,
       error: "Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.",
@@ -207,10 +228,15 @@ export async function uploadImage(
         uploadOptions.transformation = options.transformation;
       }
 
-      // Add upload_preset - use provided option, env var, or default
-      const uploadPreset = options.uploadPreset || DEFAULT_UPLOAD_PRESET;
+      // Add upload_preset for unsigned uploads only if explicitly provided
+      // Note: upload_preset must be configured in Cloudinary dashboard for unsigned uploads
+      // If not provided, we'll use signed uploads with API credentials
+      const uploadPreset = options.uploadPreset;
       if (uploadPreset) {
         uploadOptions.upload_preset = uploadPreset;
+        console.log(`[Cloudinary] Using upload_preset: ${uploadPreset} (unsigned upload)`);
+      } else {
+        console.log('[Cloudinary] Using signed upload with API credentials');
       }
 
       let result;
@@ -236,53 +262,119 @@ export async function uploadImage(
         }
 
         originalSize = fileSize;
+        console.log(`[Cloudinary] Processing file of size ${fileSize} bytes`);
         
         // Compress image before upload if enabled (default: true)
         const shouldCompress = options.compress !== false;
         let buffer: Buffer;
         
-        if (shouldCompress) {
-          buffer = await compressImageForUpload(
-            imageData, 
-            options.maxWidth || 1280, 
-            options.quality || 0.8
-          );
-          compressedSize = buffer.length;
-          wasCompressed = compressedSize < originalSize;
-        } else {
-          // No compression - convert directly to buffer
-          const arrayBuffer = await imageData.arrayBuffer();
-          buffer = Buffer.from(arrayBuffer);
-          compressedSize = buffer.length;
+        try {
+          if (shouldCompress) {
+            console.log('[Cloudinary] Compressing image...');
+            buffer = await compressImageForUpload(
+              imageData, 
+              options.maxWidth || 1280, 
+              options.quality || 0.8
+            );
+            compressedSize = buffer.length;
+            wasCompressed = compressedSize < originalSize;
+            console.log(`[Cloudinary] Compressed from ${originalSize} to ${compressedSize} bytes`);
+          } else {
+            // No compression - convert directly to buffer
+            console.log('[Cloudinary] Converting to buffer without compression...');
+            const arrayBuffer = await imageData.arrayBuffer();
+            buffer = Buffer.from(arrayBuffer);
+            compressedSize = buffer.length;
+            console.log(`[Cloudinary] Converted to buffer: ${buffer.length} bytes`);
+          }
+        } catch (conversionError) {
+          console.error('[Cloudinary] Error converting image:', conversionError);
+          return {
+            success: false,
+            error: `Failed to process image: ${conversionError instanceof Error ? conversionError.message : 'Unknown error'}`,
+            attempts,
+          };
         }
         
-        // Use upload_stream for buffer-based uploads with timeout
-        result = await Promise.race([
-          new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-              uploadOptions,
-              (error, uploadResult) => {
-                if (error) {
-                  // Ensure error is properly formatted as an Error object
-                  // Cloudinary errors can be objects with message property
-                  if (typeof error === 'object' && error !== null) {
-                    const errorMessage = (error as { message?: string }).message 
-                      || JSON.stringify(error);
-                    reject(new Error(errorMessage));
-                  } else {
-                    reject(new Error(String(error)));
-                  }
-                } else {
-                  resolve(uploadResult);
-                }
-              }
-            );
-            uploadStream.end(buffer);
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error(`Upload timeout after ${timeoutMs}ms`)), timeoutMs)
-          )
-        ]);
+        // Use Cloudinary REST API directly via fetch
+        console.log('[Cloudinary] Starting REST API upload...');
+        const uploadStartTime = Date.now();
+        
+        try {
+          // Build form data for REST API
+          const formData = new FormData();
+          formData.append('file', `data:image/jpeg;base64,${buffer.toString('base64')}`);
+          formData.append('api_key', CLOUDINARY_API_KEY!);
+          
+          // Generate signature for signed upload
+          // Parameters must be in alphabetical order for signature
+          const timestamp = Math.floor(Date.now() / 1000).toString();
+          
+          // Build parameters object for signature (alphabetical order is critical)
+          const paramsToSign: Record<string, string> = {
+            folder: uploadOptions.folder,
+            timestamp: timestamp,
+          };
+          
+          if (uploadOptions.public_id) {
+            paramsToSign.public_id = uploadOptions.public_id;
+          }
+          
+          // Sort keys alphabetically and build string to sign
+          const sortedKeys = Object.keys(paramsToSign).sort();
+          const stringToSign = sortedKeys
+            .map(key => `${key}=${paramsToSign[key]}`)
+            .join('&') + CLOUDINARY_API_SECRET;
+          
+          const signature = crypto.createHash('sha256').update(stringToSign).digest('hex');
+          
+          console.log('[Cloudinary] Signature params:', { 
+            folder: uploadOptions.folder, 
+            timestamp, 
+            public_id: uploadOptions.public_id,
+            signatureLength: signature.length 
+          });
+          
+          formData.append('timestamp', timestamp);
+          formData.append('signature', signature);
+          formData.append('folder', uploadOptions.folder);
+          
+          if (uploadOptions.public_id) {
+            formData.append('public_id', uploadOptions.public_id);
+          }
+          
+          console.log(`[Cloudinary] Uploading to cloud: ${CLOUDINARY_CLOUD_NAME}`);
+          
+          const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+          
+          const response = await Promise.race([
+            fetch(uploadUrl, {
+              method: 'POST',
+              body: formData,
+            }),
+            new Promise((_, reject) => 
+              setTimeout(() => {
+                const timeoutDuration = Date.now() - uploadStartTime;
+                reject(new Error(`Upload timeout after ${timeoutMs}ms (actual: ${timeoutDuration}ms)`));
+              }, timeoutMs)
+            )
+          ]) as Response;
+          
+          const uploadDuration = Date.now() - uploadStartTime;
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[Cloudinary] HTTP error ${response.status}: ${errorText}`);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+          }
+          
+          result = await response.json();
+          console.log(`[Cloudinary] Upload succeeded after ${uploadDuration}ms`);
+        } catch (uploadError) {
+          const uploadDuration = Date.now() - uploadStartTime;
+          console.error(`[Cloudinary] REST API upload failed after ${uploadDuration}ms:`, uploadError);
+          throw uploadError;
+        }
       } else {
         // Handle base64 string (legacy method) with timeout
         // Check base64 data size

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { GlassCard } from "./GlassCard";
+import { GlassCard } from "./glass/GlassCard";
 import { cn, ui } from "@/lib/ui";
 
 interface SectionCardProps {

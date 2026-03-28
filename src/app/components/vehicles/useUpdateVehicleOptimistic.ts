@@ -4,7 +4,46 @@ import { useState, useCallback } from "react";
 import { compressImage } from "@/lib/clientImageCompression";
 import { getCloudinaryFolder } from "@/lib/cloudinary-folders";
 import { recordMutation } from "@/lib/vehicleCache";
+import { safeBase64ToFile } from "@/lib/fileToDataUrl";
 import type { Vehicle } from "@/lib/types";
+
+/**
+ * Clean base64 data URL to remove problematic characters
+ * This is a defensive measure to handle data that may have been corrupted
+ */
+function cleanBase64DataUrl(dataUrl: string): string {
+  if (!dataUrl || typeof dataUrl !== 'string') return dataUrl;
+  
+  // Only process data URLs
+  if (!dataUrl.startsWith('data:')) return dataUrl;
+  
+  // Find the comma separator
+  const commaIndex = dataUrl.indexOf(',');
+  if (commaIndex === -1) return dataUrl;
+  
+  const header = dataUrl.substring(0, commaIndex);
+  let base64Data = dataUrl.substring(commaIndex + 1);
+  
+  // Remove all whitespace and control characters (including zero-width chars)
+  base64Data = base64Data.replace(/[\s\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
+  
+  // Convert URL-safe base64 to standard
+  base64Data = base64Data.replace(/-/g, "+").replace(/_/g, "/");
+  
+  // Remove ellipsis characters
+  base64Data = base64Data.replace(/…/g, '').replace(/\u2026/g, '');
+  
+  // Remove all non-base64 characters
+  base64Data = base64Data.replace(/[^A-Za-z0-9+/]/g, '');
+  
+  // Add padding if needed
+  const remainder = base64Data.length % 4;
+  if (remainder !== 0) {
+    base64Data += "=".repeat(4 - remainder);
+  }
+  
+  return `${header},${base64Data}`;
+}
 
 interface UseUpdateVehicleOptimisticOptions {
   onSuccess?: (vehicle: Vehicle) => void;
@@ -305,21 +344,6 @@ async function uploadImageToCloudinary(
   }
 }
 
-/**
- * Convert Base64 string to File object
- */
-function base64ToFile(base64String: string, filename: string): File {
-  const arr = base64String.split(",");
-  const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new File([u8arr], filename, { type: mime });
-}
-
 export function useUpdateVehicleOptimistic(
   options: UseUpdateVehicleOptimisticOptions = {}
 ): UseUpdateVehicleOptimisticReturn {
@@ -377,7 +401,34 @@ export function useUpdateVehicleOptimistic(
         // Case B: We have a Base64 string in data.Image
         else if (data.Image && data.Image.startsWith("data:image/")) {
           reportProgress('compressing', 50); // Converting base64
-          const fileFromBase64 = base64ToFile(data.Image, `vehicle_${vehicleId}_${Date.now()}.jpg`);
+          
+          // Clean the base64 data to remove any problematic characters
+          const cleanedImage = cleanBase64DataUrl(data.Image);
+          
+          console.log("[useUpdateVehicleOptimistic] Converting base64 image:", {
+            originalLength: data.Image.length,
+            cleanedLength: cleanedImage.length,
+            imagePreview: cleanedImage.substring(0, 100),
+          });
+          
+          const { file: fileFromBase64, error: conversionError } = safeBase64ToFile(
+            cleanedImage, 
+            `vehicle_${vehicleId}_${Date.now()}.jpg`
+          );
+          
+          if (conversionError || !fileFromBase64) {
+            console.error("[useUpdateVehicleOptimistic] Base64 conversion failed:", conversionError);
+            setIsUpdating(false);
+            const error = new Error(conversionError || "Failed to convert image data. Please try uploading a different image or refreshing the page.");
+            onError?.(error, originalVehicle);
+            throw error;
+          }
+          
+          console.log("[useUpdateVehicleOptimistic] Base64 conversion successful:", {
+            fileSize: fileFromBase64.size,
+            fileType: fileFromBase64.type,
+          });
+          
           reportProgress('compressing', 100);
 
           reportProgress('uploading', 0);

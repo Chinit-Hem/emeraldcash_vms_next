@@ -1,7 +1,5 @@
 "use client";
 
-import { GlassButton } from "@/app/components/ui/GlassButton";
-
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
@@ -75,15 +73,15 @@ export default function Pagination({
   if (totalPages <= 1) {
     return (
       <div className="flex items-center justify-between py-4 px-4 sm:px-6">
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="text-sm text-[#4a4a5a]">
           Showing {totalItems} vehicle{totalItems !== 1 ? "s" : ""}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600 dark:text-gray-400">Show:</span>
+          <span className="text-sm text-[#4a4a5a]">Show:</span>
           <select
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="px-3 py-1.5 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+            className="px-3 py-1.5 bg-[#e6e9ef] rounded-lg text-sm text-[#1a1a2e] focus:outline-none shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]"
           >
             {PAGE_SIZE_OPTIONS.map((size) => (
               <option key={size} value={size}>
@@ -97,23 +95,23 @@ export default function Pagination({
   }
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4 px-4 sm:px-6 border-t border-gray-200 dark:border-gray-700">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4 px-4 sm:px-6 border-t border-[#bebebe]/30">
       {/* Info */}
-      <div className="text-sm text-gray-600 dark:text-gray-400">
-        Showing <span className="font-medium text-gray-900 dark:text-white">{startItem}</span> to{" "}
-        <span className="font-medium text-gray-900 dark:text-white">{endItem}</span> of{" "}
-        <span className="font-medium text-gray-900 dark:text-white">{totalItems}</span> vehicles
+      <div className="text-sm text-[#4a4a5a]">
+        Showing <span className="font-medium text-[#1a1a2e]">{startItem}</span> to{" "}
+        <span className="font-medium text-[#1a1a2e]">{endItem}</span> of{" "}
+        <span className="font-medium text-[#1a1a2e]">{totalItems}</span> vehicles
       </div>
 
       {/* Controls */}
       <div className="flex items-center gap-4">
         {/* Page Size Selector */}
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600 dark:text-gray-400 hidden sm:inline">Show:</span>
+          <span className="text-sm text-[#4a4a5a] hidden sm:inline">Show:</span>
           <select
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="px-3 py-1.5 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+            className="px-3 py-1.5 bg-[#e6e9ef] rounded-lg text-sm text-[#1a1a2e] focus:outline-none shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]"
           >
             {PAGE_SIZE_OPTIONS.map((size) => (
               <option key={size} value={size}>
@@ -128,7 +126,7 @@ export default function Pagination({
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors touch-target"
+            className="p-2 rounded-lg text-[#4a4a5a] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-200 hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
             aria-label="Previous page"
           >
             <svg
@@ -149,12 +147,12 @@ export default function Pagination({
                 key={index}
                 onClick={() => typeof page === "number" && onPageChange(page)}
                 disabled={page === "..."}
-                className={`min-w-[40px] h-10 px-3 rounded-lg text-sm font-medium transition-colors touch-target ${
+                className={`min-w-[40px] h-10 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                   page === currentPage
-                    ? "bg-emerald-600 text-white"
+                    ? "bg-[#10b981] text-white shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff]"
                     : page === "..."
-                    ? "text-gray-400 cursor-default"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    ? "text-[#4a4a5a] cursor-default"
+                    : "text-[#4a4a5a] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
                 }`}
               >
                 {page}
@@ -165,7 +163,7 @@ export default function Pagination({
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors touch-target"
+            className="p-2 rounded-lg text-[#4a4a5a] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-200 hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
             aria-label="Next page"
           >
             <svg

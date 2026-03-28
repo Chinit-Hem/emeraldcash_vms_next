@@ -1,37 +1,40 @@
 "use client";
 
 import { BookOpen, Car, LayoutDashboard, Settings } from "lucide-react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 import type { LucideIcon } from "lucide-react";
 import { isIOSSafariBrowser } from "@/lib/platform";
 import { useMounted } from "@/lib/useMounted";
+import { useLanguage } from "@/lib/LanguageContext";
+import { OptimizedLink } from "./OptimizedLink";
 
 type NavItem = {
   label: string;
+  labelKm: string;
   href: string;
   icon: LucideIcon;
 };
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "LMS", href: "/lms", icon: BookOpen },
-  { label: "Vehicles", href: "/vehicles", icon: Car },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Dashboard", labelKm: "ផ្ទាំងគ្រប់គ្រង", href: "/", icon: LayoutDashboard },
+  { label: "LMS", labelKm: "ការបណ្តុះបណ្តាល", href: "/lms", icon: BookOpen },
+  { label: "Vehicles", labelKm: "យានយន្ត", href: "/vehicles", icon: Car },
+  { label: "Settings", labelKm: "ការកំណត់", href: "/settings", icon: Settings },
 ];
 
 export default function MobileBottomNav() {
   const pathname = usePathname() || "/";
-  const router = useRouter();
   const isIOSSafari = useMounted() && isIOSSafariBrowser();
+  const { language } = useLanguage();
 
-  // Prefetch all navigation routes on mount for instant navigation
-  useEffect(() => {
-    navItems.forEach((item) => {
-      router.prefetch(item.href);
-    });
-  }, [router]);
+  // Get translated nav items based on current language
+  const translatedNavItems = useMemo(() => {
+    return navItems.map(item => ({
+      ...item,
+      displayLabel: language === 'km' ? item.labelKm : item.label
+    }));
+  }, [language]);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/" || pathname === "/dashboard";
@@ -40,8 +43,8 @@ export default function MobileBottomNav() {
 
   // iOS-safe nav class
   const navClass = isIOSSafari
-    ? "fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 shadow-lg"
-    : "ec-mobileNav fixed inset-x-0 bottom-0 z-50";
+    ? "fixed inset-x-0 bottom-0 z-50 bg-neu-bg border-t border-neu-bg-dark shadow-lg"
+    : "neu-mobile-nav fixed inset-x-0 bottom-0 z-50";
 
   return (
     <nav
@@ -49,25 +52,20 @@ export default function MobileBottomNav() {
       aria-label="Primary navigation"
     >
       <div className="mx-auto flex h-16 max-w-2xl items-center justify-around px-2 sm:h-[70px]">
-        {navItems.map((item) => {
+        {translatedNavItems.map((item) => {
           const active = isActive(item.href);
           const Icon = item.icon;
 
           return (
-            <Link
+            <OptimizedLink
               key={item.label}
               href={item.href}
-              prefetch={true}
-              className={`flex min-w-[84px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 ${
-                active
-                  ? "border border-[var(--glass-border-strong)] bg-[var(--accent-green-soft)] text-[var(--accent-green)]"
-                  : "text-[var(--text-secondary)] hover:text-[var(--accent-green)]"
-              }`}
-              aria-current={active ? "page" : undefined}
+              className={`neu-mobile-nav-item ${active ? "active" : ""}`}
+              priority={active ? "high" : "normal"}
             >
               <Icon className="h-5 w-5" strokeWidth={active ? 2.35 : 1.9} />
-              <span className="text-xs font-medium">{item.label}</span>
-            </Link>
+              <span className="text-xs font-medium">{item.displayLabel}</span>
+            </OptimizedLink>
           );
         })}
       </div>

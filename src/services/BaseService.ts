@@ -119,11 +119,11 @@ export abstract class BaseService<TEntity extends BaseEntity, TDB extends BaseDB
   // Instance-level cache
   private cache: Map<string, CacheEntry<unknown>> = new Map();
   
-  // Default cache TTL in milliseconds (5 seconds for SSR freshness)
-  protected readonly DEFAULT_CACHE_TTL_MS = 5000;
+  // Default cache TTL (30 seconds for better hit rate)
+  protected readonly DEFAULT_CACHE_TTL_MS = 30000;
   
-  // Extended cache TTL for statistics (30 seconds - stats don't change frequently)
-  protected readonly STATS_CACHE_TTL_MS = 30000;
+  // Stats cache TTL (5 minutes - stats change infrequently)
+  protected readonly STATS_CACHE_TTL_MS = 300000;
   
   // Long cache TTL for reference data (5 minutes)
   protected readonly LONG_CACHE_TTL_MS = 300000;
@@ -438,11 +438,30 @@ export abstract class BaseService<TEntity extends BaseEntity, TDB extends BaseDB
         finalQuery = finalQuery.replace(placeholderRegex, replacement);
       }
 
-      // Execute query using executeUnsafe with detailed error handling
+      // Execute query using executeUnsafe with timeout and detailed error handling
+      // INCREASED: 45 seconds for large datasets with complex filters
+      const QUERY_TIMEOUT_MS = 45000;
+      
       let dbRecords: TDB[];
       try {
-        dbRecords = await dbManager.executeUnsafe<TDB>(finalQuery);
+        // Use dbManager's built-in timeout support for better retry handling
+        dbRecords = await dbManager.query(
+          () => dbManager.executeUnsafe<TDB>(finalQuery),
+          { 
+            operationName: `${this.serviceName}.getAll`,
+            maxRetries: 2,
+            timeoutMs: QUERY_TIMEOUT_MS 
+          }
+        );
       } catch (dbError) {
+        // Enhanced error logging for timeout scenarios
+        const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
+        console.error(`[${this.serviceName}.getAll] Query failed:`, {
+          error: errorMessage,
+          queryLength: finalQuery.length,
+          timeoutMs: QUERY_TIMEOUT_MS,
+          filters: filters ? Object.keys(filters) : 'none'
+        });
         throw dbError;
       }
       

@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { compressImage } from "@/lib/compressImage";
-import { refreshVehicleCache, writeVehicleCache } from "@/lib/vehicleCache";
+import { invalidateAllCaches, writeVehicleCache } from "@/lib/vehicleCache";
 import type { Vehicle } from "@/lib/types";
 
 interface UpdateVehicleData {
@@ -310,8 +310,8 @@ export function useUpdateVehicle(
           console.error("[useUpdateVehicle] Cache update error:", e);
         }
 
-        // Also trigger a background cache refresh
-        refreshVehicleCache().catch(() => {});
+        // Invalidate all caches to ensure vehicle list is updated across all components
+        invalidateAllCaches();
 
         // Pass the updated vehicle to the success callback so the UI can show the new image immediately
         onSuccess?.(updatedVehicle);

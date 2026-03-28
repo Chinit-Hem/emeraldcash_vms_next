@@ -224,7 +224,7 @@ export function withErrorHandling(
     const requestId = logger.getRequestId();
 
     // Add context if provided
-    const contextualLogger = context ? logger.child(context) : logger;
+    const contextualLogger = context ? logger.child({ context }) : logger;
 
     // Log request start
     contextualLogger.info(`API ${req.method} ${req.nextUrl.pathname} started`, {

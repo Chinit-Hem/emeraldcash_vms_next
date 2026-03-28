@@ -22,12 +22,36 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("[Global ErrorBoundary] Caught runtime error:", {
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      url: typeof window !== 'undefined' ? window.location.href : 'server'
+    });
+    
+    // Enhanced formDebugger capture
+    if (typeof window !== 'undefined') {
+      const formDebuggerContext = (window as any).formDebugger;
+      if (formDebuggerContext?.captureError) {
+        formDebuggerContext.captureError(error, {
+          componentStack: errorInfo.componentStack,
+          boundary: 'global',
+          url: window.location.href
+        });
+      }
+    }
   }
 
   handleRetry = () => {
     this.setState({ hasError: false, error: null });
+  };
+
+  handleDashboard = () => {
+    window.location.href = '/dashboard';
+  };
+
+  handleReload = () => {
     window.location.reload();
   };
 
@@ -58,17 +82,31 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
                 </svg>
               </div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                Something went wrong
+                Application Error
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
-                {this.state.error?.message || "An unexpected error occurred"}
+              <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">
+                Something went wrong in this section. You can try again or navigate elsewhere.
               </p>
-              <button
-                onClick={this.handleRetry}
-                className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold rounded-xl shadow-lg transition-all active:scale-[0.98] touch-target"
-              >
-                Reload Page
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={this.handleRetry}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-[0.98] touch-target"
+                >
+                  Try Again
+                </button>
+                <button
+                  onClick={this.handleDashboard}
+                  className="flex-1 py-3 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-[0.98] touch-target"
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={this.handleReload}
+                  className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-[0.98] touch-target"
+                >
+                  Reload
+                </button>
+              </div>
             </div>
           </div>
         </div>

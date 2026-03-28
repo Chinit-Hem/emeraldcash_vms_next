@@ -1,29 +1,46 @@
 "use client";
 
-import type { User, VehicleMeta } from "@/lib/types";
+import type { User } from "@/lib/types";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useMounted } from "@/lib/useMounted";
+import { useLanguage } from "@/lib/LanguageContext";
+import { useTranslation } from "@/lib/i18n";
+import { OptimizedLink } from "./OptimizedLink";
+import { useVehicleStats } from "@/lib/useVehiclesNeon";
 
 function normalizeCategory(value: unknown) {
   return String(value ?? "").trim().toLowerCase();
 }
 
-// Icon Components with consistent styling
+// Helper to check if category is TukTuk (handles "Tuk Tuk", "TukTuk", "tuktuk", etc.)
+function isTukTukCategory(value: unknown): boolean {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  return normalized === "tuk tuk" || normalized === "tuktuk" || normalized === "tuk-tuk" || normalized.includes("tuk");
+}
+
+// Icon Components
+function IconDashboard() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+    </svg>
+  );
+}
+
+function IconLms() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+    </svg>
+  );
+}
+
 function IconVehicles() {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="ec-sidebar-icon"
-      aria-hidden="true"
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
       <circle cx="7" cy="17" r="2" />
       <path d="M9 17h6" />
@@ -32,40 +49,9 @@ function IconVehicles() {
   );
 }
 
-function IconDashboard() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="ec-sidebar-icon"
-      aria-hidden="true"
-    >
-      <rect x="3" y="3" width="8" height="8" rx="1.5" />
-      <rect x="13" y="3" width="8" height="5" rx="1.5" />
-      <rect x="13" y="10" width="8" height="11" rx="1.5" />
-      <rect x="3" y="13" width="8" height="8" rx="1.5" />
-    </svg>
-  );
-}
-
 function IconCar() {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="ec-sidebar-icon"
-      aria-hidden="true"
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
       <circle cx="7" cy="17" r="2" />
       <path d="M9 17h6" />
@@ -76,17 +62,7 @@ function IconCar() {
 
 function IconMotorcycle() {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="ec-sidebar-icon"
-      aria-hidden="true"
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="5.5" cy="17.5" r="2.5" />
       <circle cx="17.5" cy="17.5" r="2.5" />
       <path d="M7 17h7l3-6H8.5" />
@@ -98,17 +74,7 @@ function IconMotorcycle() {
 
 function IconTukTuk() {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="ec-sidebar-icon"
-      aria-hidden="true"
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 16v-3a2 2 0 0 1 2-2h8l3 3v3" />
       <path d="M14 13V9a2 2 0 0 1 2-2h2" />
       <circle cx="7" cy="17" r="2" />
@@ -119,17 +85,7 @@ function IconTukTuk() {
 
 function IconAdd() {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="ec-sidebar-icon"
-      aria-hidden="true"
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
       <path d="M8 12h8" />
       <path d="M12 8v8" />
@@ -137,62 +93,20 @@ function IconAdd() {
   );
 }
 
+function IconFleet({ className }: { className?: string }) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+      <path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+    </svg>
+  );
+}
+
 function IconSettings() {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="ec-sidebar-icon"
-      aria-hidden="true"
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
       <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function IconLms() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="ec-sidebar-icon"
-      aria-hidden="true"
-    >
-      <path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v11A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z" />
-      <path d="M8 4v16" />
-      <path d="M12 8h6" />
-      <path d="M12 12h6" />
-      <path d="M12 16h4" />
-    </svg>
-  );
-}
-
-function IconChevron({ open }: { open: boolean }) {
-
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={`ec-sidebar-chevron ${open ? "ec-sidebar-chevron-open" : ""}`}
-      aria-hidden="true"
-    >
-      <path d="m6 9 6 6 6-6" />
     </svg>
   );
 }
@@ -202,347 +116,368 @@ interface SidebarProps {
   onNavigate?: () => void;
 }
 
-const SIDEBAR_LABELS = {
-  brand: "Emerald Cash",
-  badge: "VMS PRO",
-  sectionOverview: "OVERVIEW",
-  dashboard: "Dashboard",
-  sectionFilters: "QUICK FILTERS",
-  vehicleFilters: "Vehicle Filters",
-  allVehicles: "All Vehicles",
-  cars: "Cars",
-  motorcycles: "Motorcycles",
-  tukTuks: "TukTuks",
-  addVehicle: "Add Vehicle",
-  lms: "LMS",
-  adminLms: "Admin LMS",
-  settings: "Settings",
-} as const;
-
-// Navigation Item Component - Premium glass pill
-function NavItem({
-  href,
-  icon: Icon,
-  label,
-  active,
-  onClick,
-  subItem = false,
-  count,
-}: {
-  href: string;
-  icon: () => React.ReactNode;
+// NavItem component with clean Neumorphism and instant navigation
+interface NavItemProps {
+  icon: React.ComponentType<{className?: string}>;
   label: string;
   active: boolean;
   onClick: () => void;
-  subItem?: boolean;
   count?: number;
-}) {
+  href: string;
+}
+
+function NavItem({ 
+  icon: Icon, 
+  label, 
+  active, 
+  onClick, 
+  count,
+  href
+}: NavItemProps) {
+  return (
+    <OptimizedLink
+      href={href}
+      onClick={onClick}
+      className="flex items-center gap-4 w-full group"
+      priority={active ? "high" : "normal"}
+    >
+      <div className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all duration-200 ease-out ${
+        active 
+          ? "shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] text-[#2ecc71] scale-[0.98]" 
+          : "shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] text-[#4a5568] hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] hover:text-[#2ecc71] hover:scale-[0.98] active:scale-95"
+      }`}>
+        <Icon className="w-6 h-6" />
+      </div>
+      <div className="flex-1 text-left">
+        <span className={`text-sm font-medium transition-colors duration-200 ${active ? "text-[#2ecc71]" : "text-[#4a5568] group-hover:text-[#2ecc71]"}`}>
+          {label}
+        </span>
+        {count !== undefined && count > 0 && (
+          <span className="ml-2 text-xs bg-[#2ecc71] text-white px-2 py-0.5 rounded-full">
+            {count}
+          </span>
+        )}
+      </div>
+    </OptimizedLink>
+  );
+}
+
+// SubNavItem for filters
+interface SubNavItemProps {
+  icon: React.ComponentType<{className?: string}>;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  count?: number;
+}
+
+function SubNavItem({ 
+  icon: Icon, 
+  label, 
+  active, 
+  onClick, 
+  count 
+}: SubNavItemProps) {
   return (
     <button
       onClick={onClick}
-      className={`ec-sidebar-item ${active ? "ec-sidebar-item-active" : ""} ${
-        subItem ? "ec-sidebar-sub-item" : ""
-      }`}
+      className="flex items-center gap-3 w-full pl-4 group"
       aria-current={active ? "page" : undefined}
-      aria-label={label}
     >
-      <Icon />
-      <span className="truncate flex-1 text-left">{label}</span>
-      {count !== undefined && count > 0 && (
-        <span className="ml-auto rounded-full border border-[var(--glass-border-strong)] bg-[var(--accent-green-soft)] px-2 py-0.5 text-xs font-medium text-[var(--accent-green)]">
-          {count}
+      <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 ${
+        active 
+          ? "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] text-[#2ecc71]" 
+          : "shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] text-[#4a5568] hover:text-[#2d3748]"
+      }`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <div className="flex-1 text-left">
+        <span className={`text-sm ${active ? "text-[#2ecc71] font-medium" : "text-[#4a5568]"}`}>
+          {label}
         </span>
-      )}
+        {count !== undefined && count > 0 && (
+          <span className="ml-2 text-xs bg-[#2ecc71] text-white px-1.5 py-0.5 rounded-full">
+            {count}
+          </span>
+        )}
+      </div>
     </button>
   );
 }
 
-// Section Header Component - Clean uppercase labels
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <div className="ec-sidebar-section">
-      <span>{title}</span>
-    </div>
-  );
+// Quick Filter Button Component - Advanced Professional Neumorphism with instant navigation
+interface QuickFilterButtonProps {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  count?: number;
+  isActive: boolean;
+  onClick: () => void;
+  color: "emerald" | "blue" | "purple" | "orange" | "slate";
+  isAddButton?: boolean;
 }
 
-// Collapsible Section Component - Instant accordion (no transition delay)
-function CollapsibleSection({
-  title,
-  icon: Icon,
-  children,
-  defaultOpen = false,
-  active = false,
-}: {
-  title: string;
-  icon: () => React.ReactNode;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-  active?: boolean;
-}) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+function QuickFilterButton({ 
+  icon: Icon, 
+  label, 
+  count, 
+  isActive, 
+  onClick, 
+  color,
+  isAddButton,
+  href
+}: QuickFilterButtonProps) {
+  const colorStyles = {
+    emerald: {
+      active: "text-emerald-600",
+      inactive: "text-slate-700",
+      iconBg: "from-emerald-500/20 to-emerald-600/10",
+      iconBorder: "border-emerald-200/50",
+      countBg: "bg-emerald-500",
+    },
+    blue: {
+      active: "text-blue-600",
+      inactive: "text-slate-700",
+      iconBg: "from-blue-500/20 to-blue-600/10",
+      iconBorder: "border-blue-200/50",
+      countBg: "bg-blue-500",
+    },
+    purple: {
+      active: "text-purple-600",
+      inactive: "text-slate-700",
+      iconBg: "from-purple-500/20 to-purple-600/10",
+      iconBorder: "border-purple-200/50",
+      countBg: "bg-purple-500",
+    },
+    orange: {
+      active: "text-orange-600",
+      inactive: "text-slate-700",
+      iconBg: "from-orange-500/20 to-orange-600/10",
+      iconBorder: "border-orange-200/50",
+      countBg: "bg-orange-500",
+    },
+    slate: {
+      active: "text-slate-600",
+      inactive: "text-slate-500",
+      iconBg: "from-slate-500/20 to-slate-600/10",
+      iconBorder: "border-slate-200/50",
+      countBg: "bg-slate-500",
+    },
+  };
+
+  const styles = colorStyles[color];
 
   return (
-    <div>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`ec-sidebar-item ${active ? "ec-sidebar-item-active" : ""}`}
-        aria-expanded={isOpen}
-        aria-controls={`section-${title.toLowerCase().replace(/\s+/g, "-")}`}
-      >
-        <Icon />
-        <span className="truncate flex-1 text-left">{title}</span>
-        <IconChevron open={isOpen} />
-      </button>
-      <div
-        id={`section-${title.toLowerCase().replace(/\s+/g, "-")}`}
-        className={`mt-1 space-y-1 overflow-hidden ${
-          isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0 hidden"
-        }`}
-      >
-        {children}
+    <OptimizedLink
+      href={href}
+      onClick={onClick}
+      className={`group relative flex items-center justify-between w-full p-3 rounded-2xl transition-all duration-300 ease-out overflow-hidden ${
+        isActive
+          ? "shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] scale-[0.98]"
+          : "shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] hover:scale-[0.98] active:scale-95"
+      }`}
+      priority={isActive ? "high" : "normal"}
+    >
+      {/* Background gradient overlay */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${styles.iconBg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+      
+      <div className="relative z-10 flex items-center gap-3">
+        {/* Icon container with neumorphism */}
+        <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-300 ${
+          isActive
+            ? "shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
+            : "shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] group-hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
+        }`}>
+          {isAddButton ? (
+            <span className={`text-lg font-bold ${isActive ? styles.active : styles.inactive}`}>+</span>
+          ) : (
+            <Icon className={`w-5 h-5 transition-colors duration-300 ${isActive ? styles.active : styles.inactive}`} />
+          )}
+        </div>
+        
+        {/* Label */}
+        <span className={`text-sm font-medium transition-colors duration-300 ${isActive ? styles.active : styles.inactive}`}>
+          {label}
+        </span>
       </div>
-    </div>
+
+      {/* Count badge */}
+      {count !== undefined && count > 0 && (
+        <span className={`relative z-10 ${styles.countBg} text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm`}>
+          {count.toLocaleString()}
+        </span>
+      )}
+    </OptimizedLink>
   );
 }
-
-// Main routes to prefetch for instant navigation
-const MAIN_ROUTES = [
-  "/",
-  "/lms",
-  "/vehicles",
-  "/vehicles?category=Cars",
-  "/vehicles?category=Motorcycles",
-  "/vehicles?category=Tuk+Tuk",
-  "/settings",
-  "/admin/lms",
-  "/vehicles/add",
-];
 
 export default function Sidebar({ user, onNavigate }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [meta, setMeta] = useState<VehicleMeta | null>(null);
-  const isMounted = useMounted();
-
-  // Prefetch all main routes on mount for instant navigation
-  useEffect(() => {
-    if (!isMounted) return;
-    
-    // Prefetch routes in the background
-    MAIN_ROUTES.forEach((route) => {
-      router.prefetch(route);
-    });
-  }, [router, isMounted]);
-
-  // Fetch meta data for category counts (client-side only)
-  useEffect(() => {
-    if (!isMounted) return;
-    
-    async function fetchMeta() {
-      try {
-        // Check cache version first
-        const cacheVersion = localStorage.getItem("vms-vehicles-version");
-        if (cacheVersion === "3") {
-          const cachedMeta = localStorage.getItem("vms-vehicles-meta");
-          if (cachedMeta) {
-            setMeta(JSON.parse(cachedMeta));
-            return;
-          }
-        }
-        
-        // Fetch fresh data if no valid cache
-        const res = await fetch("/api/vehicles?noCache=1", { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.meta) {
-            setMeta(data.meta);
-            // Save to localStorage
-            localStorage.setItem("vms-vehicles-meta", JSON.stringify(data.meta));
-            localStorage.setItem("vms-vehicles-version", "2");
-          }
-        }
-      } catch (err) {
-        console.error("[Sidebar] Failed to fetch meta:", err);
-      }
-    }
-    
-    fetchMeta();
-    
-    // Listen for storage changes (when Dashboard updates cache)
-    const handleStorageChange = () => {
-      const cachedMeta = localStorage.getItem("vms-vehicles-meta");
-      if (cachedMeta) {
-        setMeta(JSON.parse(cachedMeta));
-      }
-    };
-    
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, [isMounted]);
+  const { stats } = useVehicleStats();
+  const { language } = useLanguage();
+  const { t } = useTranslation(language);
 
   const isAdmin = user.role === "Admin";
-
   const activeCategory = pathname === "/vehicles" ? searchParams?.get("category") || "" : "";
 
   // Route active states
   const isDashboardActive = pathname === "/" || pathname === "/dashboard";
-  const isVehiclesSectionActive = pathname.startsWith("/vehicles");
-  const isAllVehiclesActive = pathname === "/vehicles" && !activeCategory;
-  const isCarsActive = pathname === "/vehicles" && normalizeCategory(activeCategory) === "cars";
-  const isMotorcyclesActive = pathname === "/vehicles" && normalizeCategory(activeCategory) === "motorcycles";
-  const isTukTuksActive = pathname === "/vehicles" && normalizeCategory(activeCategory) === "tuk tuk";
-  const isAddActive = pathname === "/vehicles/add";
   const isLmsActive = pathname.startsWith("/lms");
   const isAdminLmsActive = pathname.startsWith("/admin/lms");
+  const isVehiclesActive = pathname === "/vehicles" && !activeCategory;
+  const isCarsActive = pathname === "/vehicles" && normalizeCategory(activeCategory) === "cars";
+  const isMotorcyclesActive = pathname === "/vehicles" && normalizeCategory(activeCategory) === "motorcycles";
+  const isTukTuksActive = pathname === "/vehicles" && (normalizeCategory(activeCategory) === "tuktuks" || isTukTukCategory(activeCategory));
+  const isAddActive = false; // Modal-based, no route
   const isSettingsActive = pathname === "/settings";
 
-  // Optimized navigation handler - immediate execution
   const handleNavigate = (href: string) => {
-    // Close sidebar immediately if callback provided
     onNavigate?.();
-    // Navigate immediately without deferral
     router.push(href);
   };
 
-  // Get counts from meta
-  const allVehiclesCount = meta?.total ?? 0;
-  const carsCount = meta?.countsByCategory?.Cars ?? 0;
-  const motorcyclesCount = meta?.countsByCategory?.Motorcycles ?? 0;
-  const tukTuksCount = meta?.countsByCategory?.TukTuks ?? 0;
+  // Get counts
+  const allVehiclesCount = stats?.total ?? 0;
+  const carsCount = stats?.byCategory?.Cars ?? 0;
+  const motorcyclesCount = stats?.byCategory?.Motorcycles ?? 0;
+  const tukTuksCount = stats?.byCategory?.TukTuks ?? 0;
+
 
   return (
-    <aside className="ec-sidebar w-[280px] h-screen overflow-y-auto flex flex-col print:hidden relative z-[50]">
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true" />
-
-      {/* Header - Premium brand lockup */}
-      <div className="relative border-b border-[var(--glass-border)] p-6">
+    <aside className="w-[280px] h-screen overflow-y-auto flex flex-col bg-[#e0e5ec] shadow-[9px_9px_16px_#bebebe,-9px_-9px_16px_#ffffff] print:hidden relative z-[50]">
+      {/* Header */}
+      <div className="p-6 pb-4">
         <div className="flex items-center gap-4">
-          <div
-            className="relative w-12 h-12 flex items-center justify-center flex-shrink-0 overflow-hidden"
-          >
+          <div className="w-14 h-14 flex items-center justify-center rounded-2xl shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] bg-[#e0e5ec]">
             <Image
               src="/logo.png"
               alt="Emerald Cash"
-              width={44}
-              height={44}
-              className="w-11 h-11 object-contain"
+              width={40}
+              height={40}
+              className="w-10 h-10 object-contain"
               priority
             />
           </div>
-          <div className="min-w-0 flex flex-col">
-            <h1 className="text-lg font-bold tracking-tight leading-tight text-[var(--text-primary)]">
-              {SIDEBAR_LABELS.brand}
-            </h1>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="ec-sidebar-badge">{SIDEBAR_LABELS.badge}</span>
-            </div>
+          <div>
+            <h1 className="text-lg font-bold text-[#2d3748]">Emerald Cash</h1>
+            <span className="text-xs bg-[#2ecc71] text-white px-2 py-0.5 rounded-full">VMS PRO</span>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="relative flex-1 p-4 space-y-1" aria-label="Main navigation">
-        {/* Main */}
-        <SectionHeader title={SIDEBAR_LABELS.sectionOverview} />
-        <NavItem
-          href="/"
-          icon={IconDashboard}
-          label={SIDEBAR_LABELS.dashboard}
-          active={isDashboardActive}
-          onClick={() => handleNavigate("/")}
-        />
-        <NavItem
-          href="/lms"
-          icon={IconLms}
-          label={SIDEBAR_LABELS.lms}
-          active={isLmsActive}
-          onClick={() => handleNavigate("/lms")}
-        />
-        {isAdmin && (
+      <nav className="flex-1 px-6 py-4 flex flex-col gap-6" aria-label="Main navigation">
+        {/* Main Section */}
+        <div className="flex flex-col gap-4">
           <NavItem
-            href="/admin/lms"
+            href="/"
+            icon={IconDashboard}
+            label={t.dashboard}
+            active={isDashboardActive}
+            onClick={() => handleNavigate("/")}
+          />
+          <NavItem
+            href="/lms"
             icon={IconLms}
-            label={SIDEBAR_LABELS.adminLms}
-            active={isAdminLmsActive}
-            onClick={() => handleNavigate("/admin/lms")}
+            label={language === 'km' ? 'ការបណ្តុះបណ្តាល' : 'LMS'}
+            active={isLmsActive || isAdminLmsActive}
+            onClick={() => handleNavigate("/lms")}
           />
-        )}
+        </div>
 
-        {/* Quick filters and deep links */}
-        <SectionHeader title={SIDEBAR_LABELS.sectionFilters} />
-        <CollapsibleSection
-          title={SIDEBAR_LABELS.vehicleFilters}
-          icon={IconVehicles}
-          defaultOpen={isVehiclesSectionActive}
-          active={isAllVehiclesActive}
-        >
-          <NavItem
-            href="/vehicles"
-            icon={IconVehicles}
-            label={SIDEBAR_LABELS.allVehicles}
-            active={isAllVehiclesActive}
-            onClick={() => handleNavigate("/vehicles")}
-            subItem
-            count={allVehiclesCount}
-          />
-          <NavItem
-            href="/vehicles?category=Cars"
-            icon={IconCar}
-            label={SIDEBAR_LABELS.cars}
-            active={isCarsActive}
-            onClick={() => handleNavigate("/vehicles?category=Cars")}
-            subItem
-            count={carsCount}
-          />
-          <NavItem
-            href="/vehicles?category=Motorcycles"
-            icon={IconMotorcycle}
-            label={SIDEBAR_LABELS.motorcycles}
-            active={isMotorcyclesActive}
-            onClick={() => handleNavigate("/vehicles?category=Motorcycles")}
-            subItem
-            count={motorcyclesCount}
-          />
-          <NavItem
-            href="/vehicles?category=Tuk+Tuk"
-            icon={IconTukTuk}
-            label={SIDEBAR_LABELS.tukTuks}
-            active={isTukTuksActive}
-            onClick={() => handleNavigate("/vehicles?category=Tuk+Tuk")}
-            subItem
-            count={tukTuksCount}
-          />
-          {isAdmin && (
-            <NavItem
-              href="/vehicles/add"
-              icon={IconAdd}
-              label={SIDEBAR_LABELS.addVehicle}
-              active={isAddActive}
-              onClick={() => handleNavigate("/vehicles/add")}
-              subItem
+        {/* Quick Filters Section - Advanced Professional Neumorphism */}
+        <div className="px-4 py-6">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 px-2">
+            {language === 'km' ? 'តម្រងរហ័ស' : 'Quick Filters'}
+          </h2>
+          
+          <div className="flex flex-col gap-3">
+            {/* All Vehicles */}
+            <QuickFilterButton
+              href="/vehicles"
+              icon={IconFleet}
+              label={t.vehicles}
+              count={allVehiclesCount}
+              isActive={isVehiclesActive}
+              onClick={() => handleNavigate("/vehicles")}
+              color="emerald"
             />
-          )}
-        </CollapsibleSection>
 
-        <NavItem
-          href="/settings"
-          icon={IconSettings}
-          label={SIDEBAR_LABELS.settings}
-          active={isSettingsActive}
-          onClick={() => handleNavigate("/settings")}
-        />
+            {/* Cars */}
+            <QuickFilterButton
+              href="/vehicles?category=cars"
+              icon={IconCar}
+              label={language === 'km' ? 'រថយន្ត' : 'Cars'}
+              count={carsCount}
+              isActive={isCarsActive}
+              onClick={() => handleNavigate("/vehicles?category=cars")}
+              color="blue"
+            />
+
+            {/* Motorcycles */}
+            <QuickFilterButton
+              href="/vehicles?category=motorcycles"
+              icon={IconMotorcycle}
+              label={language === 'km' ? 'ម៉ូតូ' : 'Motorcycles'}
+              count={motorcyclesCount}
+              isActive={isMotorcyclesActive}
+              onClick={() => handleNavigate("/vehicles?category=motorcycles")}
+              color="purple"
+            />
+
+            {/* TukTuks */}
+            <QuickFilterButton
+              href="/vehicles?category=tuktuks"
+              icon={IconTukTuk}
+              label={language === 'km' ? 'ទុកទុក' : 'TukTuks'}
+              count={tukTuksCount}
+              isActive={isTukTuksActive}
+              onClick={() => handleNavigate("/vehicles?category=tuktuks")}
+              color="orange"
+            />
+
+            {/* Add Vehicle - Admin only */}
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('openAddVehicleModal'));
+                  onNavigate?.();
+                }}
+                className="group relative flex items-center justify-between w-full p-3 rounded-2xl transition-all duration-300 ease-out overflow-hidden shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] hover:scale-[0.98] active:scale-95"
+              >
+                <div className="relative z-10 flex items-center gap-3">
+                  <div className="w-10 h-10 flex items-center justify-center rounded-xl shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] group-hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]">
+                    <span className="text-lg font-bold text-slate-700">+</span>
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">
+                    {language === 'km' ? 'បន្ថែមយានយន្ត' : 'Add Vehicle'}
+                  </span>
+                </div>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Settings */}
+        <div className="mt-auto">
+          <NavItem
+            href="/settings"
+            icon={IconSettings}
+            label={t.settings}
+            active={isSettingsActive}
+            onClick={() => handleNavigate("/settings")}
+          />
+        </div>
       </nav>
 
-      {/* Footer - Subtle copyright */}
-      <div className="relative border-t border-[var(--glass-border)] p-4">
-        <p className="text-center text-xs font-medium text-[var(--text-secondary)]">
-          © 2025 Emerald Cash
-        </p>
+      {/* Footer */}
+      <div className="p-6 pt-4">
+        <div className="text-center text-xs text-[#718096]">
+          {language === 'km' ? '© ២០២៥ អេមរ៉ាល់ខាស' : '© 2025 Emerald Cash'}
+        </div>
       </div>
-
     </aside>
   );
 }

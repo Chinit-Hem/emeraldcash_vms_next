@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthUser } from "@/app/components/AuthContext";
-import { GlassButton } from "@/app/components/ui/GlassButton";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

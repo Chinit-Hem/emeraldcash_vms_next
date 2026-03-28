@@ -20,9 +20,11 @@ const contentSecurityPolicy = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob:",
   "worker-src 'self' blob:",
   "style-src 'self' 'unsafe-inline' https:",
-  "img-src 'self' data: blob: https://drive.google.com https://*.googleusercontent.com https://*.googleapis.com https://res.cloudinary.com https:",
+  // Allow images from any HTTPS source (Google Drive, Dropbox, OneDrive, etc.)
+  "img-src 'self' data: blob: https:",
   "font-src 'self' data: https:",
-  "connect-src 'self' https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.googleusercontent.com https://api.cloudinary.com https://www.youtube.com https://*.youtube.com https:",
+  // Allow connections to any HTTPS source for URL validation
+  "connect-src 'self' data: https://script.google.com https://script.googleusercontent.com https://*.googleapis.com https://*.googleusercontent.com https://api.cloudinary.com https://www.youtube.com https://*.youtube.com https:",
   "frame-src 'self' https://www.youtube.com https://*.youtube.com",
   "child-src 'self' https://www.youtube.com https://*.youtube.com",
 ].join("; ");
@@ -43,7 +45,7 @@ const apiCorsHeaders = [
   { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization, X-Requested-With, Accept, Origin" },
   { key: "Access-Control-Max-Age", value: "86400" },
   { key: "Vary", value: "Origin" },
-  { key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private" },
+{ key: "Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=300" },
   { key: "Pragma", value: "no-cache" },
   ...(allowCredentials
     ? [{ key: "Access-Control-Allow-Credentials", value: "true" }]
@@ -51,17 +53,24 @@ const apiCorsHeaders = [
 ];
 
 const authSensitivePageHeaders = [
-  { key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private" },
+  { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=60, private" },
   { key: "Pragma", value: "no-cache" },
   { key: "Vary", value: "Cookie, User-Agent" },
 ];
 
 const nextConfig = {
+  serverExternalPackages: ['@neondatabase/serverless'],
+  // swcMinify: removed (Next.js 16+)
+  generateEtags: true,
   outputFileTracingRoot: process.cwd(),
+
+  // Build optimizations for faster builds
+  productionBrowserSourceMaps: false,
+  compress: true,
 
   // Allow LAN device testing in development (mobile Safari/Chrome).
   // Added 192.168.195.1 for local network access
-  allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.195.1", devLanIp].filter(Boolean),
+  allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.1.100", "192.168.195.1", devLanIp].filter(Boolean),
 
   // Add Cloudinary image domain for Next.js Image component
   images: {
@@ -72,7 +81,11 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    // Optimize images for faster builds
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
+
 
   async headers() {
     return [

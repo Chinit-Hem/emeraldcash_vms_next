@@ -1,8 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { headers } from "next/headers";
+import { Suspense } from "react";
 import "../styles/globals.css";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { LanguageProvider } from "@/lib/LanguageContext";
+import { InstantNavigationProvider } from "@/app/components/InstantNavigationProvider";
+import { PrefetchProvider } from "@/app/components/OptimizedLink";
+import { NeuDashboardSkeleton } from "@/app/components/skeletons/NeuDashboardSkeleton";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -94,14 +99,22 @@ export default async function RootLayout({
   const iosSafariClassName = isIOSSafariUserAgent(userAgent) ? "ios-safari" : "";
 
   return (
-    <html lang="en" className={iosSafariClassName} suppressHydrationWarning>
+    <html lang="en" dir="ltr" className={iosSafariClassName} suppressHydrationWarning>
       <head>
         <script id="ios-safari-guard" dangerouslySetInnerHTML={{ __html: iosSafariGuardScript }} />
         <script id="theme-init" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         <ThemeProvider>
-          {children}
+          <LanguageProvider>
+            <InstantNavigationProvider>
+              <PrefetchProvider>
+                <Suspense fallback={<NeuDashboardSkeleton />}>
+                  {children}
+                </Suspense>
+              </PrefetchProvider>
+            </InstantNavigationProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -69,7 +69,7 @@ export function EditStaffForm({
     fullName: staff.full_name || "",
     email: staff.email || "",
     branchLocation: staff.branch_location || "",
-    role: (staff.role as LmsRole) || "Trainee",
+    role: (staff.role as LmsRole) || "Staff",
     phone: staff.phone || "",
     isActive: staff.is_active ?? true,
   });
@@ -84,7 +84,7 @@ export function EditStaffForm({
       fullName: staff.full_name || "",
       email: staff.email || "",
       branchLocation: staff.branch_location || "",
-      role: (staff.role as LmsRole) || "Trainee",
+      role: (staff.role as LmsRole) || "Staff",
       phone: staff.phone || "",
       isActive: staff.is_active ?? true,
     });

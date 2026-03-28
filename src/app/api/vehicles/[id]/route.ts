@@ -85,8 +85,8 @@ export async function GET(
 // Constants for timeout configuration
 // Note: Image uploads are now handled directly by the frontend to Cloudinary
 // This API only receives the image URL and updates the database
-const DB_TIMEOUT_MS = 5000; // 5 seconds for database operations
-const TOTAL_TIMEOUT_MS = 10000; // 10 seconds total request timeout (reduced since no image processing)
+const DB_TIMEOUT_MS = 30000; // 30 seconds for database operations (increased from 5000)
+const TOTAL_TIMEOUT_MS = 35000; // 35 seconds total request timeout (increased to accommodate DB operations)
 
 export async function PUT(
   req: NextRequest,

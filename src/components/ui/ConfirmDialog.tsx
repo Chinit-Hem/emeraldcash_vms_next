@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useCallback } from "react";
-import { GlassCard } from "./GlassCard";
-import { GlassButton } from "./GlassButton";
+import { GlassCard } from "./glass/GlassCard";
+import { GlassButton } from "./glass/GlassButton";
 
 interface ConfirmDialogProps {
   isOpen: boolean;

@@ -12,22 +12,22 @@
 
 import { dbManager } from "@/lib/db-singleton";
 import {
-  type LmsCategory,
-  type LmsLesson,
-  type LmsStaff,
-  type LmsLessonCompletion,
-  type LmsCategoryWithLessons,
-  type LmsStaffWithStats,
-  type LmsDashboardStats,
   type CreateLmsCategoryInput,
-  type UpdateLmsCategoryInput,
   type CreateLmsLessonInput,
-  type UpdateLmsLessonInput,
   type CreateLmsStaffInput,
-  type UpdateLmsStaffInput,
+  type LmsCategory,
+  type LmsCategoryWithLessons,
+  type LmsDashboardStats,
+  type LmsLesson,
+  type LmsLessonCompletion,
+  type LmsStaff,
+  type LmsStaffWithStats,
   type MarkLessonCompleteInput,
-  extractYoutubeVideoId,
+  type UpdateLmsCategoryInput,
+  type UpdateLmsLessonInput,
+  type UpdateLmsStaffInput,
   calculateCompletionPercentage,
+  extractYoutubeVideoId,
 } from "@/lib/lms-schema";
 
 // ============================================================================
@@ -306,14 +306,47 @@ export class LmsService {
   /**
    * Get all lessons for a category
    */
-  async getLessonsByCategory(categoryId: number): Promise<ServiceResult<LmsLesson[]>> {
+async getLessonsByCategory(categoryId: number): Promise<ServiceResult<LmsLesson[]>> {
+    const startTime = Date.now();
+    
+    try {
+      const result = await dbManager.execute`SELECT * FROM lms_lessons 
+        WHERE category_id = $1 AND is_active = true
+        ORDER BY order_index, id`(categoryId);
+      
+      const rows = extractRows<LmsLesson>(result);
+      
+      const duration = Date.now() - startTime;
+      console.log(`[LMS-PERF] getLessonsByCategory(${categoryId}): ${duration}ms, ${rows.length} lessons`);
+      
+      return {
+        success: true,
+        data: rows,
+        meta: { durationMs: duration, queryCount: 1, optimized: true },
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch lessons";
+      console.error(`[LMS-PERF] getLessonsByCategory(${categoryId}) ERROR: ${duration}ms`, errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+        meta: { durationMs: duration, queryCount: 1 },
+      };
+    }
+  }
+
+  /**
+   * Get all lessons across all categories (for admin)
+   */
+  async getAllLessons(): Promise<ServiceResult<LmsLesson[]>> {
     const startTime = Date.now();
     
     try {
       const query = `
         SELECT * FROM lms_lessons 
-        WHERE category_id = ${categoryId} AND is_active = true
-        ORDER BY order_index, id
+        WHERE is_active = true
+        ORDER BY category_id, order_index, id
       `;
       
       const result = await dbManager.executeUnsafe(query);
@@ -325,7 +358,7 @@ export class LmsService {
         meta: { durationMs: Date.now() - startTime, queryCount: 1 },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to fetch lessons";
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch all lessons";
       return {
         success: false,
         error: errorMessage,
@@ -337,7 +370,7 @@ export class LmsService {
   /**
    * Get single lesson by ID
    */
-  async getLessonById(id: number): Promise<ServiceResult<LmsLesson>> {
+async getLessonById(id: number): Promise<ServiceResult<LmsLesson>> {
     const startTime = Date.now();
     
     try {
@@ -988,22 +1021,24 @@ export class LmsService {
           s.id as staff_id,
           s.full_name as staff_name,
           s.branch_location as branch,
+          s.role,
           COUNT(lc.lesson_id) as completed_count,
           MAX(lc.completed_at) as last_activity
         FROM lms_staff s
         LEFT JOIN lms_lesson_completions lc ON lc.staff_id = s.id
         WHERE s.is_active = true
-        GROUP BY s.id, s.full_name, s.branch_location
+        GROUP BY s.id, s.full_name, s.branch_location, s.role
         ORDER BY completed_count DESC
       `;
       
       const staffProgressResult = await dbManager.executeUnsafe(staffProgressQuery);
-      const staffProgressRows = extractRows<{ staff_id: number; staff_name: string; branch: string | null; completed_count: number; last_activity: string | null }>(staffProgressResult);
+      const staffProgressRows = extractRows<{ staff_id: number; staff_name: string; branch: string | null; role: string; completed_count: number; last_activity: string | null }>(staffProgressResult);
       
       const staffProgress = staffProgressRows.map((s) => ({
         staff_id: s.staff_id,
         staff_name: s.staff_name,
         branch: s.branch,
+        role: s.role,
         completion_percentage: calculateCompletionPercentage(
           parseInt(String(s.completed_count)),
           parseInt(String(counts.total_lessons))

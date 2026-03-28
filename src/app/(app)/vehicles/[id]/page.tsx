@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuthUser } from "@/app/components/AuthContext";
 import { VehicleDetailsCard } from "@/app/components/vehicles/VehicleDetailsCard";
 import { VehicleForm } from "@/app/components/vehicles/VehicleForm";
-import { GlassCard } from "@/app/components/ui/GlassCard";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
 import { CardSkeleton } from "@/app/components/LoadingSkeleton";
 
 import { extractDriveFileId } from "@/lib/drive";

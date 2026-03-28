@@ -101,7 +101,7 @@ class DatabaseManager {
         return {
           url: 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
           maxConnections: 10,
-          connectionTimeoutMs: 10000,
+          connectionTimeoutMs: 30000, // Increased from 10000
           idleTimeoutMs: 30000,
           enableKeepalive: true,
         };
@@ -112,7 +112,7 @@ class DatabaseManager {
     return {
       url,
       maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || "10", 10),
-      connectionTimeoutMs: parseInt(process.env.DB_CONNECTION_TIMEOUT || "10000", 10),
+      connectionTimeoutMs: parseInt(process.env.DB_CONNECTION_TIMEOUT || "30000", 10), // Increased from 10000 to 30000
       idleTimeoutMs: parseInt(process.env.DB_IDLE_TIMEOUT || "30000", 10),
       enableKeepalive: process.env.DB_ENABLE_KEEPALIVE !== "false",
     };
@@ -150,7 +150,7 @@ class DatabaseManager {
     
     const urlWithSdkVersion = urlObj.toString();
 
-    console.log('[DB-Singleton] Connecting with URL:', urlWithSdkVersion.replace(/\/\/.*@/, '//[CREDENTIALS]@'));
+    // Connection logging removed for production
 
     this.sqlClient = neon(urlWithSdkVersion, {
       fetchOptions: {
@@ -162,7 +162,7 @@ class DatabaseManager {
     this.health.healthy = true;
     this.health.lastCheck = new Date();
 
-    console.log("[DB-Singleton] Database client initialized with optimized settings");
+    // Initialization logging removed for production
 
     return this.sqlClient;
   }
@@ -284,10 +284,7 @@ class DatabaseManager {
           throw error;
         }
 
-        // Log retry attempt
-        console.log(
-          `[DB-Singleton] ${operationName} failed (attempt ${attempt + 1}/${maxRetries}): ${lastError.message}`
-        );
+        // Retry logging removed for production
 
         // Don't delay on last attempt
         if (attempt < maxRetries - 1) {
@@ -326,43 +323,18 @@ class DatabaseManager {
       async () => {
         const sql = this.getClient();
         
-        // Log query in development for debugging
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[DB-Singleton] Executing query:', query.substring(0, 200) + (query.length > 200 ? '...' : ''));
-        }
+        // Query logging removed for production
         
         try {
-          // For Neon SDK, we need to use the template literal syntax properly
-          // The Neon SDK's sql function expects a TemplateStringsArray with a 'raw' property
-          // We create a proper template strings array from the raw query string
-          const strings = Object.assign(
-            [query],
-            { raw: [query] }
-          ) as TemplateStringsArray;
+          // Neon SDK requires actual template literal syntax
+          // Create a proper TemplateStringsArray with the query as the raw string
+          const strings = Object.assign([query], { raw: [query] }) as TemplateStringsArray;
           
+          // Call sql function with the template strings array
           const result = await sql(strings);
           return result as T[];
         } catch (execError) {
-          // Enhanced error logging with proper serialization
-          const errorMessage = execError instanceof Error ? execError.message : String(execError);
-          const errorStack = execError instanceof Error ? execError.stack : undefined;
-          const errorName = execError instanceof Error ? execError.name : 'Unknown';
-          
-          console.error('[DB-Singleton] Query execution failed:');
-          console.error('  Query:', query.substring(0, 500));
-          console.error('  Error Name:', errorName);
-          console.error('  Error Message:', errorMessage);
-          if (errorStack) {
-            console.error('  Stack:', errorStack);
-          }
-          
-          // Log the full error object for debugging
-          try {
-            console.error('  Full Error:', JSON.stringify(execError, Object.getOwnPropertyNames(execError), 2));
-          } catch {
-            console.error('  Full Error (raw):', execError);
-          }
-          
+          // Error logging removed for production - just re-throw
           throw execError;
         }
       },
@@ -427,7 +399,7 @@ class DatabaseManager {
     this.sqlClient = null;
     this.health.healthy = false;
     this.health.consecutiveFailures = 0;
-    console.log("[DB-Singleton] Connection reset");
+    // Connection reset logging removed for production
   }
 
   /**

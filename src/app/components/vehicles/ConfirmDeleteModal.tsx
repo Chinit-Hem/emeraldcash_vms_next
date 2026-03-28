@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useCallback, useState, useRef } from "react";
-import { GlassCard } from "../ui/GlassCard";
-import { GlassButton } from "../ui/GlassButton";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { formatCurrency } from "@/lib/format";
 import type { Vehicle } from "@/lib/types";
 
@@ -10,7 +10,7 @@ interface ConfirmDeleteModalProps {
   vehicle: Vehicle;
   isOpen: boolean;
   isDeleting: boolean;
-  userRole: "Admin" | "Staff" | "Viewer";
+  userRole: "Admin" | "Staff" | "Viewer" | string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -31,24 +31,8 @@ export function ConfirmDeleteModal({
   onConfirm,
   onCancel,
 }: ConfirmDeleteModalProps) {
-  const [confirmText, setConfirmText] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
   const isAdmin = userRole === "Admin";
   const canDelete = isAdmin;
-
-  // Expected confirmation text - user must type "DELETE" or the plate number
-  const expectedText = vehicle.Plate || "DELETE";
-  const isConfirmed = confirmText.trim().toUpperCase() === expectedText.toUpperCase();
-
-  // Focus input when modal opens
-  useEffect(() => {
-    if (isOpen && canDelete) {
-      const timer = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, canDelete]);
 
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback(
@@ -56,11 +40,11 @@ export function ConfirmDeleteModal({
       if (e.key === "Escape") {
         onCancel();
       }
-      if (e.key === "Enter" && isConfirmed && !isDeleting) {
+      if (e.key === "Enter" && !isDeleting) {
         onConfirm();
       }
     },
-    [onCancel, onConfirm, isConfirmed, isDeleting]
+    [onCancel, onConfirm, isDeleting]
   );
 
   useEffect(() => {
@@ -75,16 +59,6 @@ export function ConfirmDeleteModal({
     };
   }, [isOpen, handleKeyDown]);
 
-  // Reset state when modal closes
-  const wasOpenRef = useRef(isOpen);
-  useEffect(() => {
-    if (wasOpenRef.current && !isOpen) {
-      deferMicrotask(() => {
-        setConfirmText("");
-      });
-    }
-    wasOpenRef.current = isOpen;
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -228,50 +202,6 @@ export function ConfirmDeleteModal({
               </div>
             </div>
 
-            {/* Confirmation Input */}
-            <div className="mb-6">
-              <label
-                htmlFor="delete-confirm"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                To confirm deletion, type{" "}
-                <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-red-600 dark:text-red-400 font-mono font-semibold">
-                  {expectedText}
-                </code>
-              </label>
-              <input
-                ref={inputRef}
-                id="delete-confirm"
-                type="text"
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
-                placeholder={`Type ${expectedText} to confirm`}
-                className={`
-                  ec-liquid-input w-full h-11 px-4
-                  rounded-xl text-center font-mono uppercase
-                  transition-all duration-200
-                  ${isConfirmed
-                    ? "border-emerald-400/60 bg-emerald-500/5"
-                    : "border-red-400/60 bg-red-500/5"
-                  }
-                `}
-                aria-invalid={!isConfirmed}
-                autoComplete="off"
-              />
-              {isConfirmed ? (
-                <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Confirmation matches. You may proceed.
-                </p>
-              ) : (
-                <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-                  Type exactly <strong>{expectedText}</strong> to enable deletion
-                </p>
-              )}
-            </div>
-
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3">
               <GlassButton
@@ -279,7 +209,7 @@ export function ConfirmDeleteModal({
                 fullWidth
                 isLoading={isDeleting}
                 onClick={onConfirm}
-                disabled={!isConfirmed || isDeleting}
+                disabled={isDeleting}
                 className="order-1 sm:order-2"
               >
                 {isDeleting ? "Deleting..." : "Permanently Delete Vehicle"}

@@ -2,9 +2,9 @@
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { NextRequest, NextResponse } from "next/server";
-import { vehicleService, type VehicleDB } from "@/services/VehicleService";
 import type { Vehicle } from "@/lib/types";
+import { vehicleService, type VehicleDB } from "@/services/VehicleService";
+import { NextRequest, NextResponse } from "next/server";
 
 // ============================================================================
 // Helper Functions
@@ -83,14 +83,56 @@ export async function OPTIONS(req: NextRequest) {
   });
 }
 
-// GET /api/cleaned-vehicles - Get all cleaned vehicles from Google Sheets
+// GET /api/cleaned-vehicles - Get all cleaned vehicles or a single vehicle by ID
 // Uses VehicleService for optimized ILIKE filtering and SSR performance
 export async function GET(req: NextRequest) {
   const startTime = Date.now();
 
   try {
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get("limit") || "100");
+    
+    // Check if requesting a single vehicle by ID
+    const vehicleId = searchParams.get("id");
+    if (vehicleId) {
+      const vehicleIdNum = parseInt(vehicleId);
+      if (isNaN(vehicleIdNum)) {
+        return NextResponse.json({
+          success: false,
+          error: "Invalid vehicle ID format",
+        }, {
+          status: 400,
+          headers: buildCorsHeaders(req),
+        });
+      }
+
+      // Fetch single vehicle
+      const result = await vehicleService.getVehicleById(vehicleIdNum);
+      
+      if (!result.success) {
+        return NextResponse.json({
+          success: false,
+          error: result.error || "Vehicle not found",
+        }, {
+          status: result.error?.includes("not found") ? 404 : 500,
+          headers: buildCorsHeaders(req),
+        });
+      }
+
+      const responseHeaders = new Headers(buildCorsHeaders(req));
+      responseHeaders.set("X-Response-Time", `${Date.now() - startTime}ms`);
+
+      return NextResponse.json({
+        success: true,
+        data: result.data ? [result.data] : [],
+        meta: {
+          durationMs: result.meta?.durationMs || (Date.now() - startTime),
+        },
+      }, {
+        headers: responseHeaders,
+      });
+    }
+
+const limit = parseInt(searchParams.get("limit") || "500"); // Increased for pagination fix (DB total 1218)
     const offset = parseInt(searchParams.get("offset") || "0");
     const category = searchParams.get("category");
     const brand = searchParams.get("brand");

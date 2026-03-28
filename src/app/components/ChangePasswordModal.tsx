@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { GlassButton } from "@/app/components/ui/GlassButton";
-import { GlassInput } from "@/app/components/ui/GlassInput";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
+import { GlassInput } from "@/components/ui/glass/GlassInput";
 
 interface ChangePasswordModalProps {
   isOpen: boolean;

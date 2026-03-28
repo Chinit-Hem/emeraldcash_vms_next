@@ -6,8 +6,9 @@ import { recordMutation } from "./vehicleCache";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.trim();
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
-const REQUEST_TIMEOUT_MS = 30000;
-const FETCH_TIMEOUT_MS = 30000; // 30 seconds for fetchJSON (increased from 15s for large datasets)
+const REQUEST_TIMEOUT_MS = 60000; // 60 seconds for apiRequest
+// INCREASED: 60 seconds for fetchJSON to match server-side handler timeout (45s) + buffer
+const FETCH_TIMEOUT_MS = 60000;
 
 // Auth configuration - support both Bearer header and query token
 const USE_QUERY_TOKEN = process.env.NEXT_PUBLIC_USE_QUERY_TOKEN === "true";
@@ -131,13 +132,7 @@ export async function fetchJSON<T = unknown>(
     requestUrl = urlObj.toString();
   }
 
-  // Log request in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[API] ${options.method || 'GET'} ${requestUrl}`);
-    if (token && !USE_QUERY_TOKEN) {
-      console.log(`[API] Auth: Bearer token present`);
-    }
-  }
+  // Request logging removed for production
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -167,11 +162,7 @@ export async function fetchJSON<T = unknown>(
     // Get response text first for logging and error handling
     const responseText = await response.text();
 
-    // Log response in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[API] ${response.status} ${response.statusText}`);
-      console.log(`[API] Response: ${responseText.substring(0, 500)}${responseText.length > 500 ? '...' : ''}`);
-    }
+    // Response logging removed for production
 
     // Handle authentication errors
     if (response.status === 401) {
@@ -239,6 +230,13 @@ export async function fetchJSON<T = unknown>(
         "NOT_FOUND"
       );
     }
+    if (response.status === 504) {
+      throw new ApiError(
+        "The server took too long to respond. This usually happens when the database is processing a large query. Please try again or refresh the page.", 
+        504, 
+        "GATEWAY_TIMEOUT"
+      );
+    }
     if (response.status >= 500) {
       throw new ApiError(
         "The server encountered an error. Please try again later.", 
@@ -283,7 +281,11 @@ export async function fetchJSON<T = unknown>(
       throw new NetworkError(
         `Request timed out after ${FETCH_TIMEOUT_MS/1000} seconds.\n\n` +
         `URL: ${requestUrl}\n` +
-        `The server may be slow or unreachable.`
+        `The server may be slow or processing a large dataset.\n\n` +
+        `Suggestions:\n` +
+        `• Try refreshing the page\n` +
+        `• Check your internet connection\n` +
+        `• The database may be under heavy load`
       );
     }
 
@@ -347,7 +349,10 @@ async function apiRequest<T>(
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      // Use longer timeout for vehicle endpoints that may have large datasets
+      const isVehicleEndpoint = endpoint.includes('/vehicles');
+      const timeoutMs = isVehicleEndpoint ? REQUEST_TIMEOUT_MS : 30000;
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const response = await fetch(url, {
         ...options,
@@ -410,9 +415,11 @@ async function apiRequest<T>(
       const isLastAttempt = attempt === retries;
       const isRetryableError =
         error instanceof NetworkError ||
-        (error instanceof ApiError && error.status >= 500) ||
+        (error instanceof ApiError && (error.status >= 500 || error.status === 504)) ||
         error.name === "AbortError" ||
-        error.message?.includes("fetch");
+        error.message?.includes("fetch") ||
+        error.message?.includes("timeout") ||
+        error.message?.includes("Gateway timeout");
 
       if (isLastAttempt || !isRetryableError) {
         if (error instanceof ApiError) {
@@ -423,9 +430,18 @@ async function apiRequest<T>(
         );
       }
 
-      // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
-      console.warn(`[API] Retry ${attempt}/${retries} for ${endpoint}:`, error.message);
+      // Exponential backoff with jitter for timeout errors
+      // Use longer delays for timeout errors to give server time to recover
+      const isTimeoutError = 
+        error instanceof NetworkError ||
+        error.message?.includes("timeout") ||
+        error.message?.includes("Gateway timeout") ||
+        (error instanceof ApiError && error.status === 504);
+      
+      const baseDelay = isTimeoutError ? 2000 : 1000;
+      const delayMs = Math.min(baseDelay * Math.pow(2, attempt - 1), 8000) + Math.random() * 500;
+      // Retry logging removed for production
+      await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
 
@@ -553,9 +569,7 @@ export const vehicleApi = {
 
     const endpoint = `/api/vehicles?${params.toString()}`;
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[vehicleApi] Fetching from endpoint:', endpoint);
-    }
+    // Request logging removed for production
     
     try {
       const response = await fetchJSON<{ ok: boolean; data: Vehicle[]; meta?: VehicleMeta; error?: string }>(endpoint);
@@ -571,9 +585,6 @@ export const vehicleApi = {
       // b) Vehicle[]
       if (Array.isArray(response)) {
         // Direct array response: Vehicle[]
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[vehicleApi] Normalized array response to { data, meta }');
-        }
         return { data: response, meta: undefined };
       } else if (response.data && Array.isArray(response.data)) {
         // { data, meta } format
@@ -581,12 +592,8 @@ export const vehicleApi = {
       } else if (response.data === undefined && Array.isArray((response as unknown as { vehicles?: Vehicle[] }).vehicles)) {
         // Alternative: { vehicles: [...] } format
         return { data: (response as unknown as { vehicles: Vehicle[] }).vehicles, meta: (response as unknown as { meta?: VehicleMeta }).meta };
-
-
-
       } else {
-        // Unexpected format - log for debugging
-        console.error('[vehicleApi] Unexpected response format:', response);
+        // Unexpected format - throw error
         throw new ApiError(
           "Unexpected API response format. Expected { data: Vehicle[] } or Vehicle[].", 
           500,

@@ -1,10 +1,11 @@
 "use client";
 
+import { cn } from "@/lib/ui";
 import { useAuthUser } from "@/app/components/AuthContext";
 import DashboardHeader from "@/app/components/dashboard/DashboardHeader";
 import DeleteConfirmationModal from "@/app/components/dashboard/DeleteConfirmationModal";
 import FiltersBar from "@/app/components/dashboard/FiltersBar";
-import KpiCard from "@/app/components/dashboard/KpiCard";
+import { NeuKpiCard } from "@/components/ui/neu/NeuKpiCard";
 import Pagination from "@/app/components/dashboard/Pagination";
 import VehicleCardMobile from "@/app/components/dashboard/VehicleCardMobile";
 import VehicleModal from "@/app/components/dashboard/VehicleModal";
@@ -21,8 +22,8 @@ import { isIOSSafariBrowser } from "@/lib/platform";
 
 import { useSearchParams } from "next/navigation";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useToast } from "@/app/components/ui/GlassToast";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useToast } from "@/components/ui/glass/GlassToast";
 import { onVehicleCacheUpdate } from "@/lib/vehicleCache";
 import { driveThumbnailUrl } from "@/lib/drive";
 import { derivePrices } from "@/lib/pricing";
@@ -861,32 +862,58 @@ export default function VehiclesClient() {
   }, [filteredMeta, meta, vehicles, viewMode, isFiltered]);
 
 
-  // Handlers
-  const handleSort = (field: keyof Vehicle) => {
+  // Handlers - Optimized with useCallback for instant response
+  const handleSort = useCallback((field: keyof Vehicle) => {
     if (sortField === field) {
       setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortField(field);
       setSortDirection("asc");
     }
-  };
+  }, [sortField]);
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setSelectedVehicle(null);
     setEditingVehicle(null);
     setIsAddEditModalOpen(true);
-  };
+  }, []);
 
-  const handleEditClick = (vehicle: Vehicle) => {
+  const handleEditClick = useCallback((vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
     setEditingVehicle(vehicle);
     setIsAddEditModalOpen(true);
-  };
+  }, []);
 
-  const handleDeleteClick = (vehicle: Vehicle) => {
+  const handleDeleteClick = useCallback((vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
     setIsDeleteModalOpen(true);
-  };
+  }, []);
+
+  // Instant filter handlers for KPI cards
+  const handleTotalClick = useCallback(() => {
+    setFilters(prev => ({ ...prev, category: "All" }));
+    setViewMode("all-time");
+  }, []);
+
+  const handleCarsClick = useCallback(() => {
+    setFilters(prev => ({ ...prev, category: "Cars" }));
+    setViewMode("filtered");
+  }, []);
+
+  const handleMotorcyclesClick = useCallback(() => {
+    setFilters(prev => ({ ...prev, category: "Motorcycles" }));
+    setViewMode("filtered");
+  }, []);
+
+  const handleTukTuksClick = useCallback(() => {
+    setFilters(prev => ({ ...prev, category: "TukTuks" }));
+    setViewMode("filtered");
+  }, []);
+
+  const handlePriceClick = useCallback(() => {
+    setSortField("PriceNew");
+    setSortDirection("desc");
+  }, []);
 
 
   // Handle adding a new vehicle (POST /api/vehicles)
@@ -1146,10 +1173,12 @@ export default function VehiclesClient() {
   }
 
   return (
-    <div className="min-h-screen pb-20 lg:pb-0">
+    <div className="min-h-screen pb-20 lg:pb-0 bg-[#e0e5ec]">
       <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
-        {/* Header */}
-        <DashboardHeader />
+        {/* Header - Neumorphism Style */}
+        <div className="mb-6">
+          <DashboardHeader />
+        </div>
 
         {isIOSSafari ? (
           <div className="mb-4 rounded-xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-900/20 dark:text-amber-200">
@@ -1157,9 +1186,9 @@ export default function VehiclesClient() {
           </div>
         ) : null}
 
-        {/* Data Status Bar - Enterprise Grade */}
+        {/* Data Status Bar - Neumorphism Style */}
         {!loading && !error && (
-          <div className="ec-status-bar relative z-[1] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6 p-4 bg-gradient-to-r from-white/90 to-white/70 dark:from-gray-800/90 dark:to-gray-800/70 backdrop-blur-md rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+          <div className="relative z-[1] flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6 p-5 bg-[#e0e5ec] rounded-[20px] shadow-[8px_8px_16px_#a3b1c6,-8px_-8px_16px_#ffffff]">
             {/* Left Section - Info & Controls */}
             <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-6 text-sm">
               {/* Last Sync */}
@@ -1291,88 +1320,117 @@ export default function VehiclesClient() {
         )}
 
 
-        {/* KPI Cards - Enterprise Grade with Glassmorphism */}
+        {/* KPI Cards - Professional Neumorphism Design */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-          <KpiCard
+          <NeuKpiCard
+            category="total"
             label={viewMode === "filtered" && isFiltered ? "Filtered Vehicles" : "Total Vehicles"}
             value={kpis.total.toLocaleString()}
-            accent="green"
             subtitle={viewMode === "filtered" && isFiltered ? `of ${meta?.total ?? vehicles.length} total` : undefined}
+            onClick={handleTotalClick}
+            isActive={filters.category === "All"}
           />
-          <KpiCard
+          <NeuKpiCard
+            category="cars"
             label="Cars"
             value={kpis.cars.toLocaleString()}
-            accent="blue"
+            onClick={handleCarsClick}
+            isActive={filters.category === "Cars"}
           />
-          <KpiCard
+          <NeuKpiCard
+            category="motorcycles"
             label="Motorcycles"
             value={kpis.motorcycles.toLocaleString()}
-            accent="orange"
+            onClick={handleMotorcyclesClick}
+            isActive={filters.category === "Motorcycles"}
           />
-          <KpiCard
+          <NeuKpiCard
+            category="tuktuks"
             label="Tuk Tuks"
             value={kpis.tukTuks.toLocaleString()}
-            accent="green"
+            onClick={handleTukTuksClick}
+            isActive={filters.category === "TukTuks"}
           />
-          <KpiCard
+          <NeuKpiCard
+            category="price"
             label="Avg Price"
             value={kpis.avgPrice > 0 ? `$${Math.round(kpis.avgPrice).toLocaleString()}` : "-"}
-            accent="blue"
+            onClick={handlePriceClick}
           />
         </div>
 
 
-        {/* Add Button */}
+        {/* Add Button - Professional Neumorphism */}
         {isAdmin && (
-          <div className="mb-4">
-            <GlassButton onClick={handleAdd} className="w-full sm:w-auto">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                className="h-5 w-5 mr-2"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="M8 12h8" />
-                <path d="M12 8v8" />
-              </svg>
-              Add Vehicle
-            </GlassButton>
+          <div className="mb-6">
+            <button
+              onClick={handleAdd}
+              className={cn(
+                "group flex items-center gap-3 px-6 py-3.5 rounded-xl",
+                "bg-[#e0e5ec] text-[#2ecc71]",
+                "shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff]",
+                "hover:shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]",
+                "active:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
+                "hover:text-[#27ad60]",
+                "transition-all duration-200",
+                "w-full sm:w-auto",
+                "font-semibold text-sm"
+              )}
+            >
+              <div className={cn(
+                "flex items-center justify-center w-8 h-8 rounded-lg",
+                "bg-[#2ecc71] text-white",
+                "shadow-[2px_2px_4px_#27ad60,-2px_-2px_4px_#35eb82]",
+                "group-hover:shadow-[inset_2px_2px_4px_#27ad60,inset_-2px_-2px_4px_#35eb82]",
+                "transition-all duration-200"
+              )}>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  className="h-5 w-5"
+                >
+                  <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                </svg>
+              </div>
+              <span>Add Vehicle</span>
+            </button>
           </div>
         )}
 
-        {/* Filters - Enhanced with proper totals */}
-        <FiltersBar
-          filters={filters}
-          onFilterChange={setFilters}
-          vehicles={vehicles}
-          resultCount={filteredVehicles.length}
-          totalCount={viewMode === "filtered" ? filteredVehicles.length : (meta?.total ?? vehicles.length)}
-          isFiltered={isFiltered}
-          onClearFilters={() => {
-            setFilters({
-              search: "",
-              category: "All",
-              brand: "All",
-              yearMin: "",
-              yearMax: "",
-              priceMin: "",
-              priceMax: "",
-              condition: "All",
-              color: "All",
-              dateFrom: "",
-              dateTo: "",
-              withoutImage: false,
-            });
-            setViewMode("all-time");
-          }}
-        />
+        {/* Filters Section */}
+        <div className="mb-6 relative z-10">
+          <FiltersBar
+            filters={filters}
+            onFilterChange={setFilters}
+            vehicles={vehicles}
+            resultCount={filteredVehicles.length}
+            totalCount={viewMode === "filtered" ? filteredVehicles.length : (meta?.total ?? vehicles.length)}
+            isFiltered={isFiltered}
+            onClearFilters={() => {
+              setFilters({
+                search: "",
+                category: "All",
+                brand: "All",
+                yearMin: "",
+                yearMax: "",
+                priceMin: "",
+                priceMax: "",
+                condition: "All",
+                color: "All",
+                dateFrom: "",
+                dateTo: "",
+                withoutImage: false,
+              });
+              setViewMode("all-time");
+            }}
+          />
+        </div>
 
-
-        {/* Content */}
-        <div className="ec-glassPanel rounded-2xl overflow-hidden">
+        {/* Content Section - Neumorphism Style */}
+        <div className="rounded-[20px] overflow-hidden bg-[#e0e5ec] shadow-[8px_8px_16px_#a3b1c6,-8px_-8px_16px_#ffffff]">
           {/* Error State - Show immediately without waiting for loading */}
           {error && (
             <div className="p-8 text-center">

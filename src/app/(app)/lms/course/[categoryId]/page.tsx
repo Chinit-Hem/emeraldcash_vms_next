@@ -27,8 +27,8 @@ import {
   AlertCircle,
   GraduationCap,
 } from "lucide-react";
-import { GlassCard } from "@/app/components/ui/GlassCard";
-import { GlassButton } from "@/app/components/ui/GlassButton";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { LessonCard } from "@/app/components/lms/LessonCard";
 
 // ============================================================================
@@ -226,8 +226,8 @@ export default function CourseOverviewPage() {
     }
   };
   
-  // Get color theme
-  const colors = colorClasses[category?.color || "emerald"];
+  // Get color theme with fallback
+  const colors = colorClasses[category?.color || "emerald"] || colorClasses.emerald;
   
   if (loading) {
     return (

@@ -106,22 +106,19 @@ export function useHydrationSafe(options: UseHydrationSafeOptions = {}): UseHydr
   const [isMounted, setIsMounted] = useState(false);
   const [isBrowser] = useState(() => isBrowserEnvironment());
 
-  // Set mounted state with optional delay
+  // Set mounted state immediately - no delay
   useEffect(() => {
     if (!isBrowser) return;
 
-    const timer = setTimeout(() => {
-      setIsMounted(true);
-      if (debug) {
-        console.log("[useHydrationSafe] Component mounted, browser APIs now safe");
-      }
-    }, delayMs);
+    setIsMounted(true);
+    if (debug) {
+      console.log("[useHydrationSafe] Component mounted, browser APIs now safe");
+    }
 
     return () => {
-      clearTimeout(timer);
       setIsMounted(false);
     };
-  }, [isBrowser, delayMs, debug]);
+  }, [isBrowser, debug]);
 
   // Safe localStorage getter
   const getItem = useCallback((key: string, defaultValue?: string): string | null => {
@@ -233,8 +230,8 @@ export function useLocalStorage<T>(
       if (isMounted) {
         setItem(key, JSON.stringify(value));
       }
-    } catch (error) {
-      console.error(`[useLocalStorage] Error setting value for "${key}":`, error);
+    } catch {
+      // Error handling removed for production
     }
   }, [key, isMounted, setItem]);
 
@@ -245,8 +242,8 @@ export function useLocalStorage<T>(
       if (isMounted) {
         removeItem(key);
       }
-    } catch (error) {
-      console.error(`[useLocalStorage] Error removing "${key}":`, error);
+    } catch {
+      // Error handling removed for production
     }
   }, [key, initialValue, isMounted, removeItem]);
 
@@ -254,19 +251,14 @@ export function useLocalStorage<T>(
   useEffect(() => {
     if (!isMounted) return;
     
-    // Use setTimeout to avoid synchronous setState in effect
-    const timeoutId = setTimeout(() => {
-      try {
-        const item = getItem(key);
-        if (item !== null) {
-          setStoredValue(JSON.parse(item) as T);
-        }
-      } catch {
-        // Ignore parse errors
+    try {
+      const item = getItem(key);
+      if (item !== null) {
+        setStoredValue(JSON.parse(item) as T);
       }
-    }, 0);
-    
-    return () => clearTimeout(timeoutId);
+    } catch {
+      // Ignore parse errors
+    }
   }, [isMounted, key, getItem]);
 
   return [storedValue, setValue, remove];
@@ -281,16 +273,15 @@ export function useLocalStorage<T>(
  * if (!isMounted) return null; // or loading state
  * ```
  */
-export function useMounted(delayMs: number = 0): boolean {
+export function useMounted(): boolean {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsMounted(true), delayMs);
+    setIsMounted(true);
     return () => {
-      clearTimeout(timer);
       setIsMounted(false);
     };
-  }, [delayMs]);
+  }, []);
 
   return isMounted;
 }
@@ -305,12 +296,7 @@ export function useIsIOSSafari(): boolean {
   useEffect(() => {
     if (!isMounted) return;
     
-    // Use setTimeout to avoid synchronous setState in effect
-    const timeoutId = setTimeout(() => {
-      setIsIOSSafariState(isIOSSafari());
-    }, 0);
-    
-    return () => clearTimeout(timeoutId);
+    setIsIOSSafariState(isIOSSafari());
   }, [isMounted]);
 
   return isIOSSafariState;

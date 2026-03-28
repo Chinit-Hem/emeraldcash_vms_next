@@ -21,6 +21,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { processImageForUpload } from "@/lib/clientImageCompression";
+import { fileToDataUrl } from "@/lib/fileToDataUrl";
 
 // ============================================================================
 // Types & Interfaces
@@ -108,6 +109,12 @@ export function ImageInput({
       return;
     }
 
+    // If this URL has already failed, don't try to show it again
+    // This prevents the preview from reappearing after onError clears it
+    if (failedUrl === value) {
+      return;
+    }
+
     // Force cache key update to prevent browser caching old image
     setCacheKey(prev => prev + 1);
 
@@ -146,29 +153,39 @@ export function ImageInput({
       }
     }
     
-    // iOS Safari fix: Validate URL format more strictly
-    let validatedUrl = value;
+    // For external URLs coming from parent (initial data), show them
+    // The img onError handler will catch load failures
     if (isUrl) {
-      // Ensure URL is properly encoded for iOS
+      // iOS Safari fix: Validate URL format more strictly
+      let validatedUrl = value;
       try {
         const urlObj = new URL(value);
         validatedUrl = urlObj.href;
       } catch {
-        // If URL parsing fails, use as-is
         validatedUrl = value;
       }
+      
+      // Reset fallback state when value changes
+      setIsUsingFallback(false);
+      setFailedUrl(null);
+      
+      setPreview({
+        url: validatedUrl,
+        name: "Image URL",
+        isUrl: true,
+      });
+    } else {
+      // For data URLs, show immediately
+      setIsUsingFallback(false);
+      setFailedUrl(null);
+      
+      setPreview({
+        url: value,
+        name: "Uploaded Image",
+        isUrl: false,
+      });
     }
-    
-    // Reset fallback state when value changes
-    setIsUsingFallback(false);
-    setFailedUrl(null);
-    
-    setPreview({
-      url: validatedUrl,
-      name: isUrl ? "Image URL" : isDataUrl ? "Uploaded Image" : "Image",
-      isUrl: isUrl,
-    });
-  }, [value, maxSizeMB]);
+  }, [value, maxSizeMB, failedUrl]);
 
   // ============================================================================
   // Helpers
@@ -198,10 +215,46 @@ export function ImageInput({
     // Minimum valid base64 length (at least a few bytes)
     if (base64Data.length < 10) return false;
     
-    // Check for valid base64 characters
-    if (!/^[A-Za-z0-9+/=]+$/.test(base64Data)) return false;
+    // Check for valid base64 characters (allow common corruption patterns)
+    // Relaxed check: allow any characters that aren't obviously wrong
+    const cleaned = base64Data.replace(/[\s\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF…]/g, '');
+    if (cleaned.length < 10) return false;
     
     return true;
+  };
+
+  /**
+   * Clean base64 data URL to remove invalid characters
+   * This prevents atob() failures by sanitizing the data at the source
+   */
+  const cleanDataUrl = (url: string): string => {
+    if (!url.startsWith("data:")) return url;
+    
+    const commaIndex = url.indexOf(",");
+    if (commaIndex === -1) return url;
+    
+    const header = url.substring(0, commaIndex);
+    let base64Data = url.substring(commaIndex + 1);
+    
+    // Remove all whitespace and control characters
+    base64Data = base64Data.replace(/[\s\u0000-\u001F\u007F-\u009F\u200B-\u200D\uFEFF]/g, '');
+    
+    // Remove ellipsis characters (truncation indicator)
+    base64Data = base64Data.replace(/…/g, '').replace(/\u2026/g, '');
+    
+    // Convert URL-safe base64 to standard
+    base64Data = base64Data.replace(/-/g, "+").replace(/_/g, "/");
+    
+    // Remove all non-base64 characters (keep only A-Z, a-z, 0-9, +, /)
+    base64Data = base64Data.replace(/[^A-Za-z0-9+/]/g, '');
+    
+    // Add padding if needed
+    const remainder = base64Data.length % 4;
+    if (remainder !== 0) {
+      base64Data += "=".repeat(4 - remainder);
+    }
+    
+    return `${header},${base64Data}`;
   };
 
   const getDataUrlSize = (url: string): number => {
@@ -236,12 +289,7 @@ export function ImageInput({
   }, []);
 
   const readFileAsDataUrl = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsDataURL(file);
-    });
+    return fileToDataUrl(file);
   };
 
   // ============================================================================
@@ -300,11 +348,14 @@ export function ImageInput({
         objectUrlRef.current = null;
       }
       
+      // Clean the data URL to prevent atob() failures
+      const cleanedDataUrl = cleanDataUrl(dataUrl);
+      
       // Update preview with compressed data URL
-      onChange(dataUrl);
+      onChange(cleanedDataUrl);
       setCacheKey(prev => prev + 1); // Force re-render with new image
       setPreview({
-        url: dataUrl,
+        url: cleanedDataUrl,
         name: processedFile.name,
         size: processedFile.size,
         isUrl: false,
@@ -313,10 +364,14 @@ export function ImageInput({
       // If compression fails, keep the original preview and still use it
       console.warn("[ImageInput] Compression failed, using original file:", err);
       const dataUrl = await readFileAsDataUrl(file);
-      onChange(dataUrl);
+      
+      // Clean the data URL to prevent atob() failures
+      const cleanedDataUrl = cleanDataUrl(dataUrl);
+      
+      onChange(cleanedDataUrl);
       setCacheKey(prev => prev + 1); // Force re-render with new image
       setPreview({
-        url: dataUrl,
+        url: cleanedDataUrl,
         name: file.name,
         size: file.size,
         isUrl: false,
@@ -381,18 +436,56 @@ export function ImageInput({
         throw new Error("Please enter a valid image URL (http://...)");
       }
 
-      // Test if image loads
+      // Test if image loads with timeout and CORS handling
       const img = new Image();
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = () => reject(new Error("Failed to load image from URL"));
+      
+      // Only enable CORS for domains known to support it
+      // Many image hosts (like IIHS) don't send CORS headers, so we skip CORS for display-only
+      const trustedCorsDomains = [
+        'cloudinary.com',
+        'imgur.com',
+        'unsplash.com',
+        'images.unsplash.com',
+        'picsum.photos',
+        'placehold.co',
+        'via.placeholder.com'
+      ];
+      const shouldUseCors = trustedCorsDomains.some(domain => trimmedUrl.includes(domain));
+      
+      if (shouldUseCors) {
+        img.crossOrigin = "anonymous";
+      }
+      // For non-CORS domains, we don't set crossOrigin - image will load for display
+      // but can't be manipulated in canvas (which is fine for our use case)
+      
+      const imageLoadPromise = new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error("Image load timeout - URL may be inaccessible"));
+        }, 10000); // 10 second timeout
+        
+        img.onload = () => {
+          clearTimeout(timeoutId);
+          resolve(undefined);
+        };
+        
+        img.onerror = () => {
+          clearTimeout(timeoutId);
+          // Provide more specific error message based on URL pattern
+          if (trimmedUrl.includes('drive.google.com') || trimmedUrl.includes('googleusercontent.com')) {
+            reject(new Error("Google Drive images require public sharing. Try downloading and uploading directly."));
+          } else if (trimmedUrl.includes('dropbox.com')) {
+            reject(new Error("Dropbox links need to be converted to direct download links (change ?dl=0 to ?dl=1)"));
+          } else {
+            reject(new Error("Failed to load image. The URL may be private, blocked, or the image no longer exists."));
+          }
+        };
+        
         img.src = trimmedUrl;
       });
 
-      // Clear preview immediately and update cache key to prevent caching
-      setPreview(null);
-      setCacheKey(prev => prev + 1);
-      
+      await imageLoadPromise;
+
+      // Only update parent and show preview after successful validation
       onChange(trimmedUrl);
       setPreview({
         url: trimmedUrl,
@@ -400,10 +493,13 @@ export function ImageInput({
         isUrl: true,
       });
       setUrlInput("");
+      setCacheKey(prev => prev + 1);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Invalid image URL";
       setError(message);
-      console.error("[ImageInput] URL validation error:", err);
+      // Don't update parent or show preview for failed URLs
+      // Keep input field visible for retry
+      console.warn("[ImageInput] URL validation warning:", message);
     } finally {
       setIsLoading(false);
     }
@@ -557,11 +653,14 @@ export function ImageInput({
               alt="Preview"
               className="max-h-48 mx-auto rounded-lg object-contain"
               onError={(e) => {
-                // iOS Safari fix: Handle image load errors gracefully
-                // Silently fallback to placeholder - no console logging to reduce noise
-                // The UI already indicates the issue via placeholder and image name label
+                // Handle image load errors - clear preview and show error
+                // This allows user to try a different URL
                 setFailedUrl(preview.url);
                 setIsUsingFallback(true);
+                setError("Failed to load image from URL. The image may be private, blocked, or no longer exists.");
+                // Clear the preview to show the URL input again
+                setPreview(null);
+                // Don't change the parent value - let user decide to remove or try again
                 e.currentTarget.src = "/placeholder-car.svg"; // Fallback to placeholder
               }}
               onLoad={() => {

@@ -7,6 +7,7 @@ import {
   DuplicateError,
   ValidationError,
 } from "./errors";
+import { log } from "./logger";
 
 export interface UserDB {
   username: string;
@@ -15,19 +16,17 @@ export interface UserDB {
   created_at: string;
   updated_at: string;
   created_by: string;
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  bio?: string;
+  profile_picture?: string;
 }
 
 // Validation constants
 const USERNAME_REGEX = /^[a-z0-9._-]{3,32}$/;
 const MAX_PASSWORD_HASH_LENGTH = 255;
 const VALID_ROLES: Role[] = ["Admin", "Staff"];
-
-// Logger utility for structured logging
-function log(level: "INFO" | "ERROR" | "DEBUG", message: string, meta?: Record<string, unknown>): void {
-  const timestamp = new Date().toISOString();
-  const metaStr = meta ? ` ${JSON.stringify(meta)}` : "";
-  console.log(`[${timestamp}] [${level}] [USER_DB] ${message}${metaStr}`);
-}
 
 // Input validation functions
 function validateUsername(username: string): void {
@@ -414,5 +413,128 @@ export async function countAdminUsers(): Promise<number> {
       error: error instanceof Error ? error.message : String(error)
     });
     throw new DatabaseError("Failed to count admin users");
+  }
+}
+
+// Migrate users table to add profile fields
+export async function migrateUsersTable(): Promise<void> {
+  log("INFO", "Migrating users table to add profile fields");
+  
+  try {
+    // Add new columns if they don't exist
+    await queryWithRetry(
+      async () => sql`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'full_name') THEN
+            ALTER TABLE users ADD COLUMN full_name VARCHAR(100);
+          END IF;
+          
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'email') THEN
+            ALTER TABLE users ADD COLUMN email VARCHAR(255);
+          END IF;
+          
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'phone') THEN
+            ALTER TABLE users ADD COLUMN phone VARCHAR(20);
+          END IF;
+          
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'bio') THEN
+            ALTER TABLE users ADD COLUMN bio TEXT;
+          END IF;
+          
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'profile_picture') THEN
+            ALTER TABLE users ADD COLUMN profile_picture TEXT;
+          END IF;
+        END $$;
+      `,
+      "migrateUsersTable"
+    );
+    
+    log("INFO", "Users table migration completed successfully");
+  } catch (error) {
+    log("ERROR", "Failed to migrate users table", { 
+      error: error instanceof Error ? error.message : String(error) 
+    });
+    throw new DatabaseError("Failed to migrate users table");
+  }
+}
+
+// Update user profile
+export async function updateUserProfileInDB(params: {
+  username: string;
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  bio?: string;
+  profile_picture?: string;
+}): Promise<UserDB> {
+  log("INFO", "Updating user profile", { username: params.username });
+  
+  // Validate username
+  try {
+    validateUsername(params.username);
+  } catch (error) {
+    log("ERROR", "Input validation failed for profile update", { 
+      username: params.username,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    throw error;
+  }
+  
+  const normalizedUsername = params.username.trim().toLowerCase();
+  
+  try {
+    // Check if user exists before updating
+    await checkUserExists(normalizedUsername);
+    
+    // Get current user data to merge updates
+    const currentUser = await getUserByUsername(normalizedUsername);
+    if (!currentUser) {
+      throw new NotFoundError("User");
+    }
+    
+    // Build update with merged values
+    const full_name = params.full_name !== undefined ? params.full_name : currentUser.full_name;
+    const email = params.email !== undefined ? params.email : currentUser.email;
+    const phone = params.phone !== undefined ? params.phone : currentUser.phone;
+    const bio = params.bio !== undefined ? params.bio : currentUser.bio;
+    const profile_picture = params.profile_picture !== undefined ? params.profile_picture : currentUser.profile_picture;
+    
+    const result = await queryWithRetry(
+      async () => sql`
+        UPDATE users 
+        SET 
+          full_name = ${full_name || null},
+          email = ${email || null},
+          phone = ${phone || null},
+          bio = ${bio || null},
+          profile_picture = ${profile_picture || null},
+          updated_at = CURRENT_TIMESTAMP
+        WHERE username = ${normalizedUsername}
+        RETURNING *
+      `,
+      "updateUserProfileInDB"
+    );
+    
+    if (!result || result.length === 0) {
+      log("ERROR", "Profile update returned no rows", { username: normalizedUsername });
+      throw new DatabaseError("Failed to update user profile - no rows affected");
+    }
+    
+    log("INFO", "User profile updated successfully", { username: normalizedUsername });
+    return result[0] as UserDB;
+  } catch (error) {
+    // Re-throw known errors
+    if (error instanceof NotFoundError || 
+        error instanceof ValidationError || 
+        error instanceof DatabaseError) {
+      throw error;
+    }
+    
+    log("ERROR", "Error updating user profile", { 
+      username: normalizedUsername,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    throw new DatabaseError("Failed to update user profile in database");
   }
 }

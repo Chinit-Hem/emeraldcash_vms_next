@@ -20,7 +20,7 @@ export function readVehicleCache(): Vehicle[] | null {
       localStorage.removeItem(CACHE_KEY);
       localStorage.removeItem(META_KEY);
       localStorage.setItem(CACHE_VERSION_KEY, CURRENT_CACHE_VERSION);
-      console.log("[vehicleCache] Cache version mismatch, cleared old cache");
+      // Cache logging removed for production
       return null;
     }
     
@@ -116,7 +116,7 @@ export function recordMutation(): void {
   try {
     const now = Date.now();
     localStorage.setItem(LAST_MUTATION_KEY, now.toString());
-    console.log("[vehicleCache] Mutation recorded at", new Date(now).toISOString());
+    // Mutation logging removed for production
   } catch {
     // ignore errors
   }
@@ -153,14 +153,14 @@ export function isCacheStale(): boolean {
   
   // If mutation occurred after cache was written, it's stale
   if (mutationTime && mutationTime > cacheTime) {
-    console.log("[vehicleCache] Cache is stale: mutation occurred after cache");
+    // Cache logging removed for production
     return true;
   }
   
   // Check if cache is older than stale threshold
   const age = Date.now() - cacheTime;
   if (age > CACHE_STALE_MS) {
-    console.log("[vehicleCache] Cache is stale: age", age, "ms exceeds threshold", CACHE_STALE_MS, "ms");
+    // Cache logging removed for production
     return true;
   }
   
@@ -193,7 +193,7 @@ export function clearAllVehicleCache(): void {
     localStorage.removeItem(META_KEY);
     localStorage.removeItem(CACHE_TIMESTAMP_KEY);
     localStorage.removeItem(LAST_MUTATION_KEY);
-    console.log("[vehicleCache] All cache cleared");
+    // Cache logging removed for production
   } catch {
     // ignore errors
   }
@@ -232,17 +232,12 @@ export function clearCacheOnMount(): void {
   
   const cacheAge = getCacheAge();
   
-  // Log cache status for debugging
-  if (cacheAge !== null) {
-    const ageMinutes = Math.round(cacheAge / 60000);
-    console.log(`[vehicleCache] Cache age: ${cacheAge}ms (${ageMinutes}min)`);
-    
-    // Only clear if cache is truly expired (10+ minutes) - prevents cache-invalidation-storm
-    if (cacheAge > MAX_CACHE_AGE_MS) {
-      console.log(`[vehicleCache] Cache is expired (${ageMinutes} min > ${MAX_CACHE_AGE_MS / 60000} min), clearing...`);
-      clearAllVehicleCache();
-      return;
-    }
+  // Cache logging removed for production
+  
+  // Only clear if cache is truly expired (10+ minutes) - prevents cache-invalidation-storm
+  if (cacheAge !== null && cacheAge > MAX_CACHE_AGE_MS) {
+    clearAllVehicleCache();
+    return;
   }
   
   // Only clear if cache is stale due to mutation or version mismatch
@@ -250,7 +245,82 @@ export function clearCacheOnMount(): void {
   const mutationTime = getLastMutationTime();
   const cacheTime = getCacheTimestamp();
   if (mutationTime && cacheTime && mutationTime > cacheTime) {
-    console.log("[vehicleCache] Cache invalidated by mutation, clearing...");
     clearAllVehicleCache();
   }
+}
+
+/**
+ * Invalidate all cache layers - call this after any mutation (create, update, delete)
+ * This ensures data consistency across all components
+ */
+export function invalidateAllCaches(): void {
+  if (typeof window === "undefined") return;
+  
+  try {
+    // 1. Clear all vehicle cache data
+    clearAllVehicleCache();
+    
+    // 2. Record mutation timestamp (for other tabs/components)
+    recordMutation();
+    
+    // 3. Dispatch cache update event to notify all listeners.
+    // Use an empty array payload so existing array-based listeners still fire.
+    window.dispatchEvent(new CustomEvent(UPDATE_EVENT, { detail: [] }));
+    
+    // 4. Clear any SWR cache keys (if using SWR)
+    try {
+      const swrCachePrefix = "swr-";
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith(swrCachePrefix) || key.includes("vehicles"))) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch {
+      // Ignore SWR cache clearing errors
+    }
+    
+    // Cache logging removed for production
+  } catch (error) {
+    // Error logging removed for production
+    void error; // Mark error as used to prevent unused variable warning
+  }
+}
+
+/**
+ * Get cache status for debugging/monitoring
+ */
+export function getCacheStatus(): {
+  hasCache: boolean;
+  cacheAge: number | null;
+  isStale: boolean;
+  lastMutation: number | null;
+  version: string | null;
+} {
+  if (typeof window === "undefined") {
+    return {
+      hasCache: false,
+      cacheAge: null,
+      isStale: true,
+      lastMutation: null,
+      version: null,
+    };
+  }
+  
+  const cacheAge = getCacheAge();
+  const lastMutation = getLastMutationTime();
+  const cacheTime = getCacheTimestamp();
+  const version = localStorage.getItem(CACHE_VERSION_KEY);
+  
+  // Check if stale due to mutation
+  const isStaleByMutation = lastMutation && cacheTime && lastMutation > cacheTime;
+  const isStaleByAge = cacheAge === null || cacheAge > CACHE_STALE_MS;
+  
+  return {
+    hasCache: localStorage.getItem(CACHE_KEY) !== null,
+    cacheAge,
+    isStale: isStaleByMutation || isStaleByAge,
+    lastMutation,
+    version,
+  };
 }

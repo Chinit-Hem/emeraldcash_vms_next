@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { lmsService } from "@/services/LmsService";
 import { canAccessLMS, canManageLMS, getSession } from "@/lib/auth-helpers";
+import { listUsersFromDB } from "@/lib/user-db";
 
 // ============================================================================
 // GET /api/lms/dashboard - Admin & Staff can access
@@ -55,6 +56,12 @@ export async function GET(request: NextRequest) {
     result.data.staff_progress = staffProgress ? [staffProgress] : [];
   }
 
+  // Add cache-busting headers to prevent stale data
+  const headers = new Headers();
+  headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  headers.set("Pragma", "no-cache");
+  headers.set("Expires", "0");
+  
   return NextResponse.json({
     success: true,
     data: result.data,
@@ -63,5 +70,5 @@ export async function GET(request: NextRequest) {
       isAdmin,
       username: session.username,
     },
-  });
+  }, { headers });
 }

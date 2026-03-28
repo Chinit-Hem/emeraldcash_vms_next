@@ -14,14 +14,12 @@
 // Enums & Constants
 // ============================================================================
 
-export const LMS_ROLES = [
-  "Appraiser",
-  "Manager", 
-  "Admin",
-  "Trainee"
-] as const;
+import type { Role } from "@/lib/types";
 
-export type LmsRole = (typeof LMS_ROLES)[number];
+// Unified role system - same as settings/users
+export const LMS_ROLES: Role[] = ["Admin", "Staff"];
+
+export type LmsRole = Role;
 
 export const LMS_CATEGORY_NAMES = [
   "Valuation",
@@ -99,6 +97,16 @@ export interface LmsLessonCompletion {
   notes: string | null; // Staff can add notes
   created_at: string;
 }
+
+/**
+ * Sequential lesson with completion/unlock status
+ */
+export type SequentialLesson = LmsLesson & {
+  is_completed: boolean;
+  completed_at: string | null;
+  is_unlocked: boolean;
+};
+
 
 // ============================================================================
 // Composite Types for API Responses
@@ -271,10 +279,6 @@ export function buildYoutubeEmbedUrl(videoId: string, startTime = 0): string {
   if (typeof window !== "undefined") {
     // Always use window.location.origin when available (includes local IPs like 192.168.x.x)
     origin = window.location.origin;
-    console.log("[buildYoutubeEmbedUrl] Using window.location.origin:", origin);
-    console.log("[buildYoutubeEmbedUrl] window.location.href:", window.location.href);
-    console.log("[buildYoutubeEmbedUrl] window.location.protocol:", window.location.protocol);
-    console.log("[buildYoutubeEmbedUrl] window.location.host:", window.location.host);
   } else {
     // For SSR, use a default or environment variable
     origin = process.env.NEXT_PUBLIC_APP_URL || "https://emeraldcash-vms.vercel.app";
@@ -284,7 +288,6 @@ export function buildYoutubeEmbedUrl(videoId: string, startTime = 0): string {
   // use a dummy domain to trick YouTube's API
   const isLocalIP = origin.match(/^(http|https):\/\/(192\.168\.|10\.|127\.|172\.(1[6-9]|2[0-9]|3[01])\.)|localhost/);
   if (isLocalIP) {
-    console.log("[buildYoutubeEmbedUrl] Detected local IP, using dummy origin");
     origin = "https://www.youtube.com";
   }
   
@@ -303,7 +306,6 @@ export function buildYoutubeEmbedUrl(videoId: string, startTime = 0): string {
   // YouTube requires this to verify the embed source, even for local IPs
   if (origin) {
     params.set("origin", origin);
-    console.log("[buildYoutubeEmbedUrl] Added origin parameter:", origin);
   }
   
   if (startTime > 0) {
@@ -311,7 +313,6 @@ export function buildYoutubeEmbedUrl(videoId: string, startTime = 0): string {
   }
   
   const finalUrl = `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
-  console.log("[buildYoutubeEmbedUrl] Final URL:", finalUrl);
   return finalUrl;
 }
 

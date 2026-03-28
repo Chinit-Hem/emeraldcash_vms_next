@@ -28,9 +28,9 @@ import {
   Award,
   HelpCircle,
 } from "lucide-react";
-import { GlassCard } from "../ui/GlassCard";
-import { GlassButton } from "../ui/GlassButton";
-import { GlassField } from "../ui/GlassField";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
+import { GlassField } from "@/components/ui/glass/GlassField";
 
 // ============================================================================
 // Types

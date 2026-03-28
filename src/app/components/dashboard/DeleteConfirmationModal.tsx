@@ -1,6 +1,6 @@
 "use client";
 
-import { GlassButton } from "@/app/components/ui/GlassButton";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import type { Vehicle } from "@/lib/types";
 import { useState } from "react";
 

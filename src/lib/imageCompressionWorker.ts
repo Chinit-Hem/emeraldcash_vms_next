@@ -139,17 +139,7 @@ function initWorker() {
       pendingJobs.delete(id);
       
       if (success) {
-        const originalSizeKB = (e.data.originalSize / 1024).toFixed(2);
-        const compressedSizeKB = (e.data.compressedSize / 1024).toFixed(2);
-        const reduction = ((1 - e.data.compressedSize / e.data.originalSize) * 100).toFixed(1);
-        
-        console.log('[ImageWorker] Compression completed:', {
-          id,
-          originalSize: originalSizeKB + 'KB',
-          compressedSize: compressedSizeKB + 'KB',
-          reduction: reduction + '%',
-          processingTime: (e.data.processingTime || 0) + 'ms'
-        });
+        // Compression logging removed for production
         job.resolve(e.data);
       } else {
         job.reject(new Error(error || 'Compression failed'));
@@ -158,7 +148,7 @@ function initWorker() {
   };
   
   w.onerror = (error) => {
-    console.error('[ImageWorker] Worker error:', error);
+    // Worker error logging removed for production
     // Reject all pending jobs
     pendingJobs.forEach((job) => {
       job.reject(new Error('Worker error: ' + error.message));

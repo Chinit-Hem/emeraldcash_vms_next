@@ -29,8 +29,8 @@ import {
   Lock,
   ArrowRight,
 } from "lucide-react";
-import { GlassCard } from "@/app/components/ui/GlassCard";
-import { GlassButton } from "@/app/components/ui/GlassButton";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { VideoPlayer } from "@/app/components/lms/VideoPlayer";
 
 // ============================================================================

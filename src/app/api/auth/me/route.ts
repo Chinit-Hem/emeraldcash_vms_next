@@ -4,6 +4,7 @@ import {
   getSessionFromRequest,
   validateSession,
 } from "@/lib/auth";
+import { getUserByUsername } from "@/lib/user-db";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -33,9 +34,22 @@ export async function GET(req: NextRequest) {
       return res;
     }
 
+    // Get full user profile from database
+    const userProfile = await getUserByUsername(session.username);
+    
     const res = NextResponse.json({
       ok: true,
-      user: { username: session.username, role: session.role },
+      user: { 
+        username: session.username, 
+        role: session.role,
+        full_name: userProfile?.full_name || null,
+        email: userProfile?.email || null,
+        phone: userProfile?.phone || null,
+        bio: userProfile?.bio || null,
+        profile_picture: userProfile?.profile_picture || null,
+        created_at: userProfile?.created_at || null,
+        updated_at: userProfile?.updated_at || null,
+      },
     });
     
     // Add debug headers for mobile

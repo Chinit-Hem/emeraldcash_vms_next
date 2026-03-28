@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db";
+import { formatPrice } from "@/lib/vehicle-helpers";
 
 // Vehicle type definition based on the vehicles table schema
 interface Vehicle {
@@ -66,13 +67,6 @@ export default async function VehiclesDbPage() {
     error = err instanceof Error ? err.message : "Failed to fetch vehicles";
     isLoading = false;
   }
-
-  // Format price for display
-  const formatPrice = (price: number | null) => {
-    if (!price) return "—";
-    return `$${price.toLocaleString()}`;
-  };
-
 
   // Show loading state
   if (isLoading) {

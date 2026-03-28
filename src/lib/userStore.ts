@@ -1,20 +1,21 @@
-import type { Role } from "./types";
-import {
-  ensureUsersTable,
-  createUserInDB,
-  getUserByUsername,
-  listUsersFromDB,
-  updateUserInDB,
-  deleteUserFromDB,
-  countAdminUsers,
-  type UserDB,
-} from "./user-db";
 import {
   DatabaseError,
   isDuplicateError,
   isNotFoundError,
   isValidationError,
 } from "./errors";
+import { log } from "./logger";
+import type { Role } from "./types";
+import {
+  countAdminUsers,
+  createUserInDB,
+  deleteUserFromDB,
+  ensureUsersTable,
+  getUserByUsername,
+  listUsersFromDB,
+  updateUserInDB,
+  type UserDB,
+} from "./user-db";
 
 export type StoredUser = {
   username: string;
@@ -25,7 +26,13 @@ export type StoredUser = {
   createdBy: string;
 };
 
-export type PublicUser = Omit<StoredUser, "passwordHash">;
+export type PublicUser = Omit<StoredUser, "passwordHash"> & {
+  full_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  bio?: string | null;
+  profile_picture?: string | null;
+};
 
 export type CreateUserErrorCode =
   | "invalid_username"
@@ -62,13 +69,6 @@ const MAX_PASSWORD_LENGTH = 72;
 let dbInitialized = false;
 let initializationPromise: Promise<void> | null = null;
 
-// Logger utility for structured logging
-function log(level: "INFO" | "ERROR" | "DEBUG", message: string, meta?: Record<string, unknown>): void {
-  const timestamp = new Date().toISOString();
-  const metaStr = meta ? ` ${JSON.stringify(meta)}` : "";
-  console.log(`[${timestamp}] [${level}] [USER_STORE] ${message}${metaStr}`);
-}
-
 function normalizeUsername(username: string): string {
   return username.trim().toLowerCase();
 }
@@ -84,41 +84,29 @@ function publicUserFromDB(user: UserDB): PublicUser {
     createdAt: new Date(user.created_at).getTime(),
     updatedAt: new Date(user.updated_at).getTime(),
     createdBy: user.created_by,
+    full_name: user.full_name,
+    email: user.email,
+    phone: user.phone,
+    bio: user.bio,
+    profile_picture: user.profile_picture,
   };
 }
 
 // Initialize database and seed default users if needed
+let initPromise: Promise<void> | null = null;
 async function initializeDatabase(): Promise<void> {
-  if (dbInitialized) {
-    log("DEBUG", "Database already initialized, skipping");
-    return;
-  }
+  if (dbInitialized) return;
+  if (initPromise) return initPromise;
   
-  // Prevent concurrent initialization
-  if (initializationPromise) {
-    log("DEBUG", "Waiting for existing initialization");
-    return initializationPromise;
-  }
-  
-  log("INFO", "Starting database initialization");
-  
-  initializationPromise = (async () => {
+  initPromise = (async () => {
     try {
-      // Ensure users table exists
       await ensureUsersTable();
-      
-      // Check if we have any users
       const users = await listUsersFromDB();
-      
-      // Seed default users if database is empty
       if (users.length === 0) {
-        log("INFO", "Database empty, seeding default users");
-        
         const seeds = [
           { username: "admin", role: "Admin" as Role, passwordHash: DEMO_PASSWORD_HASH },
           { username: "staff", role: "Staff" as Role, passwordHash: DEMO_PASSWORD_HASH },
         ];
-        
         for (const seed of seeds) {
           try {
             await createUserInDB({
@@ -127,35 +115,20 @@ async function initializeDatabase(): Promise<void> {
               role: seed.role,
               createdBy: "system",
             });
-            log("INFO", "Seeded user successfully", { username: seed.username });
           } catch (error) {
-            if (isDuplicateError(error)) {
-              log("DEBUG", "User already exists, skipping seed", { username: seed.username });
-            } else {
-              log("ERROR", "Failed to seed user", { 
-                username: seed.username,
-                error: error instanceof Error ? error.message : String(error)
-              });
-            }
+            if (!isDuplicateError(error)) throw error;
           }
         }
-      } else {
-        log("INFO", "Database already has users", { count: users.length });
       }
-      
       dbInitialized = true;
-      log("INFO", "Database initialization complete");
     } catch (error) {
-      log("ERROR", "Database initialization failed", { 
-        error: error instanceof Error ? error.message : String(error)
-      });
+      console.error("DB init failed:", error);
       throw new DatabaseError("Failed to initialize database");
     } finally {
-      initializationPromise = null;
+      initPromise = null;
     }
   })();
-  
-  return initializationPromise;
+  return initPromise;
 }
 
 function validateUsername(username: string): string | null {
@@ -188,47 +161,66 @@ function validatePassword(password: string): string | null {
   return null;
 }
 
+let bcryptModule: typeof import("bcryptjs") | null = null;
+async function getBcrypt() {
+  if (!bcryptModule) bcryptModule = await import("bcryptjs");
+  return bcryptModule;
+}
+
 async function comparePassword(password: string, hash: string): Promise<boolean> {
   try {
-    const bcrypt = await import("bcryptjs");
-    return await bcrypt.compare(password, hash);
+    const b = await getBcrypt();
+    return await b.compare(password, hash);
   } catch (error) {
-    log("ERROR", "Password comparison failed", { 
-      error: error instanceof Error ? error.message : String(error)
-    });
+    console.error("Password compare failed:", error);
     return false;
   }
 }
 
 export async function hashPassword(password: string): Promise<string> {
   try {
-    const bcrypt = await import("bcryptjs");
-    return await bcrypt.hash(password, 10);
+    const b = await getBcrypt();
+    return await b.hash(password, 10);
   } catch (error) {
-    log("ERROR", "Password hashing failed", { 
-      error: error instanceof Error ? error.message : String(error)
-    });
+    console.error("Hash failed:", error);
     throw new DatabaseError("Failed to hash password");
   }
 }
 
+let usersCache: PublicUser[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export async function listUsers(): Promise<PublicUser[]> {
-  log("INFO", "listUsers() called");
+  const now = Date.now();
+  
+  // Return cache if valid
+  if (usersCache && (now - cacheTimestamp) < CACHE_DURATION) {
+    return usersCache;
+  }
   
   try {
-    // Initialize database if needed
-    await initializeDatabase();
+    // Initialize once
+    if (!dbInitialized) {
+      await initializeDatabase();
+    }
     
     const users = await listUsersFromDB();
-    log("INFO", "listUsers() returning users", { count: users.length });
+    usersCache = users.map(publicUserFromDB);
+    cacheTimestamp = now;
     
-    return users.map(publicUserFromDB);
+    return usersCache;
   } catch (error) {
-    log("ERROR", "listUsers() FAILED", { 
-      error: error instanceof Error ? error.message : String(error)
-    });
-    throw error;
+    console.error("listUsers() FAILED:", error);
+    // Return stale cache on error
+    return usersCache || [];
   }
+}
+
+// Invalidate cache after mutations
+export function invalidateUsersCache(): void {
+  usersCache = null;
+  cacheTimestamp = 0;
 }
 
 export async function authenticateUser(

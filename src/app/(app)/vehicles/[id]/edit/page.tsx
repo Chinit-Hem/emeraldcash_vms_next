@@ -3,9 +3,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthUser } from "@/app/components/AuthContext";
-import { useToast } from "@/app/components/ui/GlassToast";
-import { GlassCard } from "@/app/components/ui/GlassCard";
-import { GlassButton } from "@/app/components/ui/GlassButton";
+import { useToast } from "@/components/ui/glass/GlassToast";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { CardSkeleton } from "@/app/components/LoadingSkeleton";
 import { VehicleForm } from "@/app/components/vehicles/VehicleForm";
 import { ConfirmDeleteModal } from "@/app/components/vehicles/ConfirmDeleteModal";

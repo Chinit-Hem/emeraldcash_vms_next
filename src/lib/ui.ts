@@ -5,59 +5,59 @@ export function cn(...classes: Array<string | false | null | undefined>): string
 export const ui = {
   surface: {
     page:
-      "bg-[var(--bg-primary)] text-[var(--text-primary)]",
+      "bg-neu-bg text-neu-text",
     card:
-      "rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-soft backdrop-blur-xl",
+      "neu-card",
     cardSoft:
-      "rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-soft)] shadow-soft backdrop-blur-lg",
+      "neu-card-sm",
     modal:
-      "rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-elevated backdrop-blur-2xl",
+      "neu-card",
   },
   text: {
-    title: "text-[var(--text-primary)] font-semibold tracking-tight",
-    subtitle: "text-[var(--text-secondary)]",
-    label: "text-sm font-medium text-[var(--text-primary)]",
-    helper: "text-xs text-[var(--text-secondary)]",
-    danger: "text-sm text-[var(--accent-red-strong)]",
+    title: "text-neu-text font-semibold tracking-tight",
+    subtitle: "text-neu-text-muted",
+    label: "text-sm font-medium text-neu-text",
+    helper: "text-xs text-neu-text-muted",
+    danger: "text-sm text-neu-red",
   },
   input: {
     base:
-      "h-11 w-full rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 text-[var(--text-primary)] transition-all duration-300 ease-in-out placeholder:text-[var(--text-secondary)] focus:border-[var(--accent-green)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-green-soft)] disabled:cursor-not-allowed disabled:opacity-60",
+      "neu-input",
     withIcon: "pl-11",
     withRightElement: "pr-11",
     error:
-      "border-[var(--accent-red)] bg-[var(--accent-red-soft)] focus:border-[var(--accent-red)] focus:ring-[var(--accent-red-soft)]",
+      "border-neu-red bg-red-50/50 focus:border-neu-red focus:ring-neu-red/20",
   },
   button: {
     base:
-      "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-transform transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-green)] disabled:cursor-not-allowed disabled:opacity-60 disabled:pointer-events-none active:scale-[0.96] will-change-transform",
+      "inline-flex items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neu-green disabled:cursor-not-allowed disabled:opacity-60 disabled:pointer-events-none will-change-transform",
     size: {
       sm: "h-9 px-3.5",
       md: "h-11 px-4.5",
       lg: "h-12 px-6",
     },
     primary:
-      "border border-[var(--accent-green)] bg-[var(--accent-green)] text-white shadow-glow-green hover:bg-[var(--accent-green-hover)] hover:border-[var(--accent-green-hover)] active:bg-[var(--accent-green-active)] active:border-[var(--accent-green-active)]",
+      "bg-[#e0e5ec] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] text-slate-600 hover:text-green-600 hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] hover:scale-[0.98] active:scale-95",
     secondary:
-      "border border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-primary)] hover:bg-[var(--glass-bg-soft)] hover:border-[var(--glass-border-strong)] active:bg-[var(--glass-bg-soft)]",
+      "bg-[#e0e5ec] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] text-slate-600 hover:text-slate-800 hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] hover:scale-[0.98] active:scale-95",
     ghost:
-      "bg-transparent text-[var(--text-primary)] hover:bg-[var(--glass-bg-soft)]",
+      "bg-[#e0e5ec] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] text-slate-600 hover:text-slate-800 hover:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] hover:scale-[0.98] active:scale-95 w-11 h-11 rounded-full",
     danger:
-      "border border-[var(--accent-red)] bg-[var(--accent-red)] text-white shadow-glow-red hover:bg-[var(--accent-red-hover)] hover:border-[var(--accent-red-hover)] active:bg-[var(--accent-red-active)] active:border-[var(--accent-red-active)]",
+      "bg-[#e0e5ec] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] text-slate-600 hover:text-red-500 hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] hover:scale-[0.98] active:scale-95",
     outline:
-      "border border-[var(--glass-border)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--glass-bg-soft)]",
+      "bg-[#e0e5ec] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] text-slate-600 hover:text-slate-800 hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] hover:scale-[0.98] active:scale-95",
   },
   table: {
     wrapper:
-      "overflow-x-auto rounded-2xl border border-[var(--glass-border)] bg-[var(--table-bg-strong)] shadow-soft backdrop-blur-2xl",
+      "overflow-x-auto rounded-neu neu-card",
     table: "w-full min-w-[1000px] border-separate border-spacing-0",
     head:
-      "sticky top-0 z-20 bg-[var(--table-head-bg-strong)]",
-    headRow: "border-b border-[var(--glass-border)]",
+      "sticky top-0 z-20 bg-neu-bg",
+    headRow: "border-b border-neu-bg/50",
     th:
-      "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]",
+      "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-neu-text-muted",
     tr:
-      "border-b border-[var(--glass-border)] bg-[var(--table-row-bg)] transition-colors duration-300 hover:bg-[var(--table-row-hover)]",
-    td: "px-4 py-3 text-sm text-[var(--text-primary)]",
+      "border-b border-neu-bg/50 bg-neu-bg/30 transition-colors duration-300 hover:bg-neu-bg/50",
+    td: "px-4 py-3 text-sm text-neu-text",
   },
 };

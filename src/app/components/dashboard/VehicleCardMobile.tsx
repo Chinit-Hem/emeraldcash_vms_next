@@ -1,10 +1,10 @@
 "use client";
 
-import { driveThumbnailUrl, extractDriveFileId } from "@/lib/drive";
 import { derivePrices } from "@/lib/pricing";
 import type { Vehicle } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { formatPrice, getVehicleThumbnailUrl } from "@/lib/vehicle-helpers";
 
 interface VehicleCardMobileProps {
   vehicle: Vehicle;
@@ -36,44 +36,21 @@ export default function VehicleCardMobile({
   const price40 = vehicle.Price40 ?? derived.Price40;
   const price70 = vehicle.Price70 ?? derived.Price70;
 
-  // Check if it's a Cloudinary URL first (guard against "undefined" string)
-  const isCloudinary = typeof vehicle.Image === 'string' && 
-    vehicle.Image !== 'undefined' && 
-    vehicle.Image !== 'null' &&
-    vehicle.Image.includes('res.cloudinary.com');
-  
-  // Extract Google Drive file ID if not Cloudinary
-  const imageFileId = !isCloudinary ? extractDriveFileId(vehicle.Image) : null;
-  
+  // Use centralized utility for image URL
   const thumbUrl = useMemo(() => {
-    if (disableImages) return null;
-    
-    if (isCloudinary) {
-      // Use Cloudinary URL directly
-      return vehicle.Image;
-    }
-    
-    // Try Google Drive
-    if (!imageFileId || imageError) return null;
-    return `${driveThumbnailUrl(imageFileId, "w300-h300")}`;
-  }, [disableImages, isCloudinary, vehicle.Image, imageFileId, imageError]);
-
-  const formatPrice = (price: number | null) => {
-    if (price == null) return "-";
-    return `$${price.toLocaleString()}`;
-  };
+    if (disableImages || imageError) return null;
+    return getVehicleThumbnailUrl(vehicle.Image, "w300-h300");
+  }, [disableImages, vehicle.Image, imageError]);
 
   return (
     <div
-      className={`lg:hidden rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 ${
-        index % 2 === 0
-          ? "bg-white/80 dark:bg-gray-800/80"
-          : "bg-gray-50/80 dark:bg-gray-800/60"
+      className={`lg:hidden rounded-xl overflow-hidden bg-[#e6e9ef] shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff] ${
+        index % 2 === 0 ? "" : "bg-[#e6e9ef]/80"
       }`}
     >
       {/* Main Card Content */}
       <div
-        className="p-4 flex gap-4 cursor-pointer active:scale-[0.99] transition-transform"
+        className="p-4 flex gap-4 cursor-pointer active:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] transition-all duration-200"
         onClick={() => setExpanded(!expanded)}
       >
         {/* Image */}
@@ -83,18 +60,18 @@ export default function VehicleCardMobile({
             <img
               src={thumbUrl}
               alt={`${vehicle.Brand} ${vehicle.Model}`}
-              className="h-20 w-20 rounded-xl object-cover ring-1 ring-black/10 bg-white"
+              className="h-20 w-20 rounded-xl object-cover shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] bg-[#e6e9ef]"
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="h-20 w-20 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center ring-1 ring-black/10">
+            <div className="h-20 w-20 rounded-xl bg-[#e6e9ef] flex items-center justify-center shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={1.5}
-                className="h-8 w-8 text-gray-400"
+                className="h-8 w-8 text-[#4a4a5a]"
               >
                 <rect width="18" height="18" x="3" y="3" rx="2" />
                 <circle cx="9" cy="9" r="2" />
@@ -108,20 +85,20 @@ export default function VehicleCardMobile({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+              <h3 className="font-semibold text-[#1a1a2e] truncate">
                 {vehicle.Brand} {vehicle.Model}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-white">
+              <p className="text-sm text-[#4a4a5a]">
                 {vehicle.Year || "-"} • {vehicle.Category}
               </p>
             </div>
             <span
-              className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+              className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff] ${
                 vehicle.Condition === "New"
-                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                  ? "bg-[#e6e9ef] text-[#10b981]"
                   : vehicle.Condition === "Used"
-                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                  : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                  ? "bg-[#e6e9ef] text-[#3b82f6]"
+                  : "bg-[#e6e9ef] text-[#4a4a5a]"
               }`}
             >
               {vehicle.Condition || "Unknown"}
@@ -129,10 +106,10 @@ export default function VehicleCardMobile({
           </div>
 
           <div className="mt-2 flex items-center justify-between">
-            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="text-lg font-bold text-[#10b981]">
               {formatPrice(vehicle.PriceNew)}
             </div>
-            <div className="flex items-center text-gray-400 dark:text-white">
+            <div className="flex items-center text-[#4a4a5a]">
               <span className="text-xs mr-1">{expanded ? "Less" : "More"}</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -151,38 +128,38 @@ export default function VehicleCardMobile({
 
       {/* Expanded Details */}
       {expanded && (
-        <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="px-4 pb-4 border-t border-[#bebebe]/30">
           <div className="pt-3 grid grid-cols-2 gap-3 text-sm">
             <div>
-              <span className="text-gray-500 dark:text-white">Vehicle ID:</span>
-              <p className="font-mono text-gray-900 dark:text-white">{vehicle.VehicleId || "-"}</p>
+              <span className="text-[#4a4a5a]">Vehicle ID:</span>
+              <p className="font-mono text-[#1a1a2e]">{vehicle.VehicleId || "-"}</p>
             </div>
             <div>
-              <span className="text-gray-500 dark:text-white">Plate:</span>
-              <p className="font-mono text-gray-900 dark:text-white">{vehicle.Plate || "-"}</p>
+              <span className="text-[#4a4a5a]">Plate:</span>
+              <p className="font-mono text-[#1a1a2e]">{vehicle.Plate || "-"}</p>
             </div>
 
             <div>
-              <span className="text-gray-500 dark:text-white">Tax Type:</span>
-              <p className="text-gray-900 dark:text-white">{vehicle.TaxType || "-"}</p>
+              <span className="text-[#4a4a5a]">Tax Type:</span>
+              <p className="text-[#1a1a2e]">{vehicle.TaxType || "-"}</p>
             </div>
             <div>
-              <span className="text-gray-500 dark:text-white">Body Type:</span>
-              <p className="text-gray-900 dark:text-white">{vehicle.BodyType || "-"}</p>
+              <span className="text-[#4a4a5a]">Body Type:</span>
+              <p className="text-[#1a1a2e]">{vehicle.BodyType || "-"}</p>
             </div>
             <div>
-              <span className="text-gray-500 dark:text-white">Color:</span>
-              <p className="text-gray-900 dark:text-white">{vehicle.Color || "-"}</p>
+              <span className="text-[#4a4a5a]">Color:</span>
+              <p className="text-[#1a1a2e]">{vehicle.Color || "-"}</p>
             </div>
             <div>
-              <span className="text-gray-500 dark:text-white">D.O.C. 40%:</span>
-              <p className="font-semibold text-orange-600 dark:text-orange-400">
+              <span className="text-[#4a4a5a]">D.O.C. 40%:</span>
+              <p className="font-semibold text-[#ef4444]">
                 {formatPrice(price40)}
               </p>
             </div>
             <div>
-              <span className="text-gray-500 dark:text-white">Vehicles 70%:</span>
-              <p className="font-semibold text-emerald-600 dark:text-emerald-400">
+              <span className="text-[#4a4a5a]">Vehicles 70%:</span>
+              <p className="font-semibold text-[#10b981]">
                 {formatPrice(price70)}
               </p>
             </div>
@@ -192,7 +169,7 @@ export default function VehicleCardMobile({
           <div className="mt-4 flex gap-2">
             <button
               onClick={() => router.push(`/vehicles/${encodeURIComponent(vehicleId)}/view`)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-900/35 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-500/30 rounded-xl font-medium active:scale-[0.98] transition-transform touch-target"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#e6e9ef] text-[#10b981] rounded-xl font-medium shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] transition-all duration-200"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -211,7 +188,7 @@ export default function VehicleCardMobile({
               <>
                 <button
                   onClick={() => onEdit ? onEdit(vehicle) : router.push(`/vehicles/${encodeURIComponent(vehicleId)}/edit`)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl font-medium active:scale-[0.98] transition-transform touch-target"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#e6e9ef] text-[#3b82f6] rounded-xl font-medium shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] transition-all duration-200"
                 >
 
                   <svg
@@ -228,7 +205,7 @@ export default function VehicleCardMobile({
                 </button>
                 <button
                   onClick={() => onDelete(vehicle)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-xl font-medium active:scale-[0.98] transition-transform touch-target"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#e6e9ef] text-[#ef4444] rounded-xl font-medium shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] transition-all duration-200"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
