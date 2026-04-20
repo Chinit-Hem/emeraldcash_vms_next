@@ -89,29 +89,32 @@ interface SidebarProps {
 
 // NavItem component with flat styling and instant navigation
 interface NavItemProps {
+  href?: string;
   icon: React.ComponentType<{className?: string}>;
   label: string;
   active: boolean;
   onClick: () => void;
   count?: number;
-  href: string;
 }
 
+
 function NavItem({ 
+  href,
   icon: Icon, 
   label, 
   active, 
   onClick, 
-  count,
-  href
+  count
 }: NavItemProps) {
+
   return (
     <OptimizedLink
-      href={href}
+      href={href || "#"}
       onClick={onClick}
       className="flex items-center gap-4 w-full group"
       priority={active ? "high" : "normal"}
     >
+
       <div className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all duration-200 ease-out ${
         active 
           ? "bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/40 shadow-sm text-emerald-600 dark:text-emerald-300"
@@ -135,7 +138,6 @@ function NavItem({
 
 // Quick Filter Button Component with instant navigation
 interface QuickFilterButtonProps {
-  href: string;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   count?: number;
@@ -152,8 +154,7 @@ function QuickFilterButton({
   isActive, 
   onClick, 
   color,
-  isAddButton,
-  href
+  isAddButton
 }: QuickFilterButtonProps) {
   const colorStyles = {
     emerald: {
@@ -196,15 +197,13 @@ function QuickFilterButton({
   const styles = colorStyles[color];
 
   return (
-    <OptimizedLink
-      href={href}
+    <button
       onClick={onClick}
       className={`group relative flex items-center justify-between w-full p-3 rounded-2xl transition-colors duration-200 border shadow-sm ${
         isActive
           ? `${styles.activeBg} ${styles.activeBorder}`
           : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60"
       }`}
-      priority={isActive ? "high" : "normal"}
     >
       <div className="relative z-10 flex items-center gap-3">
         <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-300 ${
@@ -224,14 +223,15 @@ function QuickFilterButton({
         </span>
       </div>
 
-      {count !== undefined && count > 0 && (
-        <span className={`relative z-10 ${styles.countBg} text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm`}>
-          {count.toLocaleString()}
-        </span>
-      )}
-    </OptimizedLink>
-  );
-}
+        {count !== undefined && count > 0 && (
+          <span className={`relative z-10 ${styles.countBg} text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm`}>
+            {count.toLocaleString()}
+          </span>
+        )}
+      </button>
+    );
+  }
+
 
 export default function Sidebar({ user, onNavigate }: SidebarProps) {
   const router = useRouter();
@@ -294,7 +294,7 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
       <nav className="flex-1 px-6 py-4 flex flex-col gap-6" aria-label="Main navigation">
         {/* Main Section */}
         <div className="flex flex-col gap-4">
-          <NavItem
+  <NavItem
             href="/"
             icon={IconDashboard}
             label={t.dashboard}
@@ -308,13 +308,15 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
             active={isLmsActive || isAdminLmsActive}
             onClick={() => handleNavigate("/lms")}
           />
+
           <NavItem
-href="/sms"
+            href="/sms"
             icon={IconSms}
             label="SMS"
             active={isSmsActive}
             onClick={() => handleNavigate("/sms")}
-          />
+          /> 
+
 
 
         </div>
@@ -328,7 +330,6 @@ href="/sms"
           <div className="flex flex-col gap-3">
             {/* All Vehicles */}
             <QuickFilterButton
-              href="/vehicles"
               icon={IconFleet}
               label={t.vehicles}
               count={allVehiclesCount}
@@ -339,7 +340,6 @@ href="/sms"
 
             {/* Cars */}
             <QuickFilterButton
-              href="/vehicles?category=cars"
               icon={IconCar}
 label={language === 'km' ? 'រថយន្ត' : 'Cars'}
               count={carsCount}
@@ -350,7 +350,6 @@ label={language === 'km' ? 'រថយន្ត' : 'Cars'}
 
             {/* Motorcycles */}
             <QuickFilterButton
-              href="/vehicles?category=motorcycles"
               icon={IconMotorcycle}
 label={language === 'km' ? 'ម៉ូតូ' : 'Motorcycles'}
               count={motorcyclesCount}
@@ -361,14 +360,14 @@ label={language === 'km' ? 'ម៉ូតូ' : 'Motorcycles'}
 
             {/* TukTuks */}
             <QuickFilterButton
-              href="/vehicles?category=tuktuks"
               icon={IconTukTuk}
-label={language === 'km' ? 'កង់បី' : 'TukTuks'}
+              label={language === 'km' ? 'កង់បី' : 'TukTuks'}
               count={tukTuksCount}
               isActive={isTukTuksActive}
               onClick={() => handleNavigate("/vehicles?category=tuktuks")}
               color="orange"
             />
+
 
             {/* Add Vehicle - Admin only */}
             {isAdmin && (
@@ -401,8 +400,9 @@ label={language === 'km' ? 'កង់បី' : 'TukTuks'}
             active={isSettingsActive}
             onClick={() => handleNavigate("/settings")}
           />
+
         </div>
-      </nav>
+      </nav> 
 
       {/* Footer */}
       <div className="p-6 pt-4">

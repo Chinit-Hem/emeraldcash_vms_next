@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, History, Search, Loader2 } from 'lucide-react';
@@ -29,16 +29,16 @@ export default function HistoryPage() {
       const res = await fetch('/api/sms/assets');
       const data = await res.json();
       if (data.success) {
-        setAssets(data.data.slice(0, 20)); // Top 20 assets
+        setAssets(data.data.slice(0, 20));
       }
-    } catch {}
+    } catch (e) {}
   };
 
   const fetchHistory = async (assetId: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/sms/history/${assetId}`);
+      const res = await fetch(`/api/sms/assets/${assetId}/history`);
       const data = await res.json();
       if (data.success) {
         setHistory(data.data);

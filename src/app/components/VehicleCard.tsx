@@ -51,10 +51,8 @@ export default function VehicleCard({
 }: VehicleCardProps) {
   const router = useRouter();
   const vehicleId = vehicle.VehicleId;
-  const displayNo = vehicleId || String(index + 1);
 
   const derived = derivePrices(vehicle.PriceNew);
-  const price40 = vehicle.Price40 ?? derived.Price40;
   const price70 = vehicle.Price70 ?? derived.Price70;
 
   const imageUrl = Array.isArray(vehicle.Image) 

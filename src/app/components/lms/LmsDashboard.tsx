@@ -36,6 +36,7 @@ import {
   Zap,
   LucideIcon
 } from "lucide-react";
+
 import {
   LmsDashboardStats,
   LmsCategory,
@@ -342,9 +343,11 @@ function LmsDashboard({ initialData }: LmsDashboardProps) {
   const [lessons, setLessons] = useState<LessonWithStatus[]>(initialData?.lessons || []);
   const [loading, setLoading] = useState(!initialData);
   const [isPending, startTransition] = useTransition();
-  const [activeTab, setActiveTab] = useState<TabType>("learning");
+  const [_activeTab, _setActiveTab] = useState<TabType>("learning");
   const [isExporting, setIsExporting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const activeTab = _activeTab;
+  const setActiveTab = _setActiveTab;
   
   const user = useAuthUser();
   const isAdmin = user?.role === "Admin";
