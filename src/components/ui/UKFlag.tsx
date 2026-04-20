@@ -18,14 +18,17 @@ export const UKFlag: React.FC<UKFlagProps> = ({
   const { width, height } = sizeMap[size];
   
   return (
-    <img 
-      src="https://flagcdn.com/gb.svg"
-      alt="UK Flag"
-      loading="lazy"
-      width={width}
-      height={height}
-      className={`object-cover rounded-sm shadow-sm border-[0.5px] border-slate-200 ${className}`}
-    />
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="https://flagcdn.com/gb.svg"
+        alt="UK Flag"
+        loading="lazy"
+        width={width}
+        height={height}
+        className={`object-cover rounded-sm shadow-sm border-[0.5px] border-slate-200 ${className}`}
+      />
+    </>
   );
 };
 

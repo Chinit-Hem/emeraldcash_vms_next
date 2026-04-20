@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 import { Suspense } from "react";
 import "../styles/globals.css";
@@ -8,8 +7,6 @@ import { LanguageProvider } from "@/lib/LanguageContext";
 import { InstantNavigationProvider } from "@/app/components/InstantNavigationProvider";
 import { PrefetchProvider } from "@/app/components/OptimizedLink";
 import { NeuDashboardSkeleton } from "@/app/components/skeletons/NeuDashboardSkeleton";
-
-const inter = Inter({ subsets: ["latin"] });
 
 const themeInitScript = `
   (function () {
@@ -104,7 +101,7 @@ export default async function RootLayout({
         <script id="ios-safari-guard" dangerouslySetInnerHTML={{ __html: iosSafariGuardScript }} />
         <script id="theme-init" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className={`${inter.className} antialiased`} suppressHydrationWarning>
+      <body className="antialiased" suppressHydrationWarning>
         <ThemeProvider>
           <LanguageProvider>
             <InstantNavigationProvider>

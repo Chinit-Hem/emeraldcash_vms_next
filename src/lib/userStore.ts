@@ -67,7 +67,7 @@ const MAX_PASSWORD_LENGTH = 72;
 
 // Track if we've initialized the database
 let dbInitialized = false;
-let initializationPromise: Promise<void> | null = null;
+const _initializationPromise: Promise<void> | null = null;
 
 function normalizeUsername(username: string): string {
   return username.trim().toLowerCase();

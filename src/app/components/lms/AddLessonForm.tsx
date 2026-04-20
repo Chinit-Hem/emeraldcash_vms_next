@@ -14,7 +14,7 @@
 
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   Plus,
   Link2,
@@ -57,6 +57,26 @@ export interface LessonFormData {
 }
 
 // ============================================================================
+// Debounce Hook
+// ============================================================================
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
@@ -93,6 +113,10 @@ export function AddLessonForm({
   const [errors, setErrors] = useState<Partial<Record<keyof LessonFormData, string>> & { submit?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [youtubePreview, setYoutubePreview] = useState<string | null>(null);
+  const [touched, setTouched] = useState<Partial<Record<keyof LessonFormData, boolean>>>({});
+
+  // Debounced YouTube URL for validation
+  const debouncedYoutubeUrl = useDebounce(formData.youtubeUrl, 500);
 
   // Reset form to initial state
   const resetForm = useCallback(() => {
@@ -108,45 +132,68 @@ export function AddLessonForm({
     });
     setYoutubePreview(null);
     setErrors({});
+    setTouched({});
   }, []);
 
-  // Handle YouTube URL change with validation and preview
-  const handleYoutubeUrlChange = useCallback((url: string) => {
-    setFormData((prev) => ({ ...prev, youtubeUrl: url }));
-
-    // Clear error when user types
-    if (errors.youtubeUrl) {
-      setErrors((prev) => ({ ...prev, youtubeUrl: undefined }));
+  // Optimized input change handler
+  const handleInputChange = useCallback((field: keyof LessonFormData, value: string | number) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    
+    // Clear error immediately for better UX
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
+  }, [errors]);
 
-    // Validate and extract video ID
-    if (url) {
-      const isValid = validateYoutubeUrl(url);
-      const videoId = extractYoutubeVideoId(url);
-
-      if (isValid && videoId) {
-        setFormData((prev) => ({ ...prev, youtubeVideoId: videoId }));
-        setYoutubePreview(`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`);
-        setErrors((prev) => ({ ...prev, youtubeUrl: undefined }));
-      } else if (url.length > 10) {
-        setErrors((prev) => ({
-          ...prev,
-          youtubeUrl: "Please enter a valid YouTube URL",
-        }));
-        setYoutubePreview(null);
-      }
-    } else {
+  // Handle YouTube URL change with debounced validation
+  const handleYoutubeUrlChange = useCallback((url: string) => {
+    handleInputChange("youtubeUrl", url);
+    
+    // Clear preview immediately when typing
+    if (!url) {
       setYoutubePreview(null);
       setFormData((prev) => ({ ...prev, youtubeVideoId: "" }));
     }
-  }, [errors.youtubeUrl]);
+  }, [handleInputChange]);
+
+  // Debounced YouTube validation effect
+  useEffect(() => {
+    if (!debouncedYoutubeUrl) {
+      setYoutubePreview(null);
+      return;
+    }
+
+    const isValid = validateYoutubeUrl(debouncedYoutubeUrl);
+    const videoId = extractYoutubeVideoId(debouncedYoutubeUrl);
+
+    if (isValid && videoId) {
+      setFormData((prev) => ({ ...prev, youtubeVideoId: videoId }));
+      setYoutubePreview(`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`);
+      setErrors((prev) => ({ ...prev, youtubeUrl: undefined }));
+    } else if (debouncedYoutubeUrl.length > 10 && touched.youtubeUrl) {
+      setErrors((prev) => ({
+        ...prev,
+        youtubeUrl: "Please enter a valid YouTube URL",
+      }));
+      setYoutubePreview(null);
+    }
+  }, [debouncedYoutubeUrl, touched.youtubeUrl]);
+
+  // Handle field blur for validation
+  const handleBlur = useCallback((field: keyof LessonFormData) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  }, []);
 
   // Validate entire form
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     const newErrors: Partial<Record<keyof LessonFormData, string>> = {};
 
     if (!formData.title.trim()) {
       newErrors.title = "Title is required";
+    } else if (formData.title.trim().length < 2) {
+      newErrors.title = "Title must be at least 2 characters";
+    } else if (formData.title.trim().length > 100) {
+      newErrors.title = "Title must be less than 100 characters";
     }
 
     if (!formData.youtubeUrl) {
@@ -161,15 +208,16 @@ export function AddLessonForm({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [formData]);
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Handle form submission with optimistic updates
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("[AddLessonForm] Form submitted", formData);
+
+    // Mark all fields as touched
+    setTouched({ title: true, categoryId: true, youtubeUrl: true, description: true, stepByStepInstructions: true, durationMinutes: true, orderIndex: true });
 
     if (!validateForm()) {
-      console.log("[AddLessonForm] Validation failed", errors);
       // Scroll to first error
       const firstError = document.querySelector('.text-red-500, .border-red-500');
       firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -180,11 +228,11 @@ export function AddLessonForm({
     setErrors((prev) => ({ ...prev, submit: undefined }));
 
     try {
-      console.log("[AddLessonForm] Calling onSubmit...");
-      await onSubmit(formData);
-      console.log("[AddLessonForm] onSubmit completed successfully");
-      // Reset form after successful submission
+      // Optimistic update - clear form immediately for better UX
+      const submitData = { ...formData };
       resetForm();
+      
+      await onSubmit(submitData);
     } catch (error) {
       console.error("[AddLessonForm] Submit error:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to create lesson. Please try again.";
@@ -192,12 +240,12 @@ export function AddLessonForm({
         ...prev,
         submit: errorMessage,
       }));
-      // Show alert for mobile users
-      alert("Error: " + errorMessage);
+      // Restore form data on error
+      setFormData(formData);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [formData, validateForm, onSubmit, resetForm]);
 
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/50 backdrop-blur-sm">

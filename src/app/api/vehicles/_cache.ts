@@ -1,37 +1,102 @@
 import type { Vehicle } from "@/lib/types";
+import type { VehicleFilters } from "@/services/VehicleService";
 
-type VehiclesCache = {
+interface CacheEntry {
   ts: number;
   data: Vehicle[];
-};
-
-let cache: VehiclesCache | null = null;
-
-function cacheTtlMs(): number {
-  const raw = process.env.VEHICLES_CACHE_TTL_MS;
-  // Default 0 to disable caching for real-time updates.
-  if (!raw) return 0;
-
-  const parsed = Number.parseInt(raw, 10);
-  if (!Number.isFinite(parsed) || parsed < 0) return 0;
-  return parsed;
+  filters?: string; // JSON stringified filters for debugging
 }
 
-export function getCachedVehicles(): Vehicle[] | null {
-  if (!cache) return null;
-  if (cacheTtlMs() === 0) return null;
+const MAX_CACHE_SIZE = 10; // LRU: max 10 filter combinations
+const DEFAULT_TTL_MS = 300000; // 5 minutes default
 
-  const ageMs = Date.now() - cache.ts;
-  if (ageMs < cacheTtlMs()) return cache.data;
+class VehiclesLRUCache {
+  private cache = new Map<string, CacheEntry>();
+  private stats = { hits: 0, misses: 0, evictions: 0, size: 0 };
 
-  cache = null;
-  return null;
+  set(key: string, data: Vehicle[], filters?: VehicleFilters): void {
+    // Evict LRU if full
+    if (this.cache.size >= MAX_CACHE_SIZE) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+      this.stats.evictions++;
+    }
+
+    const entry: CacheEntry = {
+      ts: Date.now(),
+      data,
+      filters: filters ? JSON.stringify(filters) : undefined
+    };
+
+    this.cache.set(key, entry);
+    this.stats.size = this.cache.size;
+  }
+
+  get(key: string): Vehicle[] | null {
+    const entry = this.cache.get(key);
+    if (!entry) {
+      this.stats.misses++;
+      return null;
+    }
+
+    const ttlMs = Number(process.env.VEHICLES_CACHE_TTL_MS) || DEFAULT_TTL_MS;
+    if (Date.now() - entry.ts >= ttlMs) {
+      this.cache.delete(key);
+      this.stats.misses++;
+      return null;
+    }
+
+    // Move to end (LRU update)
+    const data = entry.data;
+    this.cache.delete(key);
+    this.cache.set(key, entry);
+    this.stats.hits++;
+    return data;
+  }
+
+  clear(): void {
+    this.cache.clear();
+    this.stats = { hits: 0, misses: 0, evictions: 0, size: 0 };
+  }
+
+  invalidate(key: string): void {
+    this.cache.delete(key);
+    this.stats.misses++;
+    console.log(`[LRU Cache] Invalidated key: ${key}`);
+  }
+
+  getStats(): typeof this.stats {
+    return { ...this.stats };
+  }
+
+  getSize(): number {
+    return this.cache.size;
+  }
 }
 
-export function setCachedVehicles(data: Vehicle[]): void {
-  cache = { ts: Date.now(), data };
+export const vehiclesCache = new VehiclesLRUCache();
+
+// Legacy API compatibility
+export function getCachedVehicles(filters?: VehicleFilters): Vehicle[] | null {
+  const key = filters ? `vehicles:${JSON.stringify(filters)}` : 'vehicles:all';
+  return vehiclesCache.get(key);
+}
+
+export function setCachedVehicles(data: Vehicle[], filters?: VehicleFilters): void {
+  const key = filters ? `vehicles:${JSON.stringify(filters)}` : 'vehicles:all';
+  vehiclesCache.set(key, data, filters);
 }
 
 export function clearCachedVehicles(): void {
-  cache = null;
+  vehiclesCache.clear();
 }
+
+// Stats export for monitoring
+export function getCacheStats() {
+  return vehiclesCache.getStats();
+}
+
+export function getCacheSize() {
+  return vehiclesCache.getSize();
+}
+

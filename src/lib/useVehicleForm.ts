@@ -9,6 +9,30 @@
  */
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+
+// ============================================================================
+// Debounce Hook
+// ============================================================================
+
+/**
+ * useDebounce - Debounce hook for form field validation
+ * Prevents excessive validation during rapid typing
+ */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 import type { Vehicle } from "@/lib/types";
 import { derivePrices } from "@/lib/pricing";
 import { fileToDataUrl } from "@/lib/fileToDataUrl";

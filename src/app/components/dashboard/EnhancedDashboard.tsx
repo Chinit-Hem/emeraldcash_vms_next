@@ -13,6 +13,7 @@
 
 "use client";
 
+import ChartErrorBoundary from "@/app/components/dashboard/ChartErrorBoundary";
 import { useLanguage } from "@/lib/LanguageContext";
 import { CATEGORY_COLORS } from "@/lib/categoryColors";
 import { useTranslation } from "@/lib/i18n";
@@ -32,9 +33,31 @@ import {
   Package,
   RefreshCw,
   Search,
-  TrendingUp,
-  Truck
+  TrendingUp
 } from "lucide-react";
+
+// TukTuk Icon Component - From Sidebar Menu (IconTukTuk)
+function TukTukIcon({ className }: { className?: string }) {
+  return (
+    <svg 
+      className={className} 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    >
+      <path d="M4 16v-3a2 2 0 0 1 2-2h8l3 3v3" />
+      <path d="M14 13V9a2 2 0 0 1 2-2h2" />
+      <circle cx="7" cy="17" r="2" />
+      <circle cx="17" cy="17" r="2" />
+    </svg>
+  );
+}
 import dynamic from "next/dynamic";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -164,7 +187,7 @@ const VEHICLE_CATEGORIES = {
   },
   tuktuks: {
     label: "Tuk Tuks",
-    icon: Truck,
+    icon: TukTukIcon,
     color: "#f59e0b",
     gradient: "from-amber-500 to-orange-600",
     shadowColor: "shadow-amber-500/30",
@@ -183,7 +206,7 @@ const VEHICLE_CATEGORIES = {
 function ChartSkeleton({ height = 320, title = "Loading..." }: { height?: number; title?: string }) {
   return (
     <div 
-      className="w-full flex flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-[#e8ecf1] to-[#dce2e8] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff]"
+      className="w-full flex flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-[#e8ecf1] to-[#dce2e8] shadow-sm"
       style={{ height: `${height}px` }}
     >
       <div className="flex flex-col items-center gap-4">
@@ -255,10 +278,10 @@ function StatCard({
       className={`
         relative overflow-hidden rounded-3xl p-6
         bg-gradient-to-br from-[#f0f4f8] to-[#e6e9ef]
-        shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]
+        shadow-sm
         ${isClickable ? 'cursor-pointer hover:-translate-y-1 active:translate-y-0' : ''}
         transition-all duration-300
-        hover:shadow-[12px_12px_24px_#b8b9be,-12px_-12px_24px_#ffffff]
+        hover:bg-slate-50
         group
       `}
     >
@@ -359,8 +382,26 @@ export default function EnhancedDashboard({
   // 🚀 PERF: aggregatedStats now server-side in /api/dashboard/stats
   // Small initialVehicles (50) doesn't need client computation
 
-  // 🚀 PERF: Client filtering removed - use /vehicles?search=query API instead
-  const filteredVehicles = vehicles; // initialVehicles already limited
+  // Client-side filtering for search within loaded vehicles
+  const filteredVehicles = useMemo(() => {
+    if (!debouncedSearch.trim()) return vehicles;
+    
+    const query = debouncedSearch.toLowerCase().trim();
+    
+    return vehicles.filter((v) => {
+      const textMatch = 
+        v.Brand?.toLowerCase().includes(query) ||
+        v.Model?.toLowerCase().includes(query) ||
+        v.Plate?.toLowerCase().includes(query) ||
+        v.Category?.toLowerCase().includes(query) ||
+        v.Condition?.toLowerCase().includes(query) ||
+        v.Color?.toLowerCase().includes(query) ||
+        v.VehicleId?.toString().toLowerCase().includes(query) ||
+        v.Year?.toString().includes(query);
+      
+      return textMatch;
+    });
+  }, [vehicles, debouncedSearch]);
 
   // Chart data preparation
   const categoryChartData = useMemo(() => {
@@ -392,7 +433,7 @@ export default function EnhancedDashboard({
     { name: 'TOYOTA', value: 32 },
     { name: 'KIA', value: 28 },
     { name: 'MITSUBISHI', value: 24 },
-  ] as const;
+  ];
 
   const monthlyChartData = [
     { name: 'Jan 2024', value: 89 },
@@ -407,7 +448,7 @@ export default function EnhancedDashboard({
     { name: 'Oct 2024', value: 598 },
     { name: 'Nov 2024', value: 634 },
     { name: 'Dec 2024', value: 712 },
-  ] as const;
+  ];
 
   // Handlers
   const handleRefresh = useCallback(async () => {
@@ -511,7 +552,7 @@ export default function EnhancedDashboard({
               {/* All Vehicles Card */}
               <a
                 href="/vehicles"
-                className="group relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white to-slate-50 shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff] hover:shadow-[12px_12px_32px_#d1d5db,-12px_-12px_32px_#ffffff] transition-all duration-500 hover:-translate-y-1"
+                className="group relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white to-slate-50 shadow-sm hover:bg-slate-50 transition-all duration-500 hover:-translate-y-1"
               >
                 {/* Animated Background Gradient */}
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -551,7 +592,7 @@ export default function EnhancedDashboard({
               {/* Cars Card */}
               <a
                 href="/vehicles?category=Cars"
-                className="group relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white to-blue-50/30 shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff] hover:shadow-[12px_12px_32px_#d1d5db,-12px_-12px_32px_#ffffff] transition-all duration-500 hover:-translate-y-1"
+                className="group relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white to-blue-50/30 shadow-sm hover:bg-slate-50 transition-all duration-500 hover:-translate-y-1"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
@@ -588,7 +629,7 @@ export default function EnhancedDashboard({
               {/* Motorcycles Card */}
               <a
                 href="/vehicles?category=Motorcycles"
-                className="group relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white to-violet-50/30 shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff] hover:shadow-[12px_12px_32px_#d1d5db,-12px_-12px_32px_#ffffff] transition-all duration-500 hover:-translate-y-1"
+                className="group relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white to-violet-50/30 shadow-sm hover:bg-slate-50 transition-all duration-500 hover:-translate-y-1"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-purple-500/5 to-fuchsia-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
@@ -625,14 +666,14 @@ export default function EnhancedDashboard({
               {/* Tuk Tuks Card */}
               <a
                 href="/vehicles?category=Tuk+Tuk"
-                className="group relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white to-amber-50/30 shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff] hover:shadow-[12px_12px_32px_#d1d5db,-12px_-12px_32px_#ffffff] transition-all duration-500 hover:-translate-y-1"
+                className="group relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-white to-amber-50/30 shadow-sm hover:bg-slate-50 transition-all duration-500 hover:-translate-y-1"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
                 <div className="relative">
                   <div className="flex items-start justify-between mb-4">
                     <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30 group-hover:shadow-amber-500/40 group-hover:scale-110 transition-all duration-300">
-                      <Truck className="w-7 h-7 text-white" />
+                      <TukTukIcon className="w-7 h-7 text-white" />
                     </div>
                     <div className="text-right">
                       <span className="text-4xl font-bold text-slate-800 group-hover:text-amber-600 transition-colors duration-300">
@@ -691,7 +732,7 @@ export default function EnhancedDashboard({
               placeholder="Search by brand, model, category, plate number, or year..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-14 pr-14 py-4 rounded-2xl bg-white shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:shadow-[6px_6px_16px_#e2e8f0,-6px_-6px_16px_#ffffff] transition-all text-base"
+              className="w-full pl-14 pr-14 py-4 rounded-2xl bg-white shadow-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:ring-2 focus:ring-emerald-500/20 transition-all text-base"
             />
             {debouncedSearch !== searchQuery && (
               <div className="absolute inset-y-0 right-0 pr-5 flex items-center">
@@ -704,21 +745,16 @@ export default function EnhancedDashboard({
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <span className="font-medium text-slate-700">
-                {vehicles.length.toLocaleString()}
+                {filteredVehicles.length.toLocaleString()}
               </span>
               <span>of</span>
               <span className="font-medium text-slate-700">
                 {meta.total.toLocaleString()}
               </span>
               <span>vehicles</span>
-{vehicles.length < meta.total && (
-            <span className="text-emerald-600 font-medium">
-              (showing first {vehicles.length} of {meta.total.toLocaleString()})
-            </span>
-          )}
               {debouncedSearch && (
                 <span className="text-slate-400">
-                  matching "{debouncedSearch}"
+                  matching &quot;{debouncedSearch}&quot;
                 </span>
               )}
             </div>
@@ -744,7 +780,7 @@ export default function EnhancedDashboard({
           {/* Charts Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Vehicles by Category */}
-            <div className="bg-white rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff] p-6 sm:p-8">
+            <div className="bg-white rounded-3xl shadow-sm p-6 sm:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-bold text-slate-800">Vehicles by Category</h3>
@@ -764,7 +800,7 @@ export default function EnhancedDashboard({
             </div>
 
             {/* New vs Used */}
-            <div className="bg-white rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff] p-6 sm:p-8">
+            <div className="bg-white rounded-3xl shadow-sm p-6 sm:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-bold text-slate-800">Condition Distribution</h3>
@@ -784,7 +820,7 @@ export default function EnhancedDashboard({
             </div>
 
             {/* Top Brands */}
-            <div className="bg-white rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff] p-6 sm:p-8">
+            <div className="bg-white rounded-3xl shadow-sm p-6 sm:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-bold text-slate-800">Top Brands</h3>
@@ -804,7 +840,7 @@ export default function EnhancedDashboard({
             </div>
 
             {/* Monthly Added */}
-            <div className="bg-white rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff] p-6 sm:p-8">
+            <div className="bg-white rounded-3xl shadow-sm p-6 sm:p-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-bold text-slate-800">Monthly Trends</h3>
@@ -858,7 +894,7 @@ export default function EnhancedDashboard({
             ].map((stat, index) => (
               <div
                 key={stat.label}
-                className="bg-white rounded-2xl shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] p-5 text-center hover:shadow-[6px_6px_16px_#e2e8f0,-6px_-6px_16px_#ffffff] transition-shadow"
+                className="bg-white rounded-2xl shadow-sm p-5 text-center hover:bg-slate-50 transition-shadow"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className={`w-12 h-12 mx-auto mb-3 rounded-xl ${stat.bgColor} flex items-center justify-center`}>

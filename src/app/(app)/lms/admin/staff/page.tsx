@@ -17,7 +17,7 @@ import {
   Users
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 type ManagedUser = {
   username: string;
@@ -80,8 +80,8 @@ export default function StaffAdminPage() {
     try {
       // Fetch Settings users
       const usersRes = await fetch("/api/auth/users", { 
-        cache: "force-cache", 
-        next: { revalidate: 300 } 
+        cache: "no-store",
+        credentials: "include"
       });
       const usersData = (await usersRes.json().catch(() => ({}))) as {
         ok?: boolean;
@@ -196,7 +196,7 @@ export default function StaffAdminPage() {
       
       setUserActionSuccess(`Synced ${users.length} users to LMS`);
       await loadData();
-    } catch (error) {
+    } catch (_error) {
       setUserActionError("Failed to sync some users to LMS");
     } finally {
       setIsSyncingAll(false);
@@ -406,23 +406,23 @@ export default function StaffAdminPage() {
     }
   };
 
-  // Get LMS progress for a user
-  const getLMSProgress = (email: string | null) => {
+  // Get LMS progress for a user - MEMOIZED for performance
+  const getLMSProgress = useCallback((email: string | null) => {
     if (!email) return null;
     return lmsStaff.find(s => s.email?.toLowerCase() === email.toLowerCase());
-  };
+  }, [lmsStaff]);
 
-  // Filter users based on search
-  const filteredUsers = users.filter((managedUser) => {
-    if (!searchQuery) return true;
+  // Filter users based on search - MEMOIZED to avoid recomputation on every render
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery) return users;
     const query = searchQuery.toLowerCase();
-    return (
+    return users.filter((managedUser) => (
       managedUser.username.toLowerCase().includes(query) ||
       (managedUser.full_name && managedUser.full_name.toLowerCase().includes(query)) ||
       (managedUser.email && managedUser.email.toLowerCase().includes(query)) ||
       (managedUser.phone && managedUser.phone.toLowerCase().includes(query))
-    );
-  });
+    ));
+  }, [users, searchQuery]);
 
   if (!isAdmin) return null;
 
@@ -567,6 +567,24 @@ export default function StaffAdminPage() {
               <Loader2 className="w-8 h-8 mx-auto animate-spin text-purple-600" />
               <p className="mt-4 text-slate-500">Loading users...</p>
             </div>
+          ) : userActionError && userActionError.includes("Access denied") ? (
+            <div className="text-center py-12 bg-white rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff]">
+              <Shield className="w-12 h-12 mx-auto mb-4 text-amber-500" />
+              <h3 className="text-lg font-semibold text-slate-800 mb-2">Admin Access Required</h3>
+              <p className="text-slate-500 mb-4">{userActionError}</p>
+              <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 max-w-md mx-auto">
+                <p className="text-sm text-amber-700">
+                  <strong>Default Admin Credentials:</strong><br />
+                  <code className="bg-amber-100 px-2 py-1 rounded">admin / 1234</code>
+                </p>
+              </div>
+              <button
+                onClick={() => router.push("/settings")}
+                className="px-4 py-2 rounded-xl bg-amber-100 text-amber-700 font-medium hover:bg-amber-200 transition-colors"
+              >
+                Go to Settings
+              </button>
+            </div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff]">
               <Users className="w-12 h-12 mx-auto mb-4 text-slate-300" />
@@ -587,6 +605,7 @@ export default function StaffAdminPage() {
                     {/* Avatar */}
                     <div className="relative shrink-0">
                       {managedUser.profile_picture ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={managedUser.profile_picture}
                           alt={managedUser.username}
@@ -718,6 +737,7 @@ export default function StaffAdminPage() {
               <div className="flex flex-col items-center mb-6">
                 <div className="relative">
                   {editProfilePicture ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={editProfilePicture}
                       alt="Profile"

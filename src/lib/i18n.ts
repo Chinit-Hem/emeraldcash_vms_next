@@ -48,6 +48,7 @@ export interface Translations {
   dashboard: string;
   vehicles: string;
   training: string;
+  sms: string;
   lmsStaff: string;
   memberSince: string;
   you: string;
@@ -169,6 +170,7 @@ export const translations: Record<Language, Translations> = {
     dashboard: "Dashboard",
     vehicles: "Vehicles",
     training: "Training",
+    sms: "Stock Management",
     lmsStaff: "LMS Staff",
     memberSince: "Member since",
     you: "You",
@@ -179,8 +181,10 @@ export const translations: Record<Language, Translations> = {
     darkMode: "Dark Mode",
     lightMode: "Light Mode",
     language: "Language",
+
     khmer: "Khmer",
     english: "English",
+
     quickLinks: "Quick Links",
     account: "Account",
     preferences: "Preferences",
@@ -288,6 +292,7 @@ export const translations: Record<Language, Translations> = {
     dashboard: "ផ្ទាំងគ្រប់គ្រង",
     vehicles: "យានយន្ត",
     training: "ការបណ្តុះបណ្តាល",
+    sms: "គ្រប់គ្រងស្តុក",
     lmsStaff: "បុគ្គលិក LMS",
     memberSince: "សមាជិកតាំងពី",
     you: "អ្នក",

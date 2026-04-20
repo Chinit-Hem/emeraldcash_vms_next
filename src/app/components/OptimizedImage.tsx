@@ -99,7 +99,7 @@ export function OptimizedImage({
   const blurPlaceholder = blurDataURL || 
     `data:image/svg+xml;base64,${btoa(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1">
-        <rect fill="#e0e5ec" width="1" height="1"/>
+        <rect fill="#f1f5f9" width="1" height="1"/>
       </svg>
     `)}`;
 
@@ -188,9 +188,7 @@ export function OptimizedImage({
 
       {/* Skeleton placeholder */}
       {!isLoaded && !hasError && (
-        <div className="absolute inset-0 bg-[#e0e5ec] animate-pulse">
-          <div className="w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-        </div>
+        <div className="absolute inset-0 bg-slate-200 animate-pulse" />
       )}
 
       {/* Main image */}
@@ -222,7 +220,7 @@ export function OptimizedImage({
 
       {/* Error state */}
       {hasError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#e0e5ec]">
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
           <div className="text-center">
             <svg
               className="w-12 h-12 mx-auto mb-2 text-slate-400"

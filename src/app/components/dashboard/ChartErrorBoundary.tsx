@@ -25,9 +25,9 @@ export default function ChartErrorBoundary({
     
     // Try formDebugger integration
     if (typeof window !== 'undefined') {
-      const formDebugger = (window as any).formDebugger;
-      if (formDebugger?.captureError) {
-        formDebugger.captureError(error, { chart: title, componentStack: errorInfo.componentStack });
+      const formDebuggerObj = (window as unknown as Record<string, unknown>).formDebugger as { captureError?: (error: Error, info: Record<string, unknown>) => void } | undefined;
+      if (formDebuggerObj?.captureError) {
+        formDebuggerObj.captureError(error, { chart: title, componentStack: errorInfo.componentStack });
       }
     }
     
@@ -85,7 +85,11 @@ class ReactErrorBoundary extends React.Component<{
 }, {
   hasError: boolean;
 }> {
-  constructor(props: any) {
+  constructor(props: {
+    children: ReactNode;
+    onError: (error: Error, errorInfo: React.ErrorInfo) => void;
+    fallbackRender: () => ReactNode;
+  }) {
     super(props);
     this.state = { hasError: false };
   }

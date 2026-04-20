@@ -5,7 +5,7 @@ import { recordMutation } from "./vehicleCache";
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.trim();
 const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 1000;
+const _RETRY_DELAY_MS = 1000;
 const REQUEST_TIMEOUT_MS = 60000; // 60 seconds for apiRequest
 // INCREASED: 60 seconds for fetchJSON to match server-side handler timeout (45s) + buffer
 const FETCH_TIMEOUT_MS = 60000;

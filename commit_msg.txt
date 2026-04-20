@@ -1,6 +1,0 @@
-Update project with various fixes, new features, and cleanup
-
-- Add change-password API route and ChangePasswordModal component
-- Clean up duplicate files and directories
-- Update configuration files, scripts, and dependencies
-- Modify TODO files and environment example

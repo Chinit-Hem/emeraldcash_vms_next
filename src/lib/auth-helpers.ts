@@ -4,7 +4,7 @@
  * @module auth-helpers
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { requireSession, type SessionPayload } from "./auth";
 
 import type { Role } from "./types";

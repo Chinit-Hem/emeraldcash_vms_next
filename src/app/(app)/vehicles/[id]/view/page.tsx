@@ -455,6 +455,11 @@ function ViewVehicleInner() {
           }
           return;
         }
+        if (res.status === 404) {
+          // Vehicle not found - let !vehicle state handle it
+          setLoading(false);
+          return;
+        }
         if (!res.ok) throw new Error("Failed to fetch vehicle");
         const data = await res.json();
         if (!alive) return;
@@ -606,9 +611,15 @@ function ViewVehicleInner() {
             }),
           });
           
-          if (!uploadRes.ok) throw new Error("Failed to upload image");
+          if (!uploadRes.ok) {
+            const uploadError = await uploadRes.json().catch(() => ({}));
+            throw new Error(uploadError.error || "Failed to upload image");
+          }
           const uploadData = await uploadRes.json();
-          finalImageUrl = uploadData.url;
+          finalImageUrl = uploadData?.data?.url || uploadData?.url;
+          if (!finalImageUrl) {
+            throw new Error("Upload response missing image URL");
+          }
         } else if (imagePreview.startsWith('http')) {
           finalImageUrl = imagePreview;
         }

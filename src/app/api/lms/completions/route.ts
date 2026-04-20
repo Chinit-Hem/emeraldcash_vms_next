@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const staffId = searchParams.get("staffId");
+  const staffId = searchParams.get("staffId") ?? searchParams.get("staff_id");
 
   if (!staffId) {
     return NextResponse.json(
@@ -99,18 +99,21 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+    const lessonId = body.lessonId ?? body.lesson_id;
+    const incomingStaffId = body.staffId ?? body.staff_id;
+    const timeSpentSeconds = body.timeSpentSeconds ?? body.time_spent_seconds;
 
     // Validate required fields
-    if (!body.lesson_id || typeof body.lesson_id !== "number") {
+    if (!lessonId || typeof lessonId !== "number") {
       return NextResponse.json(
-        { success: false, error: "lesson_id is required and must be a number" },
+        { success: false, error: "lesson_id/lessonId is required and must be a number" },
         { status: 400 }
       );
     }
 
     // TODO: Get actual staff ID from session
     // For now, using staff ID 1 as default
-    const staffId = body.staff_id || 1;
+    const staffId = typeof incomingStaffId === "number" ? incomingStaffId : (session.staffId ?? session.userId ?? 1);
 
     const isAdmin = canManageLMS(session);
 
@@ -123,9 +126,9 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await lmsService.markLessonComplete({
-      staff_id: staffId,
-      lesson_id: body.lesson_id,
-      time_spent_seconds: body.time_spent_seconds,
+      staffId,
+      lessonId,
+      timeSpentSeconds: typeof timeSpentSeconds === "number" ? timeSpentSeconds : null,
       notes: body.notes,
     });
 
@@ -138,7 +141,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.data,
+      data: result.data
+        ? {
+            completed_at: result.data.completedAt,
+            time_spent_seconds: result.data.timeSpentSeconds,
+          }
+        : null,
       meta: result.meta,
     }, { status: 201 });
   } catch (_error) {

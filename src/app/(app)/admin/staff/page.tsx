@@ -1,26 +1,23 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useAuthUser } from "@/app/components/AuthContext";
+import type { Role } from "@/lib/types";
 import {
-  Users,
   ArrowLeft,
+  ArrowRightLeft,
+  Building2,
+  CheckCircle2,
   Loader2,
   Mail,
-  Building2,
-  Search,
   RefreshCw,
-  CheckCircle2,
-  XCircle,
-  UserCheck,
-  UserX,
-  ArrowRightLeft,
+  Search,
   Shield,
   User,
+  UserCheck,
+  Users,
 } from "lucide-react";
-import { useAuthUser } from "@/app/components/AuthContext";
-import type { StaffProgress } from "@/lib/lms-types";
-import type { Role } from "@/lib/types";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 interface SettingsUser {
   username: string;
@@ -65,8 +62,8 @@ export default function UnifiedStaffPage() {
   const isAdmin = user?.role === "Admin";
   
   const [unifiedStaff, setUnifiedStaff] = useState<UnifiedStaffMember[]>([]);
-  const [settingsUsers, setSettingsUsers] = useState<SettingsUser[]>([]);
-  const [lmsStaff, setLmsStaff] = useState<StaffMember[]>([]);
+  const [_settingsUsers, setSettingsUsers] = useState<SettingsUser[]>([]);
+  const [_lmsStaff, setLmsStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -196,7 +193,7 @@ export default function UnifiedStaffPage() {
       } else {
         setSyncMessage(`Failed to sync ${member.name}: ${data.error}`);
       }
-    } catch (err) {
+    } catch (_err) {
       setSyncMessage(`Error syncing ${member.name}`);
     }
   };
@@ -234,7 +231,7 @@ export default function UnifiedStaffPage() {
           if (data.success) success++;
           else failed++;
         }
-      } catch (err) {
+      } catch (_err) {
         failed++;
       }
     }

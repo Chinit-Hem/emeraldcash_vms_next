@@ -9,28 +9,28 @@
 
 "use client";
 
-import React, { useState, useCallback } from "react";
-import { cn } from "@/lib/ui";
-import type { RoleDefinition, Permission } from "@/lib/types";
-import { 
-  PERMISSION_LABELS, 
+import type { Permission, RoleDefinition } from "@/lib/types";
+import {
+  DEFAULT_ROLE_PERMISSIONS,
   PERMISSION_CATEGORIES,
-  DEFAULT_ROLE_PERMISSIONS 
+  PERMISSION_LABELS
 } from "@/lib/types";
-import { 
-  Shield, 
-  Plus, 
-  Edit2, 
-  Trash2, 
-  Check, 
-  X,
-  Users,
-  Settings,
-  Car,
-  BookOpen,
+import { cn } from "@/lib/ui";
+import {
   BarChart3,
-  Lock
+  BookOpen,
+  Car,
+  Check,
+  Edit2,
+  Lock,
+  Plus,
+  Settings,
+  Shield,
+  Trash2,
+  Users,
+  X
 } from "lucide-react";
+import React, { useCallback, useState } from "react";
 
 // ============================================================================
 // Types & Interfaces
@@ -272,16 +272,16 @@ export function RoleManager({
             onClick={() => handleCategoryToggle(permissions)}
             className={cn(
               "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all",
-              "bg-[#e0e5ec] shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff]",
-              allSelected && "text-emerald-600 shadow-[inset_2px_2px_4px_#a3b1c6,inset_-2px_-2px_4px_#ffffff]",
+              "bg-white dark:bg-slate-900 shadow-sm",
+              allSelected && "text-emerald-600 shadow-sm",
               someSelected && "text-amber-600",
-              !selectedCount && "text-[#4a4a5a]"
+              !selectedCount && "text-slate-600 dark:text-slate-400"
             )}
           >
             {CATEGORY_ICONS[category]}
             {category}
             {selectedCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-[#e0e5ec] shadow-[1px_1px_2px_#a3b1c6,-1px_-1px_2px_#ffffff] text-[10px]">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white dark:bg-slate-900 shadow-sm text-[10px]">
                 {selectedCount}/{permissions.length}
               </span>
             )}
@@ -295,10 +295,10 @@ export function RoleManager({
               onClick={() => handlePermissionToggle(permission)}
               className={cn(
                 "flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-all text-left",
-                "bg-[#e0e5ec] shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff]",
+                "bg-white dark:bg-slate-900 shadow-sm",
                 formData.permissions.includes(permission)
-                  ? "shadow-[inset_2px_2px_4px_#a3b1c6,inset_-2px_-2px_4px_#ffffff] text-emerald-600"
-                  : "text-[#4a4a5a] hover:shadow-[3px_3px_6px_#a3b1c6,-3px_-3px_6px_#ffffff]"
+                  ? "shadow-sm text-emerald-600"
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
               )}
             >
               <div
@@ -306,7 +306,7 @@ export function RoleManager({
                   "w-4 h-4 rounded-full flex items-center justify-center transition-all",
                   formData.permissions.includes(permission)
                     ? "bg-emerald-500 text-white"
-                    : "bg-[#e0e5ec] shadow-[1px_1px_2px_#a3b1c6,-1px_-1px_2px_#ffffff]"
+                    : "bg-white dark:bg-slate-900 shadow-sm"
                 )}
               >
                 {formData.permissions.includes(permission) && <Check className="w-3 h-3" />}
@@ -325,8 +325,8 @@ export function RoleManager({
 
   if (!isAdmin) {
     return (
-      <div className="p-6 rounded-[20px] bg-[#e0e5ec] shadow-[8px_8px_16px_#a3b1c6,-8px_-8px_16px_#ffffff]">
-        <div className="flex items-center gap-3 text-[#e74c3c]">
+      <div className="p-6 rounded-[20px] bg-white dark:bg-slate-900 shadow-sm">
+        <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
           <Shield className="w-5 h-5" />
           <p className="text-sm font-medium">Only administrators can manage roles.</p>
         </div>
@@ -339,8 +339,8 @@ export function RoleManager({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-[#1a1a2e]">Role Management</h2>
-          <p className="text-sm text-[#4a4a5a] mt-1">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Role Management</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
             Create and manage custom roles with granular permissions
           </p>
         </div>
@@ -349,10 +349,10 @@ export function RoleManager({
             onClick={handleCreateClick}
             className={cn(
               "flex items-center gap-2 px-5 py-2.5 rounded-xl",
-              "bg-[#e0e5ec] text-emerald-600",
-              "shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff]",
-              "hover:shadow-[6px_6px_12px_#a3b1c6,-6px_-6px_12px_#ffffff]",
-              "active:shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff]",
+              "bg-white dark:bg-slate-900 text-emerald-600",
+              "shadow-sm",
+              "hover:bg-slate-50 dark:hover:bg-slate-800",
+              "active:bg-slate-100 dark:active:bg-slate-700",
               "transition-all duration-200 font-semibold text-sm"
             )}
           >
@@ -364,27 +364,27 @@ export function RoleManager({
 
       {/* Messages */}
       {error && (
-        <div className="p-4 rounded-[16px] bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff] text-[#e74c3c] text-sm">
+        <div className="p-4 rounded-[16px] bg-white dark:bg-slate-900 shadow-sm text-red-600 dark:text-red-400 text-sm">
           {error}
         </div>
       )}
       {success && (
-        <div className="p-4 rounded-[16px] bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff] text-emerald-600 text-sm">
+        <div className="p-4 rounded-[16px] bg-white dark:bg-slate-900 shadow-sm text-emerald-600 text-sm">
           {success}
         </div>
       )}
 
       {/* Create/Edit Form */}
       {(isCreating || isEditing) && (
-        <div className="p-6 rounded-[24px] bg-[#e0e5ec] shadow-[12px_12px_24px_#a3b1c6,-12px_-12px_24px_#ffffff]">
-          <h3 className="text-lg font-bold text-[#1a1a2e] mb-4">
+        <div className="p-6 rounded-[24px] bg-white dark:bg-slate-900 shadow-sm">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">
             {isEditing ? "Edit Role" : "Create New Role"}
           </h3>
 
           <div className="space-y-4">
             {/* Role Name */}
             <div>
-              <label className="block text-xs font-bold text-[#1a1a2e] uppercase tracking-wide mb-2">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wide mb-2">
                 Role Name *
               </label>
               <input
@@ -393,17 +393,17 @@ export function RoleManager({
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., Manager, Supervisor, Viewer"
                 className={cn(
-                  "w-full px-4 py-3 rounded-xl text-sm text-[#1a1a2e]",
-                  "bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff]",
-                  "outline-none transition-all placeholder:text-[#4a4a5a]",
-                  "focus:shadow-[inset_6px_6px_12px_#a3b1c6,inset_-6px_-6px_12px_#ffffff]"
+                  "w-full px-4 py-3 rounded-xl text-sm text-slate-900 dark:text-slate-100",
+                  "bg-white dark:bg-slate-900 shadow-sm",
+                  "outline-none transition-all placeholder:text-slate-600 dark:placeholder:text-slate-400",
+                  "focus:ring-2 focus:ring-emerald-500/20"
                 )}
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-xs font-bold text-[#1a1a2e] uppercase tracking-wide mb-2">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wide mb-2">
                 Description
               </label>
               <input
@@ -412,17 +412,17 @@ export function RoleManager({
                 onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                 placeholder="Brief description of this role's responsibilities"
                 className={cn(
-                  "w-full px-4 py-3 rounded-xl text-sm text-[#1a1a2e]",
-                  "bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff]",
-                  "outline-none transition-all placeholder:text-[#4a4a5a]",
-                  "focus:shadow-[inset_6px_6px_12px_#a3b1c6,inset_-6px_-6px_12px_#ffffff]"
+                  "w-full px-4 py-3 rounded-xl text-sm text-slate-900 dark:text-slate-100",
+                  "bg-white dark:bg-slate-900 shadow-sm",
+                  "outline-none transition-all placeholder:text-slate-600 dark:placeholder:text-slate-400",
+                  "focus:ring-2 focus:ring-emerald-500/20"
                 )}
               />
             </div>
 
             {/* Color Selection */}
             <div>
-              <label className="block text-xs font-bold text-[#1a1a2e] uppercase tracking-wide mb-2">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wide mb-2">
                 Role Color
               </label>
               <div className="flex flex-wrap gap-3">
@@ -433,10 +433,10 @@ export function RoleManager({
                     onClick={() => setFormData((prev) => ({ ...prev, color: color.value }))}
                     className={cn(
                       "w-10 h-10 rounded-xl transition-all",
-                      "shadow-[3px_3px_6px_#a3b1c6,-3px_-3px_6px_#ffffff]",
+                      "shadow-sm",
                       formData.color === color.value
-                        ? "shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff] ring-2 ring-offset-2 ring-offset-[#e0e5ec] ring-emerald-500"
-                        : "hover:shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff]"
+                        ? "shadow-sm ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 ring-emerald-500"
+                        : "hover:bg-slate-50 dark:hover:bg-slate-800"
                     )}
                     style={{ backgroundColor: color.value }}
                     title={color.name}
@@ -447,10 +447,10 @@ export function RoleManager({
 
             {/* Permissions */}
             <div>
-              <label className="block text-xs font-bold text-[#1a1a2e] uppercase tracking-wide mb-3">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wide mb-3">
                 Permissions *
               </label>
-              <div className="p-4 rounded-[16px] bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff]">
+              <div className="p-4 rounded-[16px] bg-white dark:bg-slate-900 shadow-sm">
                 {Object.entries(PERMISSION_CATEGORIES).map(([category, permissions]) =>
                   renderPermissionCategory(category, permissions)
                 )}
@@ -464,10 +464,10 @@ export function RoleManager({
                 onClick={handleSubmit}
                 className={cn(
                   "flex items-center gap-2 px-6 py-3 rounded-xl",
-                  "bg-[#e0e5ec] text-emerald-600",
-                  "shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff]",
-                  "hover:shadow-[6px_6px_12px_#a3b1c6,-6px_-6px_12px_#ffffff]",
-                  "active:shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff]",
+                  "bg-white dark:bg-slate-900 text-emerald-600",
+                  "shadow-sm",
+                  "hover:bg-slate-50 dark:hover:bg-slate-800",
+                  "active:bg-slate-100 dark:active:bg-slate-700",
                   "transition-all duration-200 font-semibold text-sm"
                 )}
               >
@@ -479,10 +479,10 @@ export function RoleManager({
                 onClick={handleCancel}
                 className={cn(
                   "flex items-center gap-2 px-6 py-3 rounded-xl",
-                  "bg-[#e0e5ec] text-[#4a4a5a]",
-                  "shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff]",
-                  "hover:shadow-[6px_6px_12px_#a3b1c6,-6px_-6px_12px_#ffffff]",
-                  "active:shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff]",
+                  "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400",
+                  "shadow-sm",
+                  "hover:bg-slate-50 dark:hover:bg-slate-800",
+                  "active:bg-slate-100 dark:active:bg-slate-700",
                   "transition-all duration-200 font-semibold text-sm"
                 )}
               >
@@ -504,8 +504,8 @@ export function RoleManager({
               <div
                 key={role.id}
                 className={cn(
-                  "p-5 rounded-[20px] bg-[#e0e5ec]",
-                  "shadow-[8px_8px_16px_#a3b1c6,-8px_-8px_16px_#ffffff]",
+                  "p-5 rounded-[20px] bg-white dark:bg-slate-900",
+                  "shadow-sm",
                   "transition-all duration-200"
                 )}
               >
@@ -514,23 +514,23 @@ export function RoleManager({
                     <div
                       className={cn(
                         "w-12 h-12 rounded-xl flex items-center justify-center",
-                        "shadow-[3px_3px_6px_#a3b1c6,-3px_-3px_6px_#ffffff]"
+                        "shadow-sm"
                       )}
                       style={getRoleColorBg(role.color)}
                     >
                       <Shield className={cn("w-6 h-6", getRoleColorClass(role.color))} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-[#1a1a2e]">{role.name}</h4>
-                      <p className="text-xs text-[#4a4a5a]">{role.description}</p>
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-[#e0e5ec] shadow-[1px_1px_2px_#a3b1c6,-1px_-1px_2px_#ffffff] text-[10px] text-[#4a4a5a]">
+                      <h4 className="font-bold text-slate-900 dark:text-slate-100">{role.name}</h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{role.description}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-white dark:bg-slate-900 shadow-sm text-[10px] text-slate-600 dark:text-slate-400">
                         System Role
                       </span>
                     </div>
                   </div>
                 </div>
-                <div className="mt-3 pt-3 border-t border-[#a3b1c6]/30">
-                  <p className="text-xs text-[#4a4a5a]">
+                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
                     {role.permissions.length} permissions
                   </p>
                 </div>
@@ -544,8 +544,8 @@ export function RoleManager({
               <div
                 key={role.id}
                 className={cn(
-                  "p-5 rounded-[20px] bg-[#e0e5ec]",
-                  "shadow-[8px_8px_16px_#a3b1c6,-8px_-8px_16px_#ffffff]",
+                  "p-5 rounded-[20px] bg-white dark:bg-slate-900",
+                  "shadow-sm",
                   "transition-all duration-200"
                 )}
               >
@@ -554,16 +554,16 @@ export function RoleManager({
                     <div
                       className={cn(
                         "w-12 h-12 rounded-xl flex items-center justify-center",
-                        "shadow-[3px_3px_6px_#a3b1c6,-3px_-3px_6px_#ffffff]"
+                        "shadow-sm"
                       )}
                       style={getRoleColorBg(role.color)}
                     >
                       <Shield className={cn("w-6 h-6", getRoleColorClass(role.color))} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-[#1a1a2e]">{role.name}</h4>
-                      <p className="text-xs text-[#4a4a5a]">{role.description}</p>
-                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-[#e0e5ec] shadow-[1px_1px_2px_#a3b1c6,-1px_-1px_2px_#ffffff] text-[10px] text-emerald-600">
+                      <h4 className="font-bold text-slate-900 dark:text-slate-100">{role.name}</h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">{role.description}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-white dark:bg-slate-900 shadow-sm text-[10px] text-emerald-600">
                         Custom Role
                       </span>
                     </div>
@@ -573,9 +573,9 @@ export function RoleManager({
                       onClick={() => handleEditClick(role)}
                       className={cn(
                         "p-2 rounded-lg",
-                        "bg-[#e0e5ec] text-[#4a4a5a]",
-                        "shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff]",
-                        "hover:shadow-[inset_2px_2px_4px_#a3b1c6,inset_-2px_-2px_4px_#ffffff]",
+                        "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400",
+                        "shadow-sm",
+                        "hover:bg-slate-50 dark:hover:bg-slate-800",
                         "transition-all duration-200"
                       )}
                       title="Edit role"
@@ -587,9 +587,9 @@ export function RoleManager({
                       disabled={isDeleting === role.id}
                       className={cn(
                         "p-2 rounded-lg",
-                        "bg-[#e0e5ec] text-[#e74c3c]",
-                        "shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff]",
-                        "hover:shadow-[inset_2px_2px_4px_#a3b1c6,inset_-2px_-2px_4px_#ffffff]",
+                        "bg-white dark:bg-slate-900 text-red-600 dark:text-red-400",
+                        "shadow-sm",
+                        "hover:bg-slate-50 dark:hover:bg-slate-800",
                         "transition-all duration-200",
                         "disabled:opacity-50"
                       )}
@@ -603,8 +603,8 @@ export function RoleManager({
                     </button>
                   </div>
                 </div>
-                <div className="mt-3 pt-3 border-t border-[#a3b1c6]/30">
-                  <p className="text-xs text-[#4a4a5a]">
+                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
                     {role.permissions.length} permissions
                   </p>
                 </div>
@@ -613,9 +613,9 @@ export function RoleManager({
 
           {/* Empty State */}
           {roles.filter((r) => !r.isSystem).length === 0 && (
-            <div className="col-span-full p-8 rounded-[20px] bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff] text-center">
-              <p className="text-sm text-[#4a4a5a]">
-                No custom roles yet. Click "Create Role" to add one.
+            <div className="col-span-full p-8 rounded-[20px] bg-white dark:bg-slate-900 shadow-sm text-center">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                No custom roles yet. Click &quot;Create Role&quot; to add one.
               </p>
             </div>
           )}

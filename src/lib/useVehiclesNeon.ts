@@ -163,18 +163,16 @@ limit = 500, // Increased for dashboard pagination fix (total 1218 vehicles)
     return unsubscribe;
   }, []);
 
-  // Use SWR for data fetching - include forceRefreshKey to trigger revalidation
-  const swrKey = `${key}&_refresh=${forceRefreshKey}`;
+  // Use SWR for data fetching
   const { data, error, isLoading, isValidating, mutate: revalidate } = useSWR(
-    swrKey,
+    key,
     fetcher,
     {
       refreshInterval: 30000, // Perf: Stats 30s poll
-      revalidateOnFocus: false,
+      revalidateOnFocus: true, // Revalidate when user returns to tab
       revalidateOnReconnect: true,
-dedupingInterval: 5000, // Perf: Reduce API spam 5s dedupe
+      dedupingInterval: 5000, // Standard deduping
       errorRetryCount: 3,
-      // Always fetch fresh data when forceRefreshKey changes
       revalidateIfStale: true,
     }
   );
@@ -351,6 +349,8 @@ interface VehicleStats {
     New: number;
     Used: number;
   };
+  noImageCount: number;
+  avgPrice: number;
 }
 
 /**
@@ -390,13 +390,19 @@ async function statsFetcher(url: string): Promise<StatsResponse> {
 /**
  * Hook to fetch vehicle statistics
  */
-export function useVehicleStats(refreshInterval = 0) {
-  const { data, error, isLoading, mutate: revalidate } = useSWR(
+export function useVehicleStats(refreshInterval = 30000): {
+  stats: VehicleStats | undefined;
+  loading: boolean;
+  error: string | null;
+} {
+  const { data, error, isLoading, mutate: revalidate } = useSWR<StatsResponse>(
     "/api/vehicles/stats",
     statsFetcher,
     {
       refreshInterval,
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      dedupingInterval: 2000,
     }
   );
 

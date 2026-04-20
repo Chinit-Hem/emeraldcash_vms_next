@@ -54,11 +54,11 @@ export function NeuCard({
   hover = false,
   onClick,
 }: NeuCardProps) {
-  // Neumorphism shadow definitions
+  // Flat style definitions
   const shadows = {
-    flat: "bg-[#e0e5ec] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff]",
-    pressed: "bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-    convex: "bg-[#e0e5ec] shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff]",
+    flat: "bg-white border border-slate-200 shadow-sm dark:bg-slate-900 dark:border-slate-700",
+    pressed: "bg-slate-50 border border-slate-200 shadow-sm dark:bg-slate-800/70 dark:border-slate-700",
+    convex: "bg-white border border-slate-200 shadow-sm dark:bg-slate-900 dark:border-slate-700",
   };
 
   const sizes = {
@@ -67,14 +67,12 @@ export function NeuCard({
     lg: "p-8 rounded-3xl",
   };
 
-  const hoverStyles = hover
-    ? "cursor-pointer hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] hover:scale-[0.99] active:scale-95 transition-all duration-200"
-    : "";
+  const hoverStyles = hover ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/70 active:bg-slate-100 dark:active:bg-slate-700 transition-colors duration-150" : "";
 
   return (
     <div
       className={cn(
-        "relative overflow-hidden transition-all duration-300",
+        "relative overflow-hidden transition-colors duration-150",
         shadows[variant],
         sizes[size],
         hoverStyles,
@@ -104,14 +102,14 @@ export function NeuCardHeader({
     <div className={cn("flex items-center justify-between mb-6", className)}>
       <div className="flex items-center gap-3">
         {icon && (
-          <div className="w-10 h-10 rounded-xl bg-[#e0e5ec] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] flex items-center justify-center text-slate-600">
+          <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center text-slate-600 dark:text-slate-300">
             {icon}
           </div>
         )}
         <div>
-          <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
           {subtitle && (
-            <p className="text-sm text-slate-500">{subtitle}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
           )}
         </div>
       </div>
@@ -131,9 +129,9 @@ export function NeuCardSection({
   divider = false,
 }: NeuCardSectionProps) {
   return (
-    <div className={cn("space-y-4", divider && "pt-4 border-t border-slate-200/50", className)}>
+    <div className={cn("space-y-4", divider && "pt-4 border-t border-slate-200/50 dark:border-slate-700", className)}>
       {title && (
-        <h4 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">
+        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
           {title}
         </h4>
       )}
@@ -162,22 +160,22 @@ export function NeuStatCard({
   className?: string;
 }) {
   const colorStyles = {
-    emerald: "text-emerald-600",
-    blue: "text-blue-600",
-    purple: "text-purple-600",
-    orange: "text-orange-600",
-    red: "text-red-600",
+    emerald: "text-emerald-600 dark:text-emerald-300",
+    blue: "text-blue-600 dark:text-blue-300",
+    purple: "text-purple-600 dark:text-purple-300",
+    orange: "text-orange-600 dark:text-orange-300",
+    red: "text-red-600 dark:text-red-300",
   };
 
   return (
     <NeuCard className={className} hover>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-slate-500">{title}</p>
-          <p className="text-2xl font-bold text-slate-800 mt-1">{value}</p>
-          {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
+          <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 mt-1">{value}</p>
+          {subtitle && <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{subtitle}</p>}
         </div>
-        <div className={cn("w-12 h-12 rounded-xl bg-[#e0e5ec] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] flex items-center justify-center", colorStyles[color])}>
+        <div className={cn("w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center", colorStyles[color])}>
           {icon}
         </div>
       </div>
@@ -205,10 +203,10 @@ export function NeuCategoryCard({
   isComplete?: boolean;
 }) {
   const colorStyles = {
-    emerald: "text-emerald-600 bg-emerald-50",
-    blue: "text-blue-600 bg-blue-50",
-    purple: "text-purple-600 bg-purple-50",
-    orange: "text-orange-600 bg-orange-50",
+    emerald: "text-emerald-600 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/15",
+    blue: "text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-500/15",
+    purple: "text-purple-600 dark:text-purple-300 bg-purple-50 dark:bg-purple-500/15",
+    orange: "text-orange-600 dark:text-orange-300 bg-orange-50 dark:bg-orange-500/15",
   };
 
   return (
@@ -218,29 +216,29 @@ export function NeuCategoryCard({
           {icon}
         </div>
         {isComplete ? (
-          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-            <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center">
+            <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
         ) : (
-          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
-            <div className="w-3 h-3 rounded-full bg-slate-300" />
+          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+            <div className="w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600" />
           </div>
         )}
       </div>
       
-      <h3 className="text-lg font-semibold text-slate-800 mb-1">{name}</h3>
-      <p className="text-sm text-slate-500 mb-4 line-clamp-2">{description}</p>
+      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">{name}</h3>
+      <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-2">{description}</p>
       
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-500">{count} lessons</span>
-          <span className={cn("font-medium", completionRate >= 50 ? colorStyles[color].split(" ")[0] : "text-slate-500")}>
+          <span className="text-slate-500 dark:text-slate-400">{count} lessons</span>
+          <span className={cn("font-medium", completionRate >= 50 ? colorStyles[color].split(" ")[0] : "text-slate-500 dark:text-slate-400")}>
             {completionRate}%
           </span>
         </div>
-        <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+        <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
           <div
             className={cn("h-full rounded-full transition-all duration-500", colorStyles[color].split(" ")[0].replace("text-", "bg-"))}
             style={{ width: `${Math.min(100, Math.max(0, completionRate))}%` }}
@@ -274,32 +272,29 @@ export function NeuButton({
   isLoading = false,
   className = "",
 }: NeuButtonProps) {
-  const baseStyles = "px-6 py-2.5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center";
+  const baseStyles = "px-6 py-2.5 rounded-xl font-medium transition-colors duration-150 flex items-center justify-center border shadow-sm";
   
   const variants = {
     primary: cn(
       baseStyles,
-      "bg-[#e0e5ec] text-emerald-600",
-      "shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff]",
-      "hover:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
-      "active:scale-95",
-      disabled && "opacity-50 cursor-not-allowed shadow-none"
+      "bg-emerald-500 border-emerald-500 text-white",
+      "hover:bg-emerald-600 hover:border-emerald-600",
+      "active:bg-emerald-700 active:border-emerald-700",
+      disabled && "opacity-50 cursor-not-allowed"
     ),
     secondary: cn(
       baseStyles,
-      "bg-[#e0e5ec] text-slate-600",
-      "shadow-[3px_3px_6px_#bebebe,-3px_-3px_6px_#ffffff]",
-      "hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]",
-      "active:scale-95",
-      disabled && "opacity-50 cursor-not-allowed shadow-none"
+      "bg-white border-slate-200 text-slate-700 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200",
+      "hover:bg-slate-50",
+      "active:bg-slate-100 dark:hover:bg-slate-800 dark:active:bg-slate-700",
+      disabled && "opacity-50 cursor-not-allowed"
     ),
     danger: cn(
       baseStyles,
-      "bg-[#e0e5ec] text-red-600",
-      "shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff]",
-      "hover:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
-      "active:scale-95",
-      disabled && "opacity-50 cursor-not-allowed shadow-none"
+      "bg-red-500 border-red-500 text-white",
+      "hover:bg-red-600 hover:border-red-600",
+      "active:bg-red-700 active:border-red-700",
+      disabled && "opacity-50 cursor-not-allowed"
     ),
   };
 

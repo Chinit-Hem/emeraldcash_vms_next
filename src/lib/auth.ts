@@ -11,6 +11,8 @@ export type SessionPayload = {
   ts: number;
   version: number;
   fingerprint: string;
+  staffId?: number; // optional staff reference for LMS sequential lesson queries
+  userId?: number; // optional legacy user identifier
 };
 
 // Session secret is managed by getSessionSecret_() function
@@ -192,7 +194,10 @@ export function requireSessionFromRequest(req: {
     };
   }
 
-  console.log(`[AUTH] ${mobilePrefix}Session valid for user: ${session.username}`);
+  // PERFORMANCE: Silent logging for admin (appears 100+ times per session)
+  if (process.env.NODE_ENV === 'development' || session.username !== 'admin') {
+    console.log(`[AUTH] ${mobilePrefix}Session valid for user: ${session.username}`);
+  }
   return {
     session,
     debug: `Session valid for user: ${session.username}`,

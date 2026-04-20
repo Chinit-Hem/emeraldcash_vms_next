@@ -135,11 +135,11 @@ const ColorPalette = {
 function ChartSkeleton({ height = 300 }: ChartSkeletonProps) {
   return (
     <div 
-      className="w-full flex items-center justify-center bg-[#e6e9ef] rounded-[20px]"
+      className="w-full flex items-center justify-center bg-slate-100 rounded-[20px]"
       style={{ height: `${height}px` }}
     >
       <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-[#e6e9ef] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-slate-100 shadow-sm flex items-center justify-center">
           <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
         </div>
         <span className="text-sm text-[#4a4a5a]">Loading chart...</span>
@@ -191,7 +191,7 @@ function DashboardStatCard({
         </p>
         {subtitleContent}
       </div>
-      <div className={`p-2 sm:p-3 rounded-xl flex-shrink-0 ${colors.bg} ${colors.text} shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff]`}>
+      <div className={`p-2 sm:p-3 rounded-xl flex-shrink-0 ${colors.bg} ${colors.text} shadow-sm`}>
         {icon}
       </div>
     </div>
@@ -199,11 +199,11 @@ function DashboardStatCard({
 
   if (isLoading) {
     return (
-      <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 animate-pulse">
+      <div className="bg-slate-100 rounded-[24px] shadow-sm p-6 animate-pulse">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <div className="h-4 w-24 bg-[#d1d5db] rounded" />
-            <div className="h-8 w-16 bg-[#d1d5db] rounded" />
+            <div className="h-4 w-24 bg-slate-200 rounded" />
+            <div className="h-8 w-16 bg-slate-200 rounded" />
           </div>
           <div className={`p-3 rounded-xl ${colors.bg} opacity-50`}>
             {icon}
@@ -213,7 +213,7 @@ function DashboardStatCard({
     );
   }
 
-  const cardClasses = `bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 ${clickableClasses}`;
+  const cardClasses = `bg-slate-100 rounded-[24px] shadow-sm p-6 ${clickableClasses}`;
 
   if (href && subtitleHref) {
     return (
@@ -494,11 +494,11 @@ export default function Dashboard({
   if (error) {
     return (
       <div className="p-4 sm:p-6">
-        <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6">
+        <div className="bg-slate-100 rounded-[24px] shadow-sm p-6">
           <p className="text-red-600">{error}</p>
           <button
             onClick={handleRefresh}
-            className="mt-4 px-6 py-3 bg-[#e74c3c] text-white rounded-[16px] shadow-[6px_6px_12px_#c0392b,-6px_-6px_12px_#ff5f4d] active:shadow-[inset_4px_4px_8px_#c0392b,inset_-4px_-4px_8px_#ff5f4d] font-semibold transition-all"
+            className="mt-4 px-6 py-3 bg-[#e74c3c] text-white rounded-[16px] shadow-sm active:bg-slate-100 font-semibold transition-all"
           >
             Retry
           </button>
@@ -516,9 +516,9 @@ export default function Dashboard({
   const isLoading = isRefreshing;
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-[1600px] mx-auto bg-[#e6e9ef] min-h-screen">
+    <div className="p-4 sm:p-6 space-y-6 max-w-[1600px] mx-auto bg-slate-100 min-h-screen">
       {/* Header Section */}
-      <div className="bg-[#e6e9ef] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6 sm:p-8">
+      <div className="bg-slate-100 rounded-[30px] shadow-sm p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e]">
@@ -526,7 +526,7 @@ export default function Dashboard({
             </h1>
             <p className="text-sm text-[#4a4a5a] mt-2">
               {isLoading ? (
-                <span className="inline-block w-24 h-4 bg-[#d1d5db] rounded animate-pulse" />
+                <span className="inline-block w-24 h-4 bg-slate-200 rounded animate-pulse" />
               ) : (
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -538,7 +538,7 @@ export default function Dashboard({
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="px-6 py-3 bg-[#2ecc71] text-white font-semibold rounded-[16px] shadow-[6px_6px_12px_#27ad60,-6px_-6px_12px_#35eb82] active:shadow-[inset_4px_4px_8px_#27ad60,inset_-4px_-4px_8px_#35eb82] transition-all flex items-center gap-2 disabled:opacity-50"
+            className="px-6 py-3 bg-[#2ecc71] text-white font-semibold rounded-[16px] shadow-sm active:bg-slate-100 transition-all flex items-center gap-2 disabled:opacity-50"
           >
             <span className={isRefreshing ? "animate-spin" : ""}>{Icons.refresh}</span>
             {isRefreshing ? "Refreshing..." : "Refresh Data"}
@@ -606,7 +606,7 @@ export default function Dashboard({
           placeholder="Search vehicles (Brand, Model, Category, Plate...)..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-4 rounded-[20px] bg-[#e6e9ef] shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff] text-[#1a1a2e] placeholder-[#4a4a5a] focus:outline-none focus:shadow-[inset_8px_8px_16px_#bebebe,inset_-8px_-8px_16px_#ffffff] text-sm sm:text-base"
+          className="w-full pl-12 pr-4 py-4 rounded-[20px] bg-slate-100 shadow-sm text-[#1a1a2e] placeholder-[#4a4a5a] focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-sm sm:text-base"
         />
         {debouncedSearch !== searchQuery && (
           <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
@@ -617,17 +617,22 @@ export default function Dashboard({
 
       {/* Search Results Count */}
       <div className="flex flex-wrap items-center gap-2 text-sm text-[#4a4a5a]">
-        <span>
-          Showing {filteredVehicles.length.toLocaleString()} of {meta.total.toLocaleString()} vehicles
-          {vehicles.length < meta.total && (
-            <span className="text-amber-600 ml-1">
-              (displaying first {vehicles.length})
-            </span>
-          )}
+        <span className="font-medium text-[#1a1a2e]">
+          {filteredVehicles.length.toLocaleString()}
         </span>
+        <span>of</span>
+        <span className="font-medium text-[#1a1a2e]">
+          {meta.total.toLocaleString()}
+        </span>
+        <span>vehicles</span>
         {debouncedSearch && (
-          <span>
-            matching "{debouncedSearch}"
+          <span className="text-[#4a4a5a]">
+            matching &quot;{debouncedSearch}&quot;
+          </span>
+        )}
+        {vehicles.length < meta.total && (
+          <span className="text-amber-600 ml-1">
+            (loaded {vehicles.length} of {meta.total.toLocaleString()} total)
           </span>
         )}
       </div>
@@ -635,7 +640,7 @@ export default function Dashboard({
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Vehicles by Category */}
-        <div className="bg-[#e6e9ef] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6 sm:p-8">
+        <div className="bg-slate-100 rounded-[30px] shadow-sm p-6 sm:p-8">
           <h3 className="text-base sm:text-lg font-semibold text-[#1a1a2e] mb-6">
             Vehicles by Category
           </h3>
@@ -649,7 +654,7 @@ export default function Dashboard({
         </div>
 
         {/* New vs Used */}
-        <div className="bg-[#e6e9ef] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6 sm:p-8">
+        <div className="bg-slate-100 rounded-[30px] shadow-sm p-6 sm:p-8">
           <h3 className="text-base sm:text-lg font-semibold text-[#1a1a2e] mb-6">
             New vs Used
           </h3>
@@ -663,7 +668,7 @@ export default function Dashboard({
         </div>
 
         {/* Top Brands */}
-        <div className="bg-[#e6e9ef] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6 sm:p-8">
+        <div className="bg-slate-100 rounded-[30px] shadow-sm p-6 sm:p-8">
           <h3 className="text-base sm:text-lg font-semibold text-[#1a1a2e] mb-6">
             Top Brands
           </h3>
@@ -677,7 +682,7 @@ export default function Dashboard({
         </div>
 
         {/* Monthly Added */}
-        <div className="bg-[#e6e9ef] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6 sm:p-8">
+        <div className="bg-slate-100 rounded-[30px] shadow-sm p-6 sm:p-8">
           <h3 className="text-base sm:text-lg font-semibold text-[#1a1a2e] mb-6">
             Monthly Added
           </h3>
@@ -693,25 +698,25 @@ export default function Dashboard({
 
       {/* Quick Stats Footer */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 pt-6">
-        <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 text-center">
+        <div className="bg-slate-100 rounded-[24px] shadow-sm p-6 text-center">
           <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
             {(meta.total - meta.noImageCount).toLocaleString()}
           </p>
           <p className="text-xs sm:text-sm text-[#4a4a5a]">With Images</p>
         </div>
-        <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 text-center">
+        <div className="bg-slate-100 rounded-[24px] shadow-sm p-6 text-center">
           <p className="text-2xl sm:text-3xl font-bold text-red-600">
             {meta.noImageCount.toLocaleString()}
           </p>
           <p className="text-xs sm:text-sm text-[#4a4a5a]">Without Images</p>
         </div>
-        <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 text-center">
+        <div className="bg-slate-100 rounded-[24px] shadow-sm p-6 text-center">
           <p className="text-2xl sm:text-3xl font-bold text-blue-600">
             ${Math.round(meta.avgPrice).toLocaleString()}
           </p>
           <p className="text-xs sm:text-sm text-[#4a4a5a]">Avg Price</p>
         </div>
-        <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 text-center">
+        <div className="bg-slate-100 rounded-[24px] shadow-sm p-6 text-center">
           <p className="text-2xl sm:text-3xl font-bold text-purple-600">
             {aggregatedStats ? Object.keys(aggregatedStats.byBrand).length : '-'}
           </p>

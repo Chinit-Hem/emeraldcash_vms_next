@@ -9,8 +9,8 @@
  * @module app/error
  */
 
-import { useEffect } from "react";
 import { globalLogger } from "@/lib/logger";
+import { useEffect } from "react";
 
 interface ErrorBoundaryProps {
   error: Error & { digest?: string };

@@ -82,6 +82,7 @@ export default function CleanedVehiclesPage() {
   const [error, setError] = useState("");
   const [total, setTotal] = useState(0);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   
   // Professional filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -356,21 +357,27 @@ params.set("limit", "500"); // Increased for pagination fix
         <div className="p-4 sm:p-6 lg:p-8">
           <GlassToast toasts={toasts} onRemove={removeToast} />
           
-          {/* Header - Neumorphism */}
-          <div className="mb-6 p-6 rounded-[24px] bg-[#e0e5ec] shadow-[12px_12px_24px_#a3b1c6,-12px_-12px_24px_#ffffff]">
+          {/* Header */}
+          <div className="mb-6 p-6 rounded-2xl bg-white shadow-lg">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-[#2d3748]">
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">
                   Cleaned Vehicles
                 </h1>
-                <p className="text-sm text-[#718096] mt-1">
-                  Total: <span className="font-semibold text-[#10b981]">{total.toLocaleString()}</span> vehicles from Google Sheets
+                <p className="text-sm text-slate-500 mt-1">
+                  Total: <span className="font-semibold text-emerald-600">{total.toLocaleString()}</span> vehicles from Google Sheets
+                  {selectedIds.size > 0 && (
+                    <span className="ml-2 bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-sm font-semibold">
+                      {selectedIds.size} {selectedIds.size === 1 ? 'selected' : 'selected'}
+                    </span>
+                  )}
                 </p>
               </div>
-              {/* Add Vehicle Button - Neumorphism */}
-              <button
+              <div className="flex gap-2">
+                {/* Add Vehicle Button */}
+                <button
                 onClick={() => window.dispatchEvent(new CustomEvent('openAddVehicleModal'))}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#e0e5ec] shadow-[5px_5px_10px_#a3b1c6,-5px_-5px_10px_#ffffff] text-[#10b981] font-semibold text-sm transition-all duration-250 hover:shadow-[3px_3px_6px_#a3b1c6,-3px_-3px_6px_#ffffff] active:shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff]"
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-50 text-emerald-600 font-semibold text-sm transition-all duration-200 hover:bg-emerald-100 active:bg-emerald-200"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14m-7-7h14" />
@@ -380,85 +387,85 @@ params.set("limit", "500"); // Increased for pagination fix
             </div>
           </div>
 
-          {/* Stats Cards - Neumorphism - Compact */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
             {/* All Vehicles */}
-            <div className="p-3 rounded-[16px] bg-[#e0e5ec] shadow-[6px_6px_12px_#a3b1c6,-6px_-6px_12px_#ffffff]">
+            <div className="p-3 rounded-xl bg-white shadow-md">
               <div className="flex items-center gap-2 mb-1">
-                <div className="p-1.5 rounded-md bg-[#e0e5ec] shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff] text-[#10b981]">
+                <div className="p-1.5 rounded-md bg-emerald-100 text-emerald-600">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
                   </svg>
                 </div>
-                <span className="text-[10px] font-bold text-[#718096] uppercase tracking-wider">All Vehicles</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">All Vehicles</span>
               </div>
-              <p className="text-xl font-bold text-[#2d3748]">{total.toLocaleString()}</p>
-              <p className="text-[10px] text-[#718096]">Total inventory</p>
+              <p className="text-xl font-bold text-slate-800">{total.toLocaleString()}</p>
+              <p className="text-[10px] text-slate-500">Total inventory</p>
             </div>
 
             {/* Cars */}
-            <div className="p-3 rounded-[16px] bg-[#e0e5ec] shadow-[6px_6px_12px_#a3b1c6,-6px_-6px_12px_#ffffff]">
+            <div className="p-3 rounded-xl bg-white shadow-md">
               <div className="flex items-center gap-2 mb-1">
-                <div className="p-1.5 rounded-md bg-[#e0e5ec] shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff] text-[#3b82f6]">
+                <div className="p-1.5 rounded-md bg-blue-100 text-blue-600">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <span className="text-[10px] font-bold text-[#718096] uppercase tracking-wider">Cars</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cars</span>
               </div>
-              <p className="text-xl font-bold text-[#2d3748]">
+              <p className="text-xl font-bold text-slate-800">
                 {vehicles.filter(v => v.category?.toLowerCase().includes('car')).length.toLocaleString()}
               </p>
-              <p className="text-[10px] text-[#718096]">Sedans & SUVs</p>
+              <p className="text-[10px] text-slate-500">Sedans & SUVs</p>
             </div>
 
             {/* Motorcycles */}
-            <div className="p-3 rounded-[16px] bg-[#e0e5ec] shadow-[6px_6px_12px_#a3b1c6,-6px_-6px_12px_#ffffff]">
+            <div className="p-3 rounded-xl bg-white shadow-md">
               <div className="flex items-center gap-2 mb-1">
-                <div className="p-1.5 rounded-md bg-[#e0e5ec] shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff] text-[#8b5cf6]">
+                <div className="p-1.5 rounded-md bg-purple-100 text-purple-600">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <span className="text-[10px] font-bold text-[#718096] uppercase tracking-wider">Motorcycles</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Motorcycles</span>
               </div>
-              <p className="text-xl font-bold text-[#2d3748]">
+              <p className="text-xl font-bold text-slate-800">
                 {vehicles.filter(v => v.category?.toLowerCase().includes('motorcycle')).length.toLocaleString()}
               </p>
-              <p className="text-[10px] text-[#718096]">2-wheelers</p>
+              <p className="text-[10px] text-slate-500">2-wheelers</p>
             </div>
 
             {/* TukTuks */}
-            <div className="p-3 rounded-[16px] bg-[#e0e5ec] shadow-[6px_6px_12px_#a3b1c6,-6px_-6px_12px_#ffffff]">
+            <div className="p-3 rounded-xl bg-white shadow-md">
               <div className="flex items-center gap-2 mb-1">
-                <div className="p-1.5 rounded-md bg-[#e0e5ec] shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff] text-[#f59e0b]">
+                <div className="p-1.5 rounded-md bg-amber-100 text-amber-600">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                   </svg>
                 </div>
-                <span className="text-[10px] font-bold text-[#718096] uppercase tracking-wider">TukTuks</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">TukTuks</span>
               </div>
-              <p className="text-xl font-bold text-[#2d3748]">
+              <p className="text-xl font-bold text-slate-800">
                 {vehicles.filter(v => v.category?.toLowerCase().includes('tuktuk')).length.toLocaleString()}
               </p>
-              <p className="text-[10px] text-[#718096]">3-wheelers</p>
+              <p className="text-[10px] text-slate-500">3-wheelers</p>
             </div>
 
             {/* Avg Price */}
-            <div className="p-3 rounded-[16px] bg-[#e0e5ec] shadow-[6px_6px_12px_#a3b1c6,-6px_-6px_12px_#ffffff]">
+            <div className="p-3 rounded-xl bg-white shadow-md">
               <div className="flex items-center gap-2 mb-1">
-                <div className="p-1.5 rounded-md bg-[#e0e5ec] shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff] text-[#10b981]">
+                <div className="p-1.5 rounded-md bg-emerald-100 text-emerald-600">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <span className="text-[10px] font-bold text-[#718096] uppercase tracking-wider">Avg Price</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Avg Price</span>
               </div>
-              <p className="text-xl font-bold text-[#2d3748]">
+              <p className="text-xl font-bold text-slate-800">
                 {formatPrice(vehicles.reduce((acc, v) => acc + (typeof v.market_price === "string" ? parseFloat(v.market_price) : v.market_price || 0), 0) / (vehicles.length || 1))}
               </p>
-              <p className="text-[10px] text-[#718096]">Market average</p>
+              <p className="text-[10px] text-slate-500">Market average</p>
             </div>
           </div>
 
@@ -487,13 +494,13 @@ params.set("limit", "500"); // Increased for pagination fix
           />
 
           {/* Group By Control */}
-          <div className="mb-4 p-4 rounded-[20px] bg-[#e0e5ec] shadow-[8px_8px_16px_#a3b1c6,-8px_-8px_16px_#ffffff]">
+          <div className="mb-4 p-4 rounded-xl bg-white shadow-md">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#718096]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
                 </svg>
-                <span className="text-sm font-semibold text-[#2d3748]">Group by:</span>
+                <span className="text-sm font-semibold text-slate-800">Group by:</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -510,8 +517,8 @@ params.set("limit", "500"); // Increased for pagination fix
                     onClick={() => setGroupBy(option.value as typeof groupBy)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                       groupBy === option.value
-                        ? "bg-[#10b981] text-white shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff]"
-                        : "bg-[#e0e5ec] text-[#4a4a5a] shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff] hover:shadow-[1px_1px_2px_#a3b1c6,-1px_-1px_2px_#ffffff]"
+                        ? "bg-emerald-500 text-white shadow-sm"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
                     {option.label}
@@ -522,16 +529,16 @@ params.set("limit", "500"); // Increased for pagination fix
             
             {/* Group Stats Summary */}
             {groupBy !== "none" && groupStats.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-[#cbd5e1]">
+              <div className="mt-3 pt-3 border-t border-slate-200">
                 <div className="flex flex-wrap gap-2">
                   {groupStats.map((stat) => (
                     <div
                       key={stat.name}
-                      className="px-3 py-1.5 rounded-lg bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#a3b1c6,inset_-2px_-2px_4px_#ffffff] text-xs"
+                      className="px-3 py-1.5 rounded-lg bg-slate-100 text-xs"
                     >
-                      <span className="font-semibold text-[#2d3748]">{stat.name}:</span>
-                      <span className="ml-1 text-[#10b981] font-bold">{stat.count}</span>
-                      <span className="ml-1 text-[#718096]">({formatPrice(stat.avgPrice)} avg)</span>
+                      <span className="font-semibold text-slate-800">{stat.name}:</span>
+                      <span className="ml-1 text-emerald-600 font-bold">{stat.count}</span>
+                      <span className="ml-1 text-slate-500">({formatPrice(stat.avgPrice)} avg)</span>
                     </div>
                   ))}
                 </div>
@@ -548,11 +555,11 @@ params.set("limit", "500"); // Increased for pagination fix
 
           {/* Loading */}
           {isLoading && (
-            <div className="bg-[#e0e5ec] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6">
+            <div className="bg-white rounded-2xl shadow-lg p-6">
               <div className="overflow-x-auto pb-4 custom-scrollbar">
                 <div className="min-w-[1400px]">
                   {/* Table Header */}
-                  <div className="flex items-center gap-4 px-4 py-3 mb-3 bg-[#e0e5ec] rounded-[16px] shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] text-sm font-semibold text-[#4a4a5a] uppercase tracking-wider">
+                  <div className="flex items-center gap-4 px-4 py-3 mb-3 bg-slate-100 rounded-xl text-sm font-semibold text-slate-700 uppercase tracking-wider">
                     <div className="w-16 shrink-0 text-center">Image</div>
                     <div className="w-56 shrink-0">Brand / Model</div>
                     <div className="w-24 shrink-0 text-center">Year</div>
@@ -567,7 +574,7 @@ params.set("limit", "500"); // Increased for pagination fix
                   {/* Loading Skeleton Rows */}
                   <div className="space-y-3">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="bg-[#e0e5ec] mx-4 my-2 p-4 rounded-[20px] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] flex flex-row items-center gap-4 min-w-[1100px]">
+                      <div key={i} className="bg-white mx-4 my-2 p-4 rounded-xl shadow-sm flex flex-row items-center gap-4 min-w-[1100px]">
                         <div className="w-16 h-16 rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse shrink-0" />
                         <div className="w-56 h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse shrink-0" />
                         <div className="w-24 h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse shrink-0" />
@@ -587,17 +594,17 @@ params.set("limit", "500"); // Increased for pagination fix
 
           {/* Vehicles Table - Horizontal & Vertical Scroll */}
           {!isLoading && filteredVehicles.length > 0 && (
-            <div className="bg-[#e0e5ec] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6">
+            <div className="bg-white rounded-2xl shadow-lg p-6">
               <div 
                 className="overflow-auto max-h-[65vh] custom-scrollbar"
                 style={{
                   scrollbarWidth: 'thin',
-                  scrollbarColor: '#bebebe #e6e9ef'
+                  scrollbarColor: '#cbd5e1 #f1f5f9'
                 }}
               >
                 <div className="min-w-[1600px]">
                   {/* Table Header */}
-                  <div className="flex items-center gap-4 px-4 py-3 mb-3 bg-[#e0e5ec] rounded-[16px] shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] text-sm font-semibold text-[#4a4a5a] uppercase tracking-wider">
+                  <div className="flex items-center gap-4 px-4 py-3 mb-3 bg-slate-100 rounded-xl text-sm font-semibold text-slate-700 uppercase tracking-wider">
                     <div className="w-16 shrink-0 text-center">Image</div>
                     <div className="w-56 shrink-0">Brand / Model</div>
                     <div className="w-24 shrink-0 text-center">Year</div>
@@ -615,12 +622,12 @@ params.set("limit", "500"); // Increased for pagination fix
                       <div key={groupName} className="space-y-3">
                         {/* Group Header */}
                         {groupBy !== "none" && (
-                          <div className="flex items-center gap-3 px-4 py-2 bg-[#10b981]/10 rounded-[12px] border border-[#10b981]/20">
+                          <div className="flex items-center gap-3 px-4 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
                             <div className="flex items-center gap-2">
-                              <svg className="w-5 h-5 text-[#10b981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                               </svg>
-                              <span className="font-bold text-[#2d3748] text-sm uppercase tracking-wider">
+                              <span className="font-bold text-slate-800 text-sm uppercase tracking-wider">
                                 {groupBy === "color" && groupName !== "Unknown Color" ? (
                                   <span className="flex items-center gap-2">
                                     <div 
@@ -635,10 +642,10 @@ params.set("limit", "500"); // Increased for pagination fix
                               </span>
                             </div>
                             <div className="flex items-center gap-3 ml-auto">
-                              <span className="text-xs text-[#718096]">
+                              <span className="text-xs text-slate-500">
                                 {groupVehicles.length} vehicle{groupVehicles.length !== 1 ? 's' : ''}
                               </span>
-                              <span className="text-xs font-semibold text-[#10b981]">
+                              <span className="text-xs font-semibold text-emerald-600">
                                 Avg: {formatPrice(groupVehicles.reduce((acc, v) => acc + (typeof v.market_price === "string" ? parseFloat(v.market_price) : v.market_price || 0), 0) / (groupVehicles.length || 1))}
                               </span>
                             </div>
@@ -651,10 +658,10 @@ params.set("limit", "500"); // Increased for pagination fix
                             <div 
                               key={vehicle.id} 
                               onClick={() => router.push(`/cleaned-vehicles/${vehicle.id}/view`)}
-                              className="bg-[#e0e5ec] mx-4 my-2 p-4 rounded-[20px] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] flex flex-row items-center gap-4 cursor-pointer active:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] transition-all hover:translate-y-[-1px] min-w-[1100px] whitespace-nowrap"
+                              className="bg-white mx-4 my-2 p-4 rounded-xl shadow-sm flex flex-row items-center gap-4 cursor-pointer hover:shadow-md transition-all hover:-translate-y-0.5 min-w-[1100px] whitespace-nowrap"
                             >
                               {/* Image */}
-                              <div className="w-16 h-16 rounded-xl flex items-center justify-center shrink-0 bg-[#e0e5ec] shadow-[3px_3px_6px_#bebebe,-3px_-3px_6px_#ffffff]" onClick={(e) => e.stopPropagation()}>
+                              <div className="w-16 h-16 rounded-xl flex items-center justify-center shrink-0 bg-slate-100" onClick={(e) => e.stopPropagation()}>
                                 {vehicle.image_id ? (
                                   <button
                                     onClick={() => setSelectedImage(getVehicleFullImageUrl(vehicle.image_id))}
@@ -670,7 +677,7 @@ params.set("limit", "500"); // Increased for pagination fix
                                     />
                                   </button>
                                 ) : (
-                                  <div className="w-16 h-16 rounded-xl bg-[#e0e5ec] shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] flex items-center justify-center text-xs text-[#718096]">
+                                  <div className="w-16 h-16 rounded-xl bg-slate-200 flex items-center justify-center text-xs text-slate-500">
                                     No Image
                                   </div>
                                 )}
@@ -678,29 +685,29 @@ params.set("limit", "500"); // Increased for pagination fix
                               
                               {/* Brand & Model */}
                               <div className="w-56 shrink-0">
-                                <p className="font-bold text-[#2d3748] text-base truncate">{vehicle.brand} {vehicle.model}</p>
+                                <p className="font-bold text-slate-800 text-base truncate">{vehicle.brand} {vehicle.model}</p>
                               </div>
                               
                               {/* Year */}
                               <div className="w-24 shrink-0 text-center">
-                                <p className="text-sm text-[#718096]">{vehicle.year}</p>
+                                <p className="text-sm text-slate-500">{vehicle.year}</p>
                               </div>
                               
                               {/* Category */}
                               <div className="w-32 shrink-0 text-center">
-                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#e0e5ec] shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff] text-[#4a4a5a]">
+                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
                                   {vehicle.category}
                                 </span>
                               </div>
                               
                               {/* Plate */}
                               <div className="w-32 shrink-0 text-center">
-                                <p className="text-sm font-mono text-[#4a4a5a]">{vehicle.plate}</p>
+                                <p className="text-sm font-mono text-slate-600">{vehicle.plate}</p>
                               </div>
                               
                               {/* Price */}
                               <div className="w-32 shrink-0 text-center">
-                                <p className="font-bold text-[#2ecc71] text-base">{formatPrice(vehicle.market_price)}</p>
+                                <p className="font-bold text-emerald-600 text-base">{formatPrice(vehicle.market_price)}</p>
                               </div>
                               
                               {/* Condition */}
@@ -720,26 +727,25 @@ params.set("limit", "500"); // Increased for pagination fix
                                   {vehicle.color ? (
                                     <>
                                       <div 
-                                        className="w-4 h-4 rounded-full shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff] border-2 border-[#e0e5ec]"
+                                        className="w-4 h-4 rounded-full shadow-sm border-2 border-white"
                                         style={{ 
                                           backgroundColor: getColorHex(vehicle.color),
-                                          boxShadow: `inset 1px 1px 2px rgba(0,0,0,0.2), 2px 2px 4px #bebebe, -2px -2px 4px #ffffff`
                                         }}
                                         title={vehicle.color}
                                       />
-                                      <span className="text-sm text-[#4a4a5a] font-medium">
+                                      <span className="text-sm text-slate-600 font-medium">
                                         {vehicle.color}
                                       </span>
                                     </>
                                   ) : (
-                                    <span className="text-sm text-[#4a4a5a]">—</span>
+                                    <span className="text-sm text-slate-600">—</span>
                                   )}
                                 </div>
                               </div>
                               
                               {/* Tax Type */}
                               <div className="w-24 shrink-0 text-center">
-                                <p className="text-sm text-[#718096]">{vehicle.tax_type || "—"}</p>
+                                <p className="text-sm text-slate-500">{vehicle.tax_type || "—"}</p>
                               </div>
                             </div>
                           ))}
@@ -752,24 +758,24 @@ params.set("limit", "500"); // Increased for pagination fix
             </div>
           )}
 
-          {/* Empty State - Neumorphism */}
+          {/* Empty State */}
           {!isLoading && filteredVehicles.length === 0 && !error && (
-            <div className="p-8 rounded-[24px] bg-[#e0e5ec] shadow-[12px_12px_24px_#a3b1c6,-12px_-12px_24px_#ffffff] text-center">
+            <div className="p-8 rounded-2xl bg-white shadow-lg text-center">
               <div className="flex flex-col items-center gap-4">
-                <div className="p-4 rounded-2xl bg-[#e0e5ec] shadow-[6px_6px_12px_#a3b1c6,-6px_-6px_12px_#ffffff] text-[#718096]">
+                <div className="p-4 rounded-2xl bg-slate-100 text-slate-500">
                   <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 {vehicles.length === 0 ? (
                   <div>
-                    <p className="text-lg font-bold text-[#2d3748] mb-1">No vehicles found</p>
-                    <p className="text-sm text-[#718096]">The inventory is currently empty</p>
+                    <p className="text-lg font-bold text-slate-800 mb-1">No vehicles found</p>
+                    <p className="text-sm text-slate-500">The inventory is currently empty</p>
                   </div>
                 ) : (
                   <div>
-                    <p className="text-lg font-bold text-[#2d3748] mb-1">No vehicles match your filters</p>
-                    <p className="text-sm text-[#718096] mb-4">Try adjusting your search criteria</p>
+                    <p className="text-lg font-bold text-slate-800 mb-1">No vehicles match your filters</p>
+                    <p className="text-sm text-slate-500 mb-4">Try adjusting your search criteria</p>
                     <button
                       onClick={() => setFilters({
                         search: "",
@@ -785,7 +791,7 @@ params.set("limit", "500"); // Increased for pagination fix
                         dateTo: "",
                         withoutImage: false,
                       })}
-                      className="px-6 py-2.5 rounded-xl bg-[#e0e5ec] shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff] text-[#10b981] font-semibold text-sm transition-all duration-250 hover:shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff] active:shadow-[inset_2px_2px_4px_#a3b1c6,inset_-2px_-2px_4px_#ffffff]"
+                      className="px-6 py-2.5 rounded-xl bg-emerald-50 text-emerald-600 font-semibold text-sm transition-all duration-200 hover:bg-emerald-100"
                     >
                       Clear All Filters
                     </button>

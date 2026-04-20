@@ -27,15 +27,15 @@ function NeuIconButton({
   className?: string;
 }) {
   const variantClasses = {
-    default: "text-[#4a4a5a] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
-    primary: "text-blue-600 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
-    danger: "text-red-600 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+    default: "text-[#4a4a5a] shadow-sm active:bg-slate-100",
+    primary: "text-blue-600 shadow-sm active:bg-slate-100",
+    danger: "text-red-600 shadow-sm active:bg-slate-100",
   };
 
   return (
     <button
       onClick={onClick}
-      className={`p-2 rounded-[12px] bg-[#e6e9ef] transition-all ${variantClasses[variant]} ${className}`}
+      className={`p-2 rounded-[12px] bg-slate-100 transition-all ${variantClasses[variant]} ${className}`}
     >
       {children}
     </button>
@@ -110,7 +110,7 @@ export default function VehicleCard({
   return (
     <div
       onClick={handleClick}
-      className={`p-4 sm:p-6 flex gap-4 sm:gap-6 cursor-pointer transition-all rounded-[20px] bg-[#e6e9ef] shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff] hover:shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] active:shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff]`}
+      className={`p-4 sm:p-6 flex gap-4 sm:gap-6 cursor-pointer transition-all rounded-[20px] bg-slate-100 shadow-sm hover:bg-slate-50 active:bg-slate-100`}
     >
       {/* Image */}
       <div className="flex-shrink-0">
@@ -120,10 +120,10 @@ export default function VehicleCard({
             alt={`${vehicle.Brand} ${vehicle.Model}`}
             loading="lazy"
             decoding="async"
-            className="h-20 w-20 sm:h-24 sm:w-24 rounded-[16px] object-cover bg-[#e6e9ef] shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]"
+            className="h-20 w-20 sm:h-24 sm:w-24 rounded-[16px] object-cover bg-slate-100 shadow-sm"
           />
         ) : (
-          <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-[16px] bg-[#e6e9ef] shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] flex items-center justify-center">
+          <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-[16px] bg-slate-100 shadow-sm flex items-center justify-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -154,7 +154,7 @@ export default function VehicleCard({
             </p>
           </div>
           <span
-            className={`flex-shrink-0 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#e6e9ef] shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] ${
+            className={`flex-shrink-0 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 shadow-sm ${
               vehicle.Condition === "New"
                 ? "text-emerald-600"
                 : vehicle.Condition === "Used"

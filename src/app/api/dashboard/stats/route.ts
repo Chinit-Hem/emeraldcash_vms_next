@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * Server-side aggregated vehicle statistics
  * Cached 30s for dashboard performance
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const startTime = Date.now();
   
   // 🚀 Add 10s timeout for dashboard stats
@@ -16,9 +16,9 @@ export async function GET(request: NextRequest) {
   try {
     console.time('[DashboardStats]');
     
-    // Use existing VehicleService.getVehicleStats() - already optimized
+    // 🚀 FIX: Force refresh to bypass stale cache and get fresh data
     const result = await Promise.race([
-      vehicleService.getVehicleStats(false), // Use cache first
+      vehicleService.getVehicleStats(true), // Force refresh - bypass cache
       new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('Stats timeout (10s)'))))
     ]);
     
@@ -46,30 +46,32 @@ export async function GET(request: NextRequest) {
     const dashboardMeta = {
       total: result.data.total,
       countsByCategory: {
-        Cars: result.data.byCategory.Cars || 0,
-        Motorcycles: result.data.byCategory.Motorcycles || 0,
-        TukTuks: result.data.byCategory.TukTuks || 0,
+        Cars: result.data.byCategory?.Cars || 0,
+        Motorcycles: result.data.byCategory?.Motorcycles || 0,
+        TukTuks: result.data.byCategory?.TukTuks || 0,
       },
       countsByCondition: {
-        New: result.data.byCondition.New || 0,
-        Used: result.data.byCondition.Used || 0,
+        New: result.data.byCondition?.New || 0,
+        Used: result.data.byCondition?.Used || 0,
       },
       noImageCount: result.data.noImageCount || 0,
       avgPrice: result.data.avgPrice || 0,
     };
 
+
     // 🚀 Enhanced logging
     console.log(`[DashboardStats] ✅ Success: ${dashboardMeta.total} vehicles, ${result.meta?.durationMs || Date.now() - startTime}ms, cache: ${!!result.meta?.cacheHit}`);
 
+    // 🚀 FIX: Add no-cache headers to ensure fresh data
     return NextResponse.json({
       success: true,
       data: dashboardMeta,
       meta: result.meta
     }, {
       headers: {
-        // 30s stale-while-revalidate for stats (low volatility)
-        'Cache-Control': 's-maxage=30, stale-while-revalidate=60',
-        'CDN-Cache-Control': 's-maxage=30, stale-while-revalidate=60',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       }
     });
 

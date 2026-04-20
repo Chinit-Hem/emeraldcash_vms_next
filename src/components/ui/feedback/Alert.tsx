@@ -9,9 +9,9 @@
 
 "use client";
 
-import React from "react";
-import { ColorPalette, ColorCombos, type ColorName } from "@/lib/design-system/colors";
+import { ColorPalette, type ColorName } from "@/lib/design-system/colors";
 import { cn } from "@/lib/ui";
+import React from "react";
 
 interface AlertProps {
   children?: React.ReactNode;

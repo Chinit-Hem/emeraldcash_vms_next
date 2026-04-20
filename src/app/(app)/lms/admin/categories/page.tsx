@@ -1,20 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import {
-  GraduationCap,
-  BookOpen,
-  Plus,
-  Edit2,
-  Trash2,
-  ArrowLeft,
-  Save,
-  X,
-  Loader2,
-} from "lucide-react";
 import { useAuthUser } from "@/app/components/AuthContext";
 import type { LmsCategory } from "@/lib/lms-types";
+import {
+  ArrowLeft,
+  BookOpen,
+  Edit2,
+  Loader2,
+  Plus,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export default function CategoriesAdminPage() {
   const router = useRouter();
@@ -50,7 +49,7 @@ export default function CategoriesAdminPage() {
       if (data.success) {
         setCategories(data.data);
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Failed to load categories");
     } finally {
       setLoading(false);
@@ -74,6 +73,26 @@ export default function CategoriesAdminPage() {
     setSaving(true);
     setError("");
 
+    // OPTIMISTIC UPDATE: Update UI immediately before API response
+    const optimisticCategory: LmsCategory = {
+      id: editingId || Date.now(), // Temporary ID for new categories
+      name: formName.trim(),
+      description: formDescription.trim(),
+      color: formColor,
+      order_index: formOrder,
+      icon: "BookOpen",
+      is_active: true,
+      lesson_count: 0, // New categories have 0 lessons
+    };
+
+    // Update local state immediately (optimistic)
+    if (editingId) {
+      setCategories(prev => prev.map(c => c.id === editingId ? optimisticCategory : c));
+    } else {
+      setCategories(prev => [...prev, optimisticCategory]);
+    }
+    resetForm(); // Close form immediately for better UX
+
     try {
       const url = editingId 
         ? `/api/lms/categories?id=${editingId}`
@@ -95,12 +114,29 @@ export default function CategoriesAdminPage() {
       const data = await res.json();
       
       if (data.success) {
-        await fetchCategories();
-        resetForm();
+        // Replace optimistic data with real data from server
+        if (editingId) {
+          setCategories(prev => prev.map(c => c.id === editingId ? data.data : c));
+        } else {
+          setCategories(prev => prev.map(c => c.id === optimisticCategory.id ? data.data : c));
+        }
+        // ❌ REMOVED: await fetchCategories(); - No need to refetch all data!
       } else {
+        // Rollback on error
+        if (editingId) {
+          setCategories(prev => prev.map(c => c.id === editingId ? categories.find(oc => oc.id === editingId) || c : c));
+        } else {
+          setCategories(prev => prev.filter(c => c.id !== optimisticCategory.id));
+        }
         setError(data.error || "Failed to save category");
       }
-    } catch (err) {
+    } catch (_err) {
+      // Rollback on error
+      if (editingId) {
+        setCategories(prev => prev.map(c => c.id === editingId ? categories.find(oc => oc.id === editingId) || c : c));
+      } else {
+        setCategories(prev => prev.filter(c => c.id !== optimisticCategory.id));
+      }
       setError("Failed to save category");
     } finally {
       setSaving(false);
@@ -124,7 +160,7 @@ export default function CategoriesAdminPage() {
       } else {
         setError(data.error || "Failed to delete category");
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Failed to delete category");
     }
   };

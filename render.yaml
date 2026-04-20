@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: vms-next
-    env: node
-    buildCommand: npm run build
-    startCommand: npm start
-    publishDir: .next

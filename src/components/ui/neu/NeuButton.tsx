@@ -50,39 +50,33 @@ export function NeuButton({
   // Neumorphism shadow styles for each variant
   const variants = {
     primary: cn(
-      "bg-[#e0e5ec] text-slate-600",
-      "shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff]",
-      "hover:text-emerald-600",
-      "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-      "active:shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff]"
+      "bg-emerald-500 text-white border border-emerald-500 shadow-sm",
+      "hover:bg-emerald-600 hover:border-emerald-600",
+      "active:bg-emerald-700 active:border-emerald-700"
     ),
     secondary: cn(
-      "bg-[#e0e5ec] text-slate-600",
-      "shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff]",
-      "hover:text-slate-800",
-      "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-      "active:shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff]"
+      "bg-white text-slate-700 border border-slate-200 shadow-sm",
+      "hover:bg-slate-50",
+      "active:bg-slate-100",
+      "dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800 dark:active:bg-slate-700"
     ),
     danger: cn(
-      "bg-[#e0e5ec] text-slate-600",
-      "shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff]",
-      "hover:text-red-500",
-      "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-      "active:shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff]"
+      "bg-red-500 text-white border border-red-500 shadow-sm",
+      "hover:bg-red-600 hover:border-red-600",
+      "active:bg-red-700 active:border-red-700"
     ),
     ghost: cn(
-      "bg-[#e0e5ec] text-slate-600",
-      "shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff]",
-      "hover:text-slate-800",
-      "hover:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+      "bg-white text-slate-600 border border-slate-200 shadow-sm",
+      "hover:bg-slate-50 hover:text-slate-700",
+      "active:bg-slate-100",
+      "dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 dark:active:bg-slate-700",
       "w-11 h-11 p-0 rounded-full"
     ),
     outline: cn(
-      "bg-[#e0e5ec] text-slate-600",
-      "shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff]",
-      "hover:text-slate-800",
-      "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-      "active:shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff]"
+      "bg-white text-slate-700 border border-slate-300 shadow-sm",
+      "hover:bg-slate-50",
+      "active:bg-slate-100",
+      "dark:bg-slate-900 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-800 dark:active:bg-slate-700"
     ),
   };
 
@@ -90,10 +84,9 @@ export function NeuButton({
     <button
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-2xl font-semibold",
-        "transition-all duration-200 ease-out",
+        "transition-colors duration-150 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20",
         "disabled:cursor-not-allowed disabled:opacity-60 disabled:pointer-events-none",
-        "hover:scale-[0.98] active:scale-95",
         sizes[size],
         variants[variant],
         fullWidth && "w-full",

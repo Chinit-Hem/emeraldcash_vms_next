@@ -1,42 +1,42 @@
 "use client";
 
-import { cn } from "@/lib/ui";
 import { useAuthUser } from "@/app/components/AuthContext";
-import { useVehiclesNeon, useVehicleStats } from "@/lib/useVehiclesNeon";
-import type { Vehicle } from "@/lib/types";
-import { driveThumbnailUrl, extractDriveFileId } from "@/lib/drive";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { getQuickFilterCategory } from "@/lib/categoryMapping";
+import AddVehicleModal from "@/app/components/vehicles/AddVehicleModal";
+
+import { ConfirmDeleteModal } from "@/app/components/vehicles/ConfirmDeleteModal";
+
+import { useDeleteVehicle } from "@/app/components/vehicles/useDeleteVehicle";
 import { useToast } from "@/components/ui/glass/GlassToast";
-import { OptimizedLink } from "@/app/components/OptimizedLink";
-import { 
-  Plus, 
-  RefreshCw, 
-  Search, 
-  Car,
-  Bike,
+import { driveThumbnailUrl, extractDriveFileId } from "@/lib/drive";
+import type { Vehicle } from "@/lib/types";
+import { cn } from "@/lib/ui";
+import { useVehiclesNeon, useVehicleStats } from "@/lib/useVehiclesNeon";
+import {
   AlertCircle,
-  X,
-  Columns,
-  ChevronDown,
-  ArrowUpDown,
-  ArrowUp,
   ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Bike,
+  Car,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Columns,
   Eye,
-  Pen,
-  Trash2,
+  Filter,
   Grid3X3,
   List,
-  Filter,
-  Clock,
+  Pen,
+  Plus,
+  RefreshCw,
   RotateCcw,
-  CheckCircle2,
-  MoreHorizontal,
-  Download
+  Search,
+  Trash2,
+  X
 } from "lucide-react";
-import { AddVehicleModal } from "@/app/components/vehicles/AddVehicleModal";
-import { ConfirmDeleteModal } from "@/app/components/vehicles/ConfirmDeleteModal";
-import { useDeleteVehicle } from "@/app/components/vehicles/useDeleteVehicle";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // ============================================================================
 // Types & Interfaces
@@ -92,37 +92,31 @@ const COLUMNS: ColumnConfig[] = [
   { key: "actions", label: "Actions", width: "140px", sortable: false, defaultVisible: true },
 ];
 
-const ITEMS_PER_PAGE_OPTIONS = [10, 20, 30, 50, 100];
+const ITEMS_PER_PAGE_OPTIONS = [10, 20, 30, 50, 100, 500, 2000];
 const DEFAULT_ITEMS_PER_PAGE = 10;
 
 // ============================================================================
-// TukTuk Icon Component
+// TukTuk Icon Component - From Sidebar Menu (IconTukTuk)
 // ============================================================================
 
 function TukTukIcon({ className }: { className?: string }) {
   return (
     <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
       viewBox="0 0 24 24" 
       fill="none" 
       stroke="currentColor" 
-      strokeWidth="1.5" 
+      strokeWidth="2" 
       strokeLinecap="round" 
       strokeLinejoin="round"
       className={className}
     >
-      {/* TukTuk body */}
-      <path d="M3 14h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2z" />
-      {/* Front cabin */}
-      <path d="M15 8h3l3 4v2h-3" />
-      {/* Wheels */}
-      <circle cx="6" cy="17" r="2.5" />
-      <circle cx="18" cy="17" r="2.5" />
-      {/* Handlebar */}
-      <path d="M18 8V6a1 1 0 0 1 1-1h2" />
-      {/* Seat */}
-      <path d="M8 8v-2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2" />
-      {/* Headlight */}
-      <circle cx="20" cy="10" r="1" fill="currentColor" stroke="none" />
+      <path d="M4 16v-3a2 2 0 0 1 2-2h8l3 3v3" />
+      <path d="M14 13V9a2 2 0 0 1 2-2h2" />
+      <circle cx="7" cy="17" r="2" />
+      <circle cx="17" cy="17" r="2" />
     </svg>
   );
 }
@@ -621,17 +615,23 @@ function VehicleCard({
     <div className="group bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 overflow-hidden border border-slate-100 hover:border-emerald-200">
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-        {imageUrl ? (
-          <img 
-            src={imageUrl} 
-            alt={vehicle.Model || "Vehicle"}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Car className="w-16 h-16 text-slate-300" />
-          </div>
-        )}
+{imageUrl ? (
+            <img 
+              src={imageUrl} 
+              alt={`${vehicle.Brand} ${vehicle.Model}`}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onError={(e) => {
+                console.warn('[Image onError]', imageUrl);
+                (e.target as HTMLImageElement).src = '/placeholder-car.svg';
+              }}
+            />
+          ) : (
+            <img 
+              src="/placeholder-car.svg"
+              alt="No image"
+              className="w-full h-full object-cover opacity-20"
+            />
+          )}
         <div className="absolute top-3 left-3">
           <span className={cn(
             "px-2.5 py-1 rounded-lg text-xs font-medium ring-1",
@@ -889,9 +889,9 @@ export default function VehiclesClientEnhanced() {
     if (!quickFilter) return undefined;
     // Map quick filter values to category names that match the database
     switch (quickFilter) {
-      case "cars": return "Car";
-      case "motorcycles": return "Motorcycle";
-      case "tuktuks": return "Tuk Tuk";
+case "cars": return "Cars";
+case "motorcycles": return "Motorcycles";
+case "tuktuks": return "TukTuks";
       default: return undefined;
     }
   }, [quickFilter]);
@@ -904,7 +904,15 @@ export default function VehiclesClientEnhanced() {
     refreshInterval: 0,
   });
 
-  const { stats, loading: statsLoading } = useVehicleStats(0);
+  const { stats, loading: statsLoading } = useVehicleStats(30000); // 30s refresh
+
+  // Safe stats access with fallbacks (BUG FIX)
+  const safeStats = useMemo(() => ({
+    total: stats?.total || 0,
+    cars: stats?.byCategory?.Cars || 0,
+    motorcycles: stats?.byCategory?.Motorcycles || 0,
+    tuktuks: stats?.byCategory?.TukTuks || 0,
+  }), [stats]);
 
   // Delete vehicle hook
   const { deleteVehicle, isDeleting } = useDeleteVehicle(
@@ -987,27 +995,17 @@ export default function VehiclesClientEnhanced() {
     return cat?.toLowerCase().trim() || "";
   }, []);
 
-  const isTukTukCategory = useCallback((cat: string | undefined): boolean => {
-    const normalized = normalizeCategory(cat);
-    const tukTukPatterns = [
-      "tuktuk", "tuk-tuk", "tuk tuk", "tuktuks", 
-      "tricycle", "auto rickshaw", "tuk", "rickshaw",
-      "three wheeler", "3 wheeler", "tuk-tuks"
-    ];
-    return tukTukPatterns.some(pattern => normalized.includes(pattern));
-  }, [normalizeCategory]);
+const isCarCategory = useCallback((cat: string | undefined): boolean => {
+    return cat?.toLowerCase().includes('car') || false;
+  }, []);
 
-  const isCarCategory = useCallback((cat: string | undefined): boolean => {
-    const normalized = normalizeCategory(cat);
-    const carPatterns = ["car", "cars", "sedan", "suv", "truck", "van", "pickup", "hatchback"];
-    return carPatterns.some(pattern => normalized.includes(pattern));
-  }, [normalizeCategory]);
+const isMotorcycleCategory = useCallback((cat: string | undefined): boolean => {
+    return cat?.toLowerCase().includes('motor') || cat?.toLowerCase().includes('bike') || false;
+  }, []);
 
-  const isMotorcycleCategory = useCallback((cat: string | undefined): boolean => {
-    const normalized = normalizeCategory(cat);
-    const motorcyclePatterns = ["motorcycle", "motorcycles", "motor", "bike", "scooter", "moped"];
-    return motorcyclePatterns.some(pattern => normalized.includes(pattern));
-  }, [normalizeCategory]);
+const isTukTukCategory = useCallback((cat: string | undefined): boolean => {
+    return cat?.toLowerCase().includes('tuk') || false;
+  }, []);
 
   // ==========================================================================
   // Grouping Logic
@@ -1201,23 +1199,18 @@ export default function VehiclesClientEnhanced() {
   // ==========================================================================
 
   const displayStats = useMemo(() => {
-    if (totalsMode === "all" && stats) {
-      return {
-        total: stats.total || 0,
-        cars: stats.byCategory?.Cars || 0,
-        motorcycles: stats.byCategory?.Motorcycles || 0,
-        tuktuks: stats.byCategory?.TukTuks || 0,
-      };
+    if (totalsMode === "all") {
+      return safeStats;
     }
 
-    // Calculate from filtered vehicles
+    // Calculate from filtered vehicles (local counts)
     return {
       total: filteredVehicles.length,
       cars: filteredVehicles.filter(v => isCarCategory(v.Category)).length,
       motorcycles: filteredVehicles.filter(v => isMotorcycleCategory(v.Category)).length,
       tuktuks: filteredVehicles.filter(v => isTukTukCategory(v.Category)).length,
     };
-  }, [totalsMode, stats, filteredVehicles, isCarCategory, isMotorcycleCategory, isTukTukCategory]);
+  }, [totalsMode, safeStats, filteredVehicles, isCarCategory, isMotorcycleCategory, isTukTukCategory]);
 
   // ==========================================================================
   // Pagination
@@ -1308,21 +1301,41 @@ export default function VehiclesClientEnhanced() {
   // Image URL Helper
   // ==========================================================================
   
-  const getVehicleImageUrl = useCallback((imageValue: string | undefined): string | null => {
-    if (!imageValue || typeof imageValue !== 'string') return null;
-    
-    // If it's already a full URL (Cloudinary or other), use it directly
-    if (imageValue.startsWith('http://') || imageValue.startsWith('https://')) {
-      return imageValue;
+const getVehicleImageUrl = useCallback((imageValue: string | undefined): string | null => {
+    if (!imageValue?.trim()) {
+      return '/placeholder-car.svg';
     }
     
-    // If it looks like a Google Drive file ID, convert to thumbnail URL
-    const driveFileId = extractDriveFileId(imageValue);
+    const trimmed = imageValue.trim();
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[Image]', trimmed.substring(0, 50) + '...');
+    }
+    
+    // Full URL (Cloudinary/Drive)
+    if (trimmed.match(/^https?:\/\//) || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
+    
+    // Drive ID
+    const driveFileId = extractDriveFileId(trimmed);
     if (driveFileId) {
-      return driveThumbnailUrl(driveFileId, "w400-h300");
+      const thumbUrl = driveThumbnailUrl(driveFileId, "w400-h300");
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[Image] Drive thumb:', thumbUrl);
+      }
+      return thumbUrl;
     }
     
-    return null;
+    // Cloudinary public ID (path format)
+    if (/^[a-z0-9\-_\/]+$/.test(trimmed)) {
+      const cloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'demo';
+      return `https://res.cloudinary.com/${cloud}/image/upload/w400,h300,c_fill/${trimmed}`;
+    }
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[Image] Unknown format:', trimmed);
+    }
+    return '/placeholder-car.svg';
   }, []);
 
   // ==========================================================================
@@ -1503,7 +1516,7 @@ export default function VehiclesClientEnhanced() {
               const newFilter = quickFilter === "tuktuks" ? null : "tuktuks";
               setQuickFilter(newFilter);
               if (newFilter) {
-                router.push("/vehicles?category=tuktuks", { scroll: false });
+                router.push("/vehicles?category=TukTuks", { scroll: false });
               } else {
                 router.push("/vehicles", { scroll: false });
               }
@@ -1921,7 +1934,7 @@ export default function VehiclesClientEnhanced() {
               ) : (
                 <>
                   Showing <span className="font-semibold text-slate-800">{paginatedVehicles.length}</span> of{" "}
-                  <span className="font-semibold text-slate-800">{filteredVehicles.length}</span> vehicles
+                  <span className="font-semibold text-slate-800">{meta?.total || filteredVehicles.length}</span> vehicles
                 </>
               )}
             </span>

@@ -7,6 +7,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { useTranslation } from "@/lib/i18n";
 import { OptimizedLink } from "./OptimizedLink";
 import { useVehicleStats } from "@/lib/useVehiclesNeon";
+import { Car, Bike, Boxes } from "lucide-react";
 
 function normalizeCategory(value: unknown) {
   return String(value ?? "").trim().toLowerCase();
@@ -38,38 +39,22 @@ function IconLms() {
   );
 }
 
-function IconVehicles() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-      <circle cx="7" cy="17" r="2" />
-      <path d="M9 17h6" />
-      <circle cx="17" cy="17" r="2" />
-    </svg>
-  );
+function IconSms({ className }: { className?: string }) {
+  return <Boxes className={className || "w-5 h-5"} />;
 }
 
-function IconCar() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-      <circle cx="7" cy="17" r="2" />
-      <path d="M9 17h6" />
-      <circle cx="17" cy="17" r="2" />
-    </svg>
-  );
+function IconStock({ className }: { className?: string }) {
+  return <Boxes className={className || "w-5 h-5"} />;
 }
 
-function IconMotorcycle() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="5.5" cy="17.5" r="2.5" />
-      <circle cx="17.5" cy="17.5" r="2.5" />
-      <path d="M7 17h7l3-6H8.5" />
-      <path d="M14 11l2 6" />
-      <path d="M10 11l2-3h3" />
-    </svg>
-  );
+function IconCar({ className }: { className?: string }) {
+  // Uses Lucide Car icon from dashboard
+  return <Car className={className || "w-5 h-5"} />;
+}
+
+function IconMotorcycle({ className }: { className?: string }) {
+  // Uses Lucide Bike icon from dashboard
+  return <Bike className={className || "w-5 h-5"} />;
 }
 
 function IconTukTuk() {
@@ -83,23 +68,9 @@ function IconTukTuk() {
   );
 }
 
-function IconAdd() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M8 12h8" />
-      <path d="M12 8v8" />
-    </svg>
-  );
-}
-
 function IconFleet({ className }: { className?: string }) {
-  return (
-    <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-      <path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-    </svg>
-  );
+  // Reuses IconCar to avoid duplication - both use the same Car icon
+  return IconCar({ className });
 }
 
 function IconSettings() {
@@ -116,7 +87,7 @@ interface SidebarProps {
   onNavigate?: () => void;
 }
 
-// NavItem component with clean Neumorphism and instant navigation
+// NavItem component with flat styling and instant navigation
 interface NavItemProps {
   icon: React.ComponentType<{className?: string}>;
   label: string;
@@ -143,17 +114,17 @@ function NavItem({
     >
       <div className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all duration-200 ease-out ${
         active 
-          ? "shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] text-[#2ecc71] scale-[0.98]" 
-          : "shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] text-[#4a5568] hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] hover:text-[#2ecc71] hover:scale-[0.98] active:scale-95"
+          ? "bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/40 shadow-sm text-emerald-600 dark:text-emerald-300"
+          : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:text-emerald-600 dark:hover:text-emerald-300"
       }`}>
         <Icon className="w-6 h-6" />
       </div>
       <div className="flex-1 text-left">
-        <span className={`text-sm font-medium transition-colors duration-200 ${active ? "text-[#2ecc71]" : "text-[#4a5568] group-hover:text-[#2ecc71]"}`}>
+        <span className={`text-sm font-medium transition-colors duration-200 ${active ? "text-emerald-600 dark:text-emerald-300" : "text-slate-600 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-300"}`}>
           {label}
         </span>
         {count !== undefined && count > 0 && (
-          <span className="ml-2 text-xs bg-[#2ecc71] text-white px-2 py-0.5 rounded-full">
+          <span className="ml-2 text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full">
             {count}
           </span>
         )}
@@ -162,50 +133,7 @@ function NavItem({
   );
 }
 
-// SubNavItem for filters
-interface SubNavItemProps {
-  icon: React.ComponentType<{className?: string}>;
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  count?: number;
-}
-
-function SubNavItem({ 
-  icon: Icon, 
-  label, 
-  active, 
-  onClick, 
-  count 
-}: SubNavItemProps) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-3 w-full pl-4 group"
-      aria-current={active ? "page" : undefined}
-    >
-      <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 ${
-        active 
-          ? "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] text-[#2ecc71]" 
-          : "shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] text-[#4a5568] hover:text-[#2d3748]"
-      }`}>
-        <Icon className="w-5 h-5" />
-      </div>
-      <div className="flex-1 text-left">
-        <span className={`text-sm ${active ? "text-[#2ecc71] font-medium" : "text-[#4a5568]"}`}>
-          {label}
-        </span>
-        {count !== undefined && count > 0 && (
-          <span className="ml-2 text-xs bg-[#2ecc71] text-white px-1.5 py-0.5 rounded-full">
-            {count}
-          </span>
-        )}
-      </div>
-    </button>
-  );
-}
-
-// Quick Filter Button Component - Advanced Professional Neumorphism with instant navigation
+// Quick Filter Button Component with instant navigation
 interface QuickFilterButtonProps {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -229,39 +157,39 @@ function QuickFilterButton({
 }: QuickFilterButtonProps) {
   const colorStyles = {
     emerald: {
-      active: "text-emerald-600",
-      inactive: "text-slate-700",
-      iconBg: "from-emerald-500/20 to-emerald-600/10",
-      iconBorder: "border-emerald-200/50",
-      countBg: "bg-emerald-500",
+      active: "text-emerald-700 dark:text-emerald-300",
+      inactive: "text-slate-700 dark:text-slate-300",
+      activeBg: "bg-emerald-50 dark:bg-emerald-500/15",
+      activeBorder: "border-emerald-200 dark:border-emerald-500/40",
+      countBg: "bg-emerald-500 text-white",
     },
     blue: {
-      active: "text-blue-600",
-      inactive: "text-slate-700",
-      iconBg: "from-blue-500/20 to-blue-600/10",
-      iconBorder: "border-blue-200/50",
-      countBg: "bg-blue-500",
+      active: "text-blue-700 dark:text-blue-300",
+      inactive: "text-slate-700 dark:text-slate-300",
+      activeBg: "bg-blue-50 dark:bg-blue-500/15",
+      activeBorder: "border-blue-200 dark:border-blue-500/40",
+      countBg: "bg-blue-500 text-white",
     },
     purple: {
-      active: "text-purple-600",
-      inactive: "text-slate-700",
-      iconBg: "from-purple-500/20 to-purple-600/10",
-      iconBorder: "border-purple-200/50",
-      countBg: "bg-purple-500",
+      active: "text-purple-700 dark:text-purple-300",
+      inactive: "text-slate-700 dark:text-slate-300",
+      activeBg: "bg-purple-50 dark:bg-purple-500/15",
+      activeBorder: "border-purple-200 dark:border-purple-500/40",
+      countBg: "bg-purple-500 text-white",
     },
     orange: {
-      active: "text-orange-600",
-      inactive: "text-slate-700",
-      iconBg: "from-orange-500/20 to-orange-600/10",
-      iconBorder: "border-orange-200/50",
-      countBg: "bg-orange-500",
+      active: "text-orange-700 dark:text-orange-300",
+      inactive: "text-slate-700 dark:text-slate-300",
+      activeBg: "bg-orange-50 dark:bg-orange-500/15",
+      activeBorder: "border-orange-200 dark:border-orange-500/40",
+      countBg: "bg-orange-500 text-white",
     },
     slate: {
-      active: "text-slate-600",
-      inactive: "text-slate-500",
-      iconBg: "from-slate-500/20 to-slate-600/10",
-      iconBorder: "border-slate-200/50",
-      countBg: "bg-slate-500",
+      active: "text-slate-700 dark:text-slate-200",
+      inactive: "text-slate-500 dark:text-slate-400",
+      activeBg: "bg-slate-100 dark:bg-slate-700/70",
+      activeBorder: "border-slate-300 dark:border-slate-600",
+      countBg: "bg-slate-500 text-white",
     },
   };
 
@@ -271,22 +199,18 @@ function QuickFilterButton({
     <OptimizedLink
       href={href}
       onClick={onClick}
-      className={`group relative flex items-center justify-between w-full p-3 rounded-2xl transition-all duration-300 ease-out overflow-hidden ${
+      className={`group relative flex items-center justify-between w-full p-3 rounded-2xl transition-colors duration-200 border shadow-sm ${
         isActive
-          ? "shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] scale-[0.98]"
-          : "shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] hover:scale-[0.98] active:scale-95"
+          ? `${styles.activeBg} ${styles.activeBorder}`
+          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60"
       }`}
       priority={isActive ? "high" : "normal"}
     >
-      {/* Background gradient overlay */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${styles.iconBg} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-      
       <div className="relative z-10 flex items-center gap-3">
-        {/* Icon container with neumorphism */}
         <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-300 ${
           isActive
-            ? "shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
-            : "shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] group-hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
+            ? "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm"
+            : "bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-700 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800"
         }`}>
           {isAddButton ? (
             <span className={`text-lg font-bold ${isActive ? styles.active : styles.inactive}`}>+</span>
@@ -295,15 +219,13 @@ function QuickFilterButton({
           )}
         </div>
         
-        {/* Label */}
         <span className={`text-sm font-medium transition-colors duration-300 ${isActive ? styles.active : styles.inactive}`}>
           {label}
         </span>
       </div>
 
-      {/* Count badge */}
       {count !== undefined && count > 0 && (
-        <span className={`relative z-10 ${styles.countBg} text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm`}>
+        <span className={`relative z-10 ${styles.countBg} text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm`}>
           {count.toLocaleString()}
         </span>
       )}
@@ -326,11 +248,12 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
   const isDashboardActive = pathname === "/" || pathname === "/dashboard";
   const isLmsActive = pathname.startsWith("/lms");
   const isAdminLmsActive = pathname.startsWith("/admin/lms");
+  const isSmsActive = pathname.startsWith("/sms");
   const isVehiclesActive = pathname === "/vehicles" && !activeCategory;
   const isCarsActive = pathname === "/vehicles" && normalizeCategory(activeCategory) === "cars";
   const isMotorcyclesActive = pathname === "/vehicles" && normalizeCategory(activeCategory) === "motorcycles";
   const isTukTuksActive = pathname === "/vehicles" && (normalizeCategory(activeCategory) === "tuktuks" || isTukTukCategory(activeCategory));
-  const isAddActive = false; // Modal-based, no route
+  const isStockActive = pathname.startsWith("/stock");
   const isSettingsActive = pathname === "/settings";
 
   const handleNavigate = (href: string) => {
@@ -346,11 +269,11 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
 
 
   return (
-    <aside className="w-[280px] h-screen overflow-y-auto flex flex-col bg-[#e0e5ec] shadow-[9px_9px_16px_#bebebe,-9px_-9px_16px_#ffffff] print:hidden relative z-[50]">
+    <aside className="w-[280px] h-screen overflow-y-auto flex flex-col bg-slate-100 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-sm print:hidden relative z-[50]">
       {/* Header */}
       <div className="p-6 pb-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 flex items-center justify-center rounded-2xl shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] bg-[#e0e5ec]">
+          <div className="w-14 h-14 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm bg-white dark:bg-slate-800">
             <Image
               src="/logo.png"
               alt="Emerald Cash"
@@ -361,8 +284,8 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
             />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-[#2d3748]">Emerald Cash</h1>
-            <span className="text-xs bg-[#2ecc71] text-white px-2 py-0.5 rounded-full">VMS PRO</span>
+            <h1 className="text-lg font-bold text-slate-800 dark:text-slate-100">Emerald Cash</h1>
+            <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full">VMS PRO</span>
           </div>
         </div>
       </div>
@@ -385,11 +308,20 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
             active={isLmsActive || isAdminLmsActive}
             onClick={() => handleNavigate("/lms")}
           />
+          <NavItem
+href="/sms"
+            icon={IconSms}
+            label="SMS"
+            active={isSmsActive}
+            onClick={() => handleNavigate("/sms")}
+          />
+
+
         </div>
 
-        {/* Quick Filters Section - Advanced Professional Neumorphism */}
+        {/* Quick Filters Section */}
         <div className="px-4 py-6">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 px-2">
+          <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4 px-2">
             {language === 'km' ? 'តម្រងរហ័ស' : 'Quick Filters'}
           </h2>
           
@@ -409,7 +341,7 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
             <QuickFilterButton
               href="/vehicles?category=cars"
               icon={IconCar}
-              label={language === 'km' ? 'រថយន្ត' : 'Cars'}
+label={language === 'km' ? 'រថយន្ត' : 'Cars'}
               count={carsCount}
               isActive={isCarsActive}
               onClick={() => handleNavigate("/vehicles?category=cars")}
@@ -420,7 +352,7 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
             <QuickFilterButton
               href="/vehicles?category=motorcycles"
               icon={IconMotorcycle}
-              label={language === 'km' ? 'ម៉ូតូ' : 'Motorcycles'}
+label={language === 'km' ? 'ម៉ូតូ' : 'Motorcycles'}
               count={motorcyclesCount}
               isActive={isMotorcyclesActive}
               onClick={() => handleNavigate("/vehicles?category=motorcycles")}
@@ -431,7 +363,7 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
             <QuickFilterButton
               href="/vehicles?category=tuktuks"
               icon={IconTukTuk}
-              label={language === 'km' ? 'ទុកទុក' : 'TukTuks'}
+label={language === 'km' ? 'កង់បី' : 'TukTuks'}
               count={tukTuksCount}
               isActive={isTukTuksActive}
               onClick={() => handleNavigate("/vehicles?category=tuktuks")}
@@ -445,13 +377,13 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
                   window.dispatchEvent(new CustomEvent('openAddVehicleModal'));
                   onNavigate?.();
                 }}
-                className="group relative flex items-center justify-between w-full p-3 rounded-2xl transition-all duration-300 ease-out overflow-hidden shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] hover:scale-[0.98] active:scale-95"
+                className="group relative flex items-center justify-between w-full p-3 rounded-2xl transition-colors duration-200 overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700/60"
               >
                 <div className="relative z-10 flex items-center gap-3">
-                  <div className="w-10 h-10 flex items-center justify-center rounded-xl shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] group-hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]">
-                    <span className="text-lg font-bold text-slate-700">+</span>
+                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-700 shadow-sm group-hover:bg-white dark:group-hover:bg-slate-800">
+                    <span className="text-lg font-bold text-slate-700 dark:text-slate-200">+</span>
                   </div>
-                  <span className="text-sm font-medium text-slate-700">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                     {language === 'km' ? 'បន្ថែមយានយន្ត' : 'Add Vehicle'}
                   </span>
                 </div>
@@ -474,7 +406,7 @@ export default function Sidebar({ user, onNavigate }: SidebarProps) {
 
       {/* Footer */}
       <div className="p-6 pt-4">
-        <div className="text-center text-xs text-[#718096]">
+        <div className="text-center text-xs text-slate-500 dark:text-slate-400">
           {language === 'km' ? '© ២០២៥ អេមរ៉ាល់ខាស' : '© 2025 Emerald Cash'}
         </div>
       </div>

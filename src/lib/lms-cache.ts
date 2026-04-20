@@ -10,7 +10,20 @@
  * @module lms-cache
  */
 
-const kv = (process.env.NODE_ENV === 'development') ? null : (await import('@vercel/kv')).kv;
+import type { VercelKV } from '@vercel/kv';
+import type { LmsLesson } from './lms-schema';
+
+let kv: VercelKV | null = null;
+
+async function ensureKv() {
+  if (kv || process.env.NODE_ENV === 'development') return;
+  try {
+    const vercelKv = await import('@vercel/kv');
+    kv = vercelKv.kv;
+  } catch (error) {
+    console.error('[LmsCache] Vercel KV import failed:', error);
+  }
+}
 
 // ============================================================================
 // Cache Keys & TTLs
@@ -18,7 +31,7 @@ const kv = (process.env.NODE_ENV === 'development') ? null : (await import('@ver
 
 const CACHE_PREFIX = 'lms:';
 const LESSONS_CACHE_TTL = 60 * 5; // 5 minutes
-const STATS_CACHE_TTL = 60 * 10;  // 10 minutes
+const _STATS_CACHE_TTL = 60 * 10;  // 10 minutes
 
 export interface LmsCacheResult<T> {
   success: boolean;
@@ -35,13 +48,24 @@ export interface LmsCacheResult<T> {
 /**
  * Get cached lessons by category (regular list)
  */
-export async function getCachedLessonsByCategory(\n  categoryId: number\n): Promise<LmsCacheResult<any[]>> {\n  const cacheKey = `${CACHE_PREFIX}lessons:${categoryId}`;\n  \n  if (process.env.NODE_ENV === 'development') {\n    return { success: false };\n  }\n  try {\n    const cached = await kv.get(cacheKey);
+export async function getCachedLessonsByCategory(
+  categoryId: number
+): Promise<LmsCacheResult<LmsLesson[]>> {
+  const cacheKey = `${CACHE_PREFIX}lessons:${categoryId}`;
+  await ensureKv();
+  
+  if (process.env.NODE_ENV === 'development' || !kv) {
+    return { success: false };
+  }
+  
+  try {
+    const cached = await kv.get(cacheKey);
     
     if (cached) {
       const ttl = await kv.ttl(cacheKey);
       return {
         success: true,
-        data: cached as any[],
+        data: cached as LmsLesson[],
         fromCache: true,
         cachedAt: Date.now(),
         ttlRemaining: ttl,
@@ -60,9 +84,12 @@ export async function getCachedLessonsByCategory(\n  categoryId: number\n): Prom
  */
 export async function setCachedLessonsByCategory(
   categoryId: number,
-  lessons: any[]
+  lessons: LmsLesson[]
 ): Promise<boolean> {
   const cacheKey = `${CACHE_PREFIX}lessons:${categoryId}`;
+  await ensureKv();
+  
+  if (!kv) return false;
   
   try {
     await kv.set(cacheKey, lessons, { ex: LESSONS_CACHE_TTL });
@@ -79,8 +106,11 @@ export async function setCachedLessonsByCategory(
 export async function getCachedSequentialLessons(
   categoryId: number,
   staffId: number
-): Promise<LmsCacheResult<any[]>> {
+): Promise<LmsCacheResult<LmsLesson[]>> {
   const cacheKey = `${CACHE_PREFIX}lessons-seq:${categoryId}:${staffId}`;
+  await ensureKv();
+  
+  if (!kv) return { success: false };
   
   try {
     const cached = await kv.get(cacheKey);
@@ -89,7 +119,7 @@ export async function getCachedSequentialLessons(
       const ttl = await kv.ttl(cacheKey);
       return {
         success: true,
-        data: cached as any[],
+        data: cached as LmsLesson[],
         fromCache: true,
         cachedAt: Date.now(),
         ttlRemaining: ttl,
@@ -109,9 +139,11 @@ export async function getCachedSequentialLessons(
 export async function setCachedSequentialLessons(
   categoryId: number,
   staffId: number,
-  lessons: any[]
+  lessons: LmsLesson[]
 ): Promise<boolean> {
   const cacheKey = `${CACHE_PREFIX}lessons-seq:${categoryId}:${staffId}`;
+  
+  if (!kv) return false;
   
   try {
     await kv.set(cacheKey, lessons, { ex: LESSONS_CACHE_TTL });
@@ -130,11 +162,10 @@ export async function setCachedSequentialLessons(
  * Invalidate all caches for a category (called on lesson/category update)
  */
 export async function invalidateCategoryCache(categoryId: number): Promise<void> {
-  const pattern = `${CACHE_PREFIX}lessons*${categoryId}*`;
-  // Note: Vercel KV doesn't support SCAN - invalidate known patterns
+  if (!kv) return;
+  
   const keys = [
     `${CACHE_PREFIX}lessons:${categoryId}`,
-    // Add sequential patterns for common staff IDs if needed
   ];
   
   try {
@@ -150,12 +181,9 @@ export async function invalidateCategoryCache(categoryId: number): Promise<void>
  * Invalidate all LMS caches (nuclear option - on major schema changes)
  */
 export async function clearAllLmsCache(): Promise<void> {
-  const allKeys = [
-    `${CACHE_PREFIX}*`
-  ];
+  if (!kv) return;
   
   try {
-    // Vercel KV pattern delete not available, manually delete known prefixes
     await kv.flushdb();
     console.log('[LmsCache] All LMS cache cleared');
   } catch (error) {
@@ -175,8 +203,18 @@ export async function getCacheStats(): Promise<{
   lmsKeys: number;
   memoryUsage: number;
 }> {
+  if (!kv) {
+    return { totalKeys: 0, lmsKeys: 0, memoryUsage: 0 };
+  }
+  
+interface RedisInfo {
+  keys?: string;
+  used_memory?: string;
+  [key: string]: string | undefined;
+}
+
   try {
-    const info = await kv.info();
+    const info = await (kv as VercelKV & { info(): Promise<RedisInfo> }).info();
     return {
       totalKeys: parseInt(info.keys || '0'),
       lmsKeys: 0, // Vercel KV doesn't support pattern count
@@ -191,7 +229,7 @@ export async function getCacheStats(): Promise<{
 // Default Export
 // ============================================================================
 
-export default {
+const lmsCache = {
   getCachedLessonsByCategory,
   setCachedLessonsByCategory,
   getCachedSequentialLessons,
@@ -200,4 +238,6 @@ export default {
   clearAllLmsCache,
   getCacheStats,
 };
+
+export default lmsCache;
 

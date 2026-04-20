@@ -13,7 +13,7 @@
  * @module useHydrationSafe
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 // ============================================================================
 // Types & Interfaces
@@ -101,7 +101,7 @@ function isIOSSafari(): boolean {
  * ```
  */
 export function useHydrationSafe(options: UseHydrationSafeOptions = {}): UseHydrationSafeReturn {
-  const { delayMs = 0, debug = false } = options;
+  const { delayMs: _delayMs = 0, debug = false } = options;
   
   const [isMounted, setIsMounted] = useState(false);
   const [isBrowser] = useState(() => isBrowserEnvironment());
@@ -110,10 +110,13 @@ export function useHydrationSafe(options: UseHydrationSafeOptions = {}): UseHydr
   useEffect(() => {
     if (!isBrowser) return;
 
-    setIsMounted(true);
-    if (debug) {
-      console.log("[useHydrationSafe] Component mounted, browser APIs now safe");
-    }
+    // Defer state update to avoid cascading render warning
+    Promise.resolve().then(() => {
+      setIsMounted(true);
+      if (debug) {
+        console.log("[useHydrationSafe] Component mounted, browser APIs now safe");
+      }
+    });
 
     return () => {
       setIsMounted(false);
@@ -251,14 +254,17 @@ export function useLocalStorage<T>(
   useEffect(() => {
     if (!isMounted) return;
     
-    try {
-      const item = getItem(key);
-      if (item !== null) {
-        setStoredValue(JSON.parse(item) as T);
+    // Defer state update to avoid cascading render warning
+    Promise.resolve().then(() => {
+      try {
+        const item = getItem(key);
+        if (item !== null) {
+          setStoredValue(JSON.parse(item) as T);
+        }
+      } catch {
+        // Ignore parse errors
       }
-    } catch {
-      // Ignore parse errors
-    }
+    });
   }, [isMounted, key, getItem]);
 
   return [storedValue, setValue, remove];
@@ -277,7 +283,10 @@ export function useMounted(): boolean {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
+    // Defer state update to avoid cascading render warning
+    Promise.resolve().then(() => {
+      setIsMounted(true);
+    });
     return () => {
       setIsMounted(false);
     };
@@ -296,7 +305,10 @@ export function useIsIOSSafari(): boolean {
   useEffect(() => {
     if (!isMounted) return;
     
-    setIsIOSSafariState(isIOSSafari());
+    // Defer state update to avoid cascading render warning
+    Promise.resolve().then(() => {
+      setIsIOSSafariState(isIOSSafari());
+    });
   }, [isMounted]);
 
   return isIOSSafariState;

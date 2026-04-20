@@ -195,6 +195,13 @@ export type Vehicle = {
   _deleted?: boolean;
   Description?: string | null; // Additional notes/description about the vehicle
 
+  // Stock tracking for mortgage/employee use
+  SenderId?: number | null;
+  ReceiverId?: number | null;
+  HandoverDate?: string | null;
+  Status?: 'PENDING' | 'ASSIGNED' | 'ACCEPTED' | 'LOST' | 'RETURNED';
+  Remarks?: string;
+
   // Market price fields (optional, populated from external sources)
   MarketPriceLow?: number | null;
   MarketPriceMedian?: number | null;
@@ -204,6 +211,46 @@ export type Vehicle = {
   MarketPriceUpdatedAt?: string | null;
   MarketPriceConfidence?: "High" | "Medium" | "Low" | null;
 };
+
+export type StockMovementType = 'IN' | 'OUT' | 'ADJUST' | 'TRANSFER';
+
+export interface StockItem {
+  id: number;
+  model_key: string; // brand_model_year_condition_color hash
+  location: string;
+  quantity: number;
+  min_stock: number;
+  available: number;
+  reserved: number;
+  last_updated: string;
+  brand: string;
+  model: string;
+  year: number | null;
+  condition: string;
+  color: string;
+  is_low_stock: boolean;
+}
+
+export interface StockMovement {
+  id: number;
+  stock_item_id: number;
+  type: StockMovementType;
+  quantity: number;
+  reason: string;
+  user_id: number;
+  from_location?: string;
+  to_location?: string;
+  created_at: string;
+}
+
+export interface StockStats {
+  total_items: number;
+  total_quantity: number;
+  low_stock_items: number;
+  locations: string[];
+}
+
+
 
 // VehicleMeta represents the FULL dataset metadata from API
 // This is computed from all records, not just the current page

@@ -70,6 +70,11 @@ function VehicleDetailInner() {
           router.push("/login");
           return;
         }
+        if (res.status === 404) {
+          // Vehicle not found - let !vehicle state handle it
+          setLoading(false);
+          return;
+        }
         if (!res.ok) throw new Error("Failed to fetch vehicle");
         const data = await res.json();
         if (!alive) return;

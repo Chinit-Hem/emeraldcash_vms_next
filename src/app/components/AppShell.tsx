@@ -192,7 +192,7 @@ function AppShellContent({ children }: AppShellProps) {
             }}
           >
             <div
-              className="absolute inset-0 bg-neu-text/30 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"
               onClick={() => setIsSidebarOpen(false)}
               aria-hidden="true"
             />

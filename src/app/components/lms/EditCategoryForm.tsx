@@ -12,25 +12,25 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
+import { GlassField } from "@/components/ui/glass/GlassField";
 import {
-  Edit2,
-  BookOpen,
   AlertCircle,
-  X,
+  Award,
+  BookOpen,
   Calculator,
+  Edit2,
+  FileText,
+  HelpCircle,
   Monitor,
-  Users,
+  Settings,
   Shield,
   TrendingUp,
-  Settings,
-  FileText,
-  Award,
-  HelpCircle,
+  Users,
+  X,
 } from "lucide-react";
-import { GlassCard } from "@/components/ui/glass/GlassCard";
-import { GlassButton } from "@/components/ui/glass/GlassButton";
-import { GlassField } from "@/components/ui/glass/GlassField";
+import React, { useEffect, useState } from "react";
 
 // ============================================================================
 // Types
@@ -97,11 +97,7 @@ export function EditCategoryForm({
   onSubmit,
   onCancel,
 }: EditCategoryFormProps) {
-  console.log("[EditCategoryForm] ==========================================");
-  console.log("[EditCategoryForm] COMPONENT MOUNTING");
-  console.log("[EditCategoryForm] Received category prop:", JSON.stringify(category, null, 2));
-  
-  // Form state - initialize from category prop
+// Form state - initialize from category prop
   const [formData, setFormData] = useState<CategoryFormData>({
     id: category.id,
     name: category.name || "",
@@ -113,9 +109,8 @@ export function EditCategoryForm({
   const [errors, setErrors] = useState<Partial<Record<keyof CategoryFormData, string>> & { submit?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // CRITICAL: Update form when category prop changes (like EditLessonForm does)
+  // Update form when category prop changes
   useEffect(() => {
-    console.log("[EditCategoryForm] useEffect - category prop changed, updating formData");
     setFormData({
       id: category.id,
       name: category.name || "",
@@ -125,14 +120,6 @@ export function EditCategoryForm({
       orderIndex: category.order_index || 0,
     });
   }, [category]);
-  
-  // Log current formData on every render
-  console.log("[EditCategoryForm] RENDER - formData.name:", formData.name);
-  console.log("[EditCategoryForm] RENDER - formData.description:", formData.description);
-  console.log("[EditCategoryForm] RENDER - formData.icon:", formData.icon);
-  console.log("[EditCategoryForm] RENDER - formData.color:", formData.color);
-  console.log("[EditCategoryForm] RENDER - formData.orderIndex:", formData.orderIndex);
-  console.log("[EditCategoryForm] ==========================================");
 
   // Validate form
   const validateForm = (): boolean => {
@@ -149,19 +136,15 @@ export function EditCategoryForm({
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("[EditCategoryForm] handleSubmit called");
 
     if (!validateForm()) {
-      console.log("[EditCategoryForm] Validation failed");
       return;
     }
 
-    console.log("[EditCategoryForm] Submitting formData:", JSON.stringify(formData, null, 2));
     setIsSubmitting(true);
 
     try {
       await onSubmit(formData);
-      console.log("[EditCategoryForm] onSubmit completed successfully");
     } catch (error) {
       console.error("[EditCategoryForm] Submit error:", error);
       setErrors((prev) => ({

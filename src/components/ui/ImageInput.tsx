@@ -19,9 +19,9 @@
 
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
 import { processImageForUpload } from "@/lib/clientImageCompression";
 import { fileToDataUrl } from "@/lib/fileToDataUrl";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 // ============================================================================
 // Types & Interfaces
@@ -379,7 +379,7 @@ export function ImageInput({
     } finally {
       setIsLoading(false);
     }
-  }, [onChange, maxSizeMB, validateFile]);
+  }, [onChange, validateFile]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -647,6 +647,7 @@ export function ImageInput({
           </div>
         ) : preview ? (
           <div className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               key={cacheKey} // Force re-render when image changes
               src={isUsingFallback ? "/placeholder-car.svg" : preview.url}
