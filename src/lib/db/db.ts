@@ -1,1 +1,64 @@
-/**\n * Database Module - Singleton Pattern Implementation\n * \n * Refactored to use the DatabaseManager singleton from db-singleton.ts\n * for optimal connection pooling, retry logic, and performance.\n * \n * This module provides SSR-ready database access with:\n * - Singleton connection management (prevents \"too many clients\" errors)\n * - Automatic retry logic with exponential backoff\n * - Connection health monitoring\n * - Type-safe query execution\n * \n * @module db\n */\n\n// Re-export everything from db-singleton to avoid duplication\nexport {\n  dbManager,\n  sql,\n  queryWithRetry,\n  testConnection,\n  isDatabaseHealthy,\n  getConnectionStats,\n  resetConnection,\n} from \"./db-singleton\";\n\n// Re-export types from services\nexport type { \n  VehicleFilters, \n  VehicleStats, \n  PaginatedResult \n} from \"@/services/VehicleService\";\n\nexport type {\n  ServiceResult\n} from \"@/services/BaseService\";\n\n// ============================================================================\n// Legacy Compatibility Exports\n// ============================================================================\n\nimport { dbManager } from \"./db-singleton\";\n\n/**\n * Legacy connection stats (for backward compatibility)\n * @deprecated Use getConnectionStats() instead for more detailed metrics\n */\nexport function getLegacyConnectionStats() {\n  const stats = dbManager.getStats();\n  return {\n    totalQueries: stats.totalQueries,\n    failedQueries: stats.failedQueries,\n    retriedQueries: 0, // Not tracked separately in new implementation  \n  };\n}\n\n/**\n * Reset legacy connection stats (no-op in new implementation)\n * @deprecated Connection stats are now managed by DatabaseManager\n */\nexport function resetConnectionStats(): void {\n  // No-op: stats are managed internally by DatabaseManager\n  // Deprecated function logging removed for production\n}\n\n// ============================================================================\n// Default Export\n// ============================================================================\n\nexport { sql as default } from \"./db-singleton\";\n
+/**
+ * Database Module - Singleton Pattern Implementation
+ * 
+ * Refactored to use the DatabaseManager singleton from db-singleton.ts
+ * for optimal connection pooling, retry logic, and performance.
+ * 
+ * This module provides SSR-ready database access with:
+ * - Singleton connection management (prevents "too many clients" errors)
+ * - Automatic retry logic with exponential backoff
+ * - Connection health monitoring
+ * - Type-safe query execution
+ * 
+ * @module db
+ */
+
+// Re-export everything from db-singleton to avoid duplication
+export {
+    dbManager, getConnectionStats, isDatabaseHealthy, queryWithRetry, resetConnection, sql, testConnection
+} from "./db-singleton";
+
+// Re-export types from services
+export type {
+    PaginatedResult, VehicleFilters,
+    VehicleStats
+} from "@/services/VehicleService";
+
+export type {
+    ServiceResult
+} from "@/services/BaseService";
+
+// ============================================================================
+// Legacy Compatibility Exports
+// ============================================================================
+
+import { dbManager } from "./db-singleton";
+
+/**
+ * Legacy connection stats (for backward compatibility)
+ * @deprecated Use getConnectionStats() instead for more detailed metrics
+ */
+export function getLegacyConnectionStats() {
+  const stats = dbManager.getStats();
+  return {
+    totalQueries: stats.totalQueries,
+    failedQueries: stats.failedQueries,
+    retriedQueries: 0, // Not tracked separately in new implementation  
+  };
+}
+
+/**
+ * Reset legacy connection stats (no-op in new implementation)
+ * @deprecated Connection stats are now managed by DatabaseManager
+ */
+export function resetConnectionStats(): void {
+  // No-op: stats are managed internally by DatabaseManager
+  // Deprecated function logging removed for production
+}
+
+// ============================================================================
+// Default Export
+// ============================================================================
+
+export { sql as default } from "./db-singleton";
+

@@ -376,14 +376,15 @@ params.set("limit", "500"); // Increased for pagination fix
               <div className="flex gap-2">
                 {/* Add Vehicle Button */}
                 <button
-                onClick={() => window.dispatchEvent(new CustomEvent('openAddVehicleModal'))}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-50 text-emerald-600 font-semibold text-sm transition-all duration-200 hover:bg-emerald-100 active:bg-emerald-200"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14m-7-7h14" />
-                </svg>
-                Add Vehicle
-              </button>
+                  onClick={() => window.dispatchEvent(new CustomEvent('openAddVehicleModal'))}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-50 text-emerald-600 font-semibold text-sm transition-all duration-200 hover:bg-emerald-100 active:bg-emerald-200"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14m-7-7h14" />
+                  </svg>
+                  Add Vehicle
+                </button>
+              </div>
             </div>
           </div>
 
@@ -815,3 +816,4 @@ params.set("limit", "500"); // Increased for pagination fix
     </div>
   );
 }
+

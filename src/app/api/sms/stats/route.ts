@@ -1,34 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { smsService } from '@/services/SmsService';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
   try {
-
-</xai:function_call >
-
-<xai:function_call name="edit_file">
-<parameter name="path">src/app/api/sms/stats/route.ts
     const result = await smsService.getStats();
-    
     const duration = Date.now() - startTime;
-</xai:function_call >
-
-<xai:function_call name="edit_file">
-<parameter name="path">src/app/api/sms/stats/route.ts
     
     if (result.success) {
       return NextResponse.json({
         success: true,
         data: result.data,
-        meta: { durationMs: duration }
+        meta: { durationMs: duration, queryCount: 2, cacheHit: false }
       });
     } else {
-      // Service error logged
-</xai:function_call >
-
-<xai:function_call name="edit_file">
-<parameter name="path">src/app/api/sms/stats/route.ts
       return NextResponse.json({
         success: false,
         error: result.error || 'Failed to fetch stats'
@@ -36,14 +21,11 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     const duration = Date.now() - startTime;
-    // Uncaught error logged
-</xai:function_call >
-
-<xai:function_call name="edit_file">
-<parameter name="path">src/services/VehicleService.ts
+    console.error('[SMS Stats] DB Error:', error);
     return NextResponse.json({
       success: false,
-      error: 'Internal server error'
+      error: error instanceof Error ? error.message : 'Failed to fetch SMS stats',
+      meta: { durationMs: duration, queryCount: 0 }
     }, { status: 500 });
   }
 }

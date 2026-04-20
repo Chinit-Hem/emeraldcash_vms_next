@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { smsService } from '@/services/SmsService';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -39,3 +39,5 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   } catch (error) {
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
+}
+

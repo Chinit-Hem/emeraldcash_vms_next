@@ -1,1 +1,4 @@
-export * from './db-schema';\nexport * from './db-singleton';\nexport * from './db';
+export * from './db';
+export * from './db-schema';
+export * from './db-singleton';
+
