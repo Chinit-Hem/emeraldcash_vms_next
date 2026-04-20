@@ -17,10 +17,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import {
   Plus,
-  Link2,
-  Clock,
-  FileText,
-  BookOpen,
   AlertCircle,
   CheckCircle2,
   X,
@@ -402,6 +398,7 @@ export function AddLessonForm({
                 {youtubePreview && (
                   <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                     <div className="flex items-start gap-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={youtubePreview}
                         alt="YouTube thumbnail preview"

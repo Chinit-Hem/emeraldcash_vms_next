@@ -37,7 +37,6 @@ import { GlassButton } from "@/components/ui/glass/GlassButton";
 // ============================================================================
 
 interface VideoPlayerProps {
-  lessonId: number;
   title: string;
   description: string | null;
   youtubeUrl: string;
@@ -116,7 +115,6 @@ const InstructionsPanel: React.FC<{
 // ============================================================================
 
 export function VideoPlayer({
-  lessonId,
   title,
   description,
   youtubeUrl,
@@ -143,23 +141,7 @@ export function VideoPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle player error - show fallback
-  const handlePlayerError = (error: unknown, data?: unknown) => {
-    console.error("[VideoPlayer] ReactPlayer ERROR:", error);
-    console.error("[VideoPlayer] Error data:", data);
-    console.error("[VideoPlayer] Video URL:", youtubeUrl);
-    console.error("[VideoPlayer] Video ID:", youtubeVideoId);
-    setHasError(true);
-  };
 
-  // Handle player ready
-  const handlePlayerReady = () => {
-    console.log("[VideoPlayer] ReactPlayer ready, URL:", youtubeUrl);
-  };
-
-  // Handle player start
-  const handlePlayerStart = () => {
-    console.log("[VideoPlayer] Video started playing");
-  };
 
   // Handle fullscreen toggle
   const toggleFullscreen = () => {
