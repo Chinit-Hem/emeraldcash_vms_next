@@ -64,7 +64,7 @@ export function diagnoseCloudinary(): void {
   console.log('2. Settings → Upload → Upload presets');
   console.log(`3. Verify preset "${uploadPreset}" exists and is UNSIGNED`);
   console.log('');
-  console.log('For detailed setup instructions, see: CLOUDINARY_SETUP_GUIDE.md');
+console.log('For detailed setup instructions, see Cloudinary dashboard Settings → Upload → Upload presets');
 }
 
 // Make it available globally for console access

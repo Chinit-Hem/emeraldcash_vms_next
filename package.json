@@ -11,6 +11,7 @@
     "start": "next start",
     "preview": "npm run build && next start",
     "lint": "eslint src --ext .ts,.tsx --max-warnings 200",
+    "structure:check": "node structure-check.mjs",
     "test:db": "node scripts/test-neon-connection.mjs",
     "db:check": "node scripts/test-neon-connection.mjs"
   },

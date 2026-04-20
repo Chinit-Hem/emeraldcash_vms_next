@@ -141,6 +141,7 @@ export async function setCachedSequentialLessons(
   staffId: number,
   lessons: LmsLesson[]
 ): Promise<boolean> {
+  await ensureKv();
   const cacheKey = `${CACHE_PREFIX}lessons-seq:${categoryId}:${staffId}`;
   
   if (!kv) return false;

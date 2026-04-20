@@ -407,7 +407,11 @@ label={language === 'km' ? 'កង់បី' : 'TukTuks'}
       {/* Footer */}
       <div className="p-6 pt-4">
         <div className="text-center text-xs text-slate-500 dark:text-slate-400">
+<<<<<<< HEAD
           {language === 'km' ? '© ២០២៥ អេមរ៉ាល់ខាស' : '© 2025 Emerald Cash'}
+=======
+          {language === 'km' ? '© ២០២៥ អេមើ​រ៉ល ឃែស' : '© 2025 Emerald Cash'}
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
         </div>
       </div>
     </aside>

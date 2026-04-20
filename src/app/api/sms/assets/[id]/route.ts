@@ -39,3 +39,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   } catch (error) {
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
+<<<<<<< HEAD
+=======
+}
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)

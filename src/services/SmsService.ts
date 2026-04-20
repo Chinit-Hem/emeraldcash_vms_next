@@ -226,6 +226,40 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
   }
 
   /**
+<<<<<<< HEAD
+=======
+   * Get single asset by ID (UUID support)
+   */
+  public async getAsset(id: string): Promise<ServiceResult<SmsAssetEntity>> {
+    const startTime = Date.now();
+    try {
+      const query = `SELECT * FROM sms_assets WHERE id = $1`;
+      const result = await dbManager.executeUnsafe<SmsAssetDB>(query, [id]);
+      
+      if (result.length === 0) {
+        return {
+          success: false,
+          error: `Asset with ID ${id} not found`,
+          meta: { durationMs: Date.now() - startTime, queryCount: 1 }
+        };
+      }
+
+      return {
+        success: true,
+        data: this.toEntity(result[0]),
+        meta: { durationMs: Date.now() - startTime, queryCount: 1 }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch asset',
+        meta: { durationMs: Date.now() - startTime, queryCount: 1 }
+      };
+    }
+  }
+
+  /**
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
    * Create new SMS asset (used by API)
    */
   public async createAsset(assetData: Omit<SmsAssetDB, "id" | "created_at" | "updated_at">): Promise<ServiceResult<SmsAssetEntity>> {
@@ -238,6 +272,72 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
   }
 
   /**
+<<<<<<< HEAD
+=======
+   * Update asset (UUID support)
+   */
+  public async updateAsset(id: string, data: Partial<SmsAssetDB>): Promise<ServiceResult<SmsAssetEntity>> {
+    const startTime = Date.now();
+    try {
+      const columns = Object.keys(data).filter(k => k !== 'id' && k !== 'created_at' && k !== 'updated_at');
+      if (columns.length === 0) return this.getAsset(id);
+      
+      const setClause = columns.map((col, i) => `${col} = $${i + 2}`).join(', ');
+      const query = `UPDATE sms_assets SET ${setClause}, updated_at = NOW() WHERE id = $1 RETURNING *`;
+      const result = await dbManager.executeUnsafe<SmsAssetDB>(query, [id, ...columns.map(c => (data as any)[c])]);
+      
+      if (result.length === 0) {
+        return {
+          success: false,
+          error: `Asset with ID ${id} not found`,
+          meta: { durationMs: Date.now() - startTime, queryCount: 1 }
+        };
+      }
+
+      const updated = this.toEntity(result[0]);
+      await this.logAudit(1, 'update_asset', { assetId: id, data });
+      return {
+        success: true,
+        data: updated,
+        meta: { durationMs: Date.now() - startTime, queryCount: 1 }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update asset',
+        meta: { durationMs: Date.now() - startTime, queryCount: 1 }
+      };
+    }
+  }
+
+  /**
+   * Delete asset (UUID support)
+   */
+  public async deleteAsset(id: string): Promise<ServiceResult<boolean>> {
+    const startTime = Date.now();
+    try {
+      const query = `DELETE FROM sms_assets WHERE id = $1 RETURNING id`;
+      const result = await dbManager.executeUnsafe(query, [id]);
+      const success = result.length > 0;
+      if (success) {
+        await this.logAudit(1, 'delete_asset', { assetId: id });
+      }
+      return {
+        success: true,
+        data: success,
+        meta: { durationMs: Date.now() - startTime, queryCount: 1 }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete asset',
+        meta: { durationMs: Date.now() - startTime, queryCount: 1 }
+      };
+    }
+  }
+
+  /**
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
    * Get SMS transfers with optional asset filter
    */
   public async getTransfers(assetId?: string): Promise<ServiceResult<SmsTransferEntity[]>> {
@@ -262,7 +362,11 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
 
       query += ` ORDER BY st.created_at DESC`;
 
+<<<<<<< HEAD
       const result = await dbManager.executeUnsafe(query + (params.length ? ` RETURNING *` : '')) as Record<string, any>[];
+=======
+      const result = await dbManager.executeUnsafe(query, params) as Record<string, any>[];
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
       
       const transfers: SmsTransferEntity[] = result.map((row: Record<string, any>) => ({
         id: row.id,
@@ -292,6 +396,23 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
   }
 
   /**
+<<<<<<< HEAD
+=======
+   * Get pending transfers
+   */
+  public async getPendingTransfers(): Promise<ServiceResult<SmsTransferEntity[]>> {
+    const result = await this.getTransfers();
+    if (result.success) {
+      return {
+        ...result,
+        data: result.data.filter(t => t.status === 'pending')
+      };
+    }
+    return result;
+  }
+
+  /**
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
    * Create transfer request
    */
   public async createTransfer(transferData: {
@@ -355,19 +476,38 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
   public async updateTransferStatus(
     transferId: string, 
     status: TransferStatus,
+<<<<<<< HEAD
     userId: number
+=======
+    userId: number,
+    remark?: string
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
   ): Promise<ServiceResult<boolean>> {
     const startTime = Date.now();
     try {
       const now = status === 'accepted' ? `NOW()` : 'NULL';
+<<<<<<< HEAD
       const query = `
         UPDATE sms_transfers 
         SET status = $1, accepted_at = ${now}
+=======
+      const remarkClause = remark ? `, remark = $3` : '';
+      const params = [status, transferId];
+      if (remark) params.push(remark);
+
+      const query = `
+        UPDATE sms_transfers 
+        SET status = $1, accepted_at = ${now} ${remarkClause}
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
         WHERE id = $2
         RETURNING id
       `;
       
+<<<<<<< HEAD
       const result = await dbManager.executeUnsafe(query, [status, transferId]) as Record<string, any>[];
+=======
+      const result = await dbManager.executeUnsafe(query, params) as Record<string, any>[];
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
       
       if (result.length === 0) {
         return {
@@ -377,7 +517,11 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
         };
       }
 
+<<<<<<< HEAD
       await this.logAudit(userId, 'update_transfer_status', { transferId, status });
+=======
+      await this.logAudit(userId, 'update_transfer_status', { transferId, status, remark });
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
       
       return {
         success: true,
@@ -395,6 +539,23 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
   }
 
   /**
+<<<<<<< HEAD
+=======
+   * Accept transfer helper
+   */
+  public async acceptTransfer(transferId: string, userId: number): Promise<ServiceResult<boolean>> {
+    return this.updateTransferStatus(transferId, 'accepted', userId);
+  }
+
+  /**
+   * Reject transfer helper
+   */
+  public async rejectTransfer(transferId: string, userId: number, remark?: string): Promise<ServiceResult<boolean>> {
+    return this.updateTransferStatus(transferId, 'rejected', userId, remark);
+  }
+
+  /**
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
    * Log audit trail
    */
   private async logAudit(
@@ -425,10 +586,13 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
       const cached = await getCache(cacheKey);
       if (cached) {
         return {
+<<<<<<< HEAD
 </xai:function_call >
 
 <xai:function_call name="edit_file">
 <parameter name="path">src/services/SmsService.ts
+=======
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
           success: true,
           data: cached as any,
           meta: { durationMs: 1, queryCount: 0, cacheHit: true }
@@ -462,6 +626,7 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
       // Cache in Redis (5min)
       await setCache(cacheKey, stats, 300);
 
+<<<<<<< HEAD
 
 </xai:function_call >
 
@@ -473,6 +638,8 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
 <xai:function_call name="edit_file">
 <parameter name="path">src/app/api/sms/stats/route.ts
 
+=======
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
       return {
         success: true,
         data: stats,
@@ -504,8 +671,13 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
       const transfersQuery = `
         SELECT 
           'transfer' as type,
+<<<<<<< HEAD
           st.id, st.asset_id as "assetId", st.sender_id as "senderId", 
           st.receiver_id as "receiverId", st.location, st.status, st.remark as description,
+=======
+          st.id, st.asset_id as \"assetId\", st.sender_id as \"senderId\", 
+          st.receiver_id as \"receiverId\", st.location, st.status, st.remark as description,
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
           st.created_at as timestamp, st.accepted_at
         FROM sms_transfers st
         WHERE st.asset_id = $1
@@ -523,7 +695,11 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
         WHERE (sal.metadata->>'assetId') = $1 OR sal.metadata @> $2::jsonb
         ORDER BY sal.created_at DESC
       `;
+<<<<<<< HEAD
       const auditsResult = await dbManager.executeUnsafe(auditsQuery, [assetId, `{ "assetId": "${assetId}" }`]) as Record<string, any>[];
+=======
+      const auditsResult = await dbManager.executeUnsafe(auditsQuery, [assetId, `{ \"assetId\": \"${assetId}\" }`]) as Record<string, any>[];
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
 
       // Combine and sort by timestamp DESC
       const events = [
@@ -582,4 +758,7 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
 export const smsService = SmsAssetService.getInstance();
 
 export default smsService;
+<<<<<<< HEAD
 
+=======
+>>>>>>> b54ca2d (feat: add SMS asset management, stock pages, UI components (alerts, badges, buttons, cards), refactor docs to /docs/, lib enhancements (redis, crypto, sms/stock schemas), repositories layer, cleanups, optimizations)
