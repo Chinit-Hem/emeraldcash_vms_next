@@ -12,7 +12,10 @@
     "preview": "npm run build && next start",
     "lint": "eslint src --ext .ts,.tsx --max-warnings 200",
     "test:db": "node scripts/test-neon-connection.mjs",
-    "db:check": "node scripts/test-neon-connection.mjs"
+    "db:check": "node scripts/test-neon-connection.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -38,6 +41,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.1",
+    "playwright": "^1.48.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^18.3.3",
