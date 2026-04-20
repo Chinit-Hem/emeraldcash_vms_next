@@ -16,13 +16,13 @@ export type LogLevel = "INFO" | "DEBUG" | "ERROR" | "WARN";
  * Logger interface for type safety
  */
 export interface Logger {
-  info: (message: string, meta?: Record<string, unknown> | Error, duration?: number) => void;
-  debug: (message: string, meta?: Record<string, unknown> | Error, duration?: number) => void;
+  info: (message: string, meta?: Record<string, unknown> | Error, _duration?: number) => void;
+  debug: (message: string, meta?: Record<string, unknown> | Error, _duration?: number) => void;
   error: (message: string, errorOrMeta?: Error | Record<string, unknown>, meta?: Record<string, unknown>) => void;
-  warn: (message: string, meta?: Record<string, unknown> | Error, duration?: number) => void;
+  warn: (message: string, meta?: Record<string, unknown> | Error, _duration?: number) => void;
   fatal: (message: string, error?: Error | Record<string, unknown>, meta?: Record<string, unknown>) => void;
   getRequestId: () => string;
-  child: (meta: Record<string, unknown>) => Logger;
+  child: (_meta: Record<string, unknown>) => Logger;
 }
 
 /**
@@ -59,9 +59,9 @@ export function log(
 export function createRequestLogger(requestId?: string): Logger {
   const id = requestId || generateRequestId();
   return {
-    info: (message: string, meta?: Record<string, unknown> | Error, duration?: number) => 
+    info: (message: string, meta?: Record<string, unknown> | Error, _duration?: number) => 
       log("INFO", message, meta as Record<string, unknown>, id),
-    debug: (message: string, meta?: Record<string, unknown> | Error, duration?: number) => 
+    debug: (message: string, meta?: Record<string, unknown> | Error, _duration?: number) => 
       log("DEBUG", message, meta as Record<string, unknown>, id),
     error: (message: string, errorOrMeta?: Error | Record<string, unknown>, meta?: Record<string, unknown>) => {
       const combinedMeta = {
@@ -70,7 +70,7 @@ export function createRequestLogger(requestId?: string): Logger {
       };
       log("ERROR", message, combinedMeta, id);
     },
-    warn: (message: string, meta?: Record<string, unknown> | Error, duration?: number) => 
+    warn: (message: string, meta?: Record<string, unknown> | Error, _duration?: number) => 
       log("WARN", message, meta as Record<string, unknown>, id),
     fatal: (message: string, error?: Error | Record<string, unknown>, meta?: Record<string, unknown>) => {
       const combinedMeta = {
@@ -80,7 +80,7 @@ export function createRequestLogger(requestId?: string): Logger {
       log("ERROR", `[FATAL] ${message}`, combinedMeta, id);
     },
     getRequestId: () => id,
-    child: (childMeta: Record<string, unknown>) => createRequestLogger(id),
+    child: (_childMeta: Record<string, unknown>) => createRequestLogger(id),
   };
 }
 
@@ -94,8 +94,8 @@ export function generateRequestId(): string {
 
 // Convenience exports for direct usage
 export const logger: Logger = {
-  info: (message: string, meta?: Record<string, unknown> | Error, duration?: number) => log("INFO", message, meta as Record<string, unknown>),
-  debug: (message: string, meta?: Record<string, unknown> | Error, duration?: number) => log("DEBUG", message, meta as Record<string, unknown>),
+  info: (message: string, meta?: Record<string, unknown> | Error, _duration?: number) => log("INFO", message, meta as Record<string, unknown>),
+  debug: (message: string, meta?: Record<string, unknown> | Error, _duration?: number) => log("DEBUG", message, meta as Record<string, unknown>),
   error: (message: string, errorOrMeta?: Error | Record<string, unknown>, meta?: Record<string, unknown>) => {
     const combinedMeta = {
       ...(errorOrMeta instanceof Error ? { error: errorOrMeta.message, stack: errorOrMeta.stack } : errorOrMeta),
@@ -103,7 +103,7 @@ export const logger: Logger = {
     };
     log("ERROR", message, combinedMeta);
   },
-  warn: (message: string, meta?: Record<string, unknown> | Error, duration?: number) => log("WARN", message, meta as Record<string, unknown>),
+  warn: (message: string, meta?: Record<string, unknown> | Error, _duration?: number) => log("WARN", message, meta as Record<string, unknown>),
   fatal: (message: string, error?: Error | Record<string, unknown>, meta?: Record<string, unknown>) => {
     const combinedMeta = {
       ...(error instanceof Error ? { error: error.message, stack: error.stack } : error),
@@ -112,7 +112,7 @@ export const logger: Logger = {
     log("ERROR", `[FATAL] ${message}`, combinedMeta);
   },
   getRequestId: () => "global",
-  child: (meta: Record<string, unknown>) => logger,
+  child: (_meta: Record<string, unknown>) => logger,
 };
 
 // Global logger for backward compatibility

@@ -92,6 +92,16 @@ export interface LmsDashboardStats {
 }
 
 // ============================================================================
+// NEW: Server Prefetch Types for Lazy Loading Fix
+// ============================================================================
+
+export interface InitialLmsData {
+  stats: LmsDashboardStats | null;
+  categories: LmsCategory[];
+  lessons: LessonWithStatus[];
+}
+
+// ============================================================================
 // Form Data Types
 // ============================================================================
 
@@ -204,3 +214,4 @@ export const LMS_ICON_MAP: Record<string, string> = {
   RefreshCw: "RefreshCw",
   ExternalLink: "ExternalLink",
 };
+

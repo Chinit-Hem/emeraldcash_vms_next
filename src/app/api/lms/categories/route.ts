@@ -11,6 +11,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { lmsService } from "@/services/LmsService";
 import { canAccessLMS, canManageLMS, getSession } from "@/lib/auth-helpers";
 
+type CategoryEntityLike = {
+  id: string | number;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
+  orderIndex: number;
+  isActive: boolean;
+  lessonCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+function toLegacyCategory(category: CategoryEntityLike) {
+  return {
+    id: Number(category.id),
+    name: category.name,
+    description: category.description,
+    icon: category.icon,
+    color: category.color,
+    order_index: category.orderIndex,
+    is_active: category.isActive,
+    lesson_count: category.lessonCount ?? 0,
+    created_at: category.createdAt ?? null,
+    updated_at: category.updatedAt ?? null,
+  };
+}
+
 // ============================================================================
 // GET /api/lms/categories - Both Admin and Staff can view
 // ============================================================================
@@ -47,9 +75,13 @@ export async function GET(request: NextRequest) {
     console.log("[API /lms/categories] First category from DB:", JSON.stringify(result.data[0], null, 2));
   }
 
+  const legacyCategories = (result.data ?? []).map((category) =>
+    toLegacyCategory(category as CategoryEntityLike)
+  );
+
   return NextResponse.json({
     success: true,
-    data: result.data,
+    data: legacyCategories,
     meta: result.meta,
   });
 }
@@ -78,6 +110,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+    const orderIndexRaw = body.orderIndex ?? body.order_index;
 
     // Validate required fields
     if (!body.name || typeof body.name !== "string") {
@@ -92,7 +125,7 @@ export async function POST(request: NextRequest) {
       description: body.description,
       icon: body.icon,
       color: body.color,
-      order_index: body.order_index,
+      orderIndex: typeof orderIndexRaw === "number" ? orderIndexRaw : undefined,
     });
 
     if (!result.success) {
@@ -104,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.data,
+      data: result.data ? toLegacyCategory(result.data as CategoryEntityLike) : null,
       meta: result.meta,
     }, { status: 201 });
   } catch (_error) {
@@ -149,14 +182,16 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
+    const orderIndexRaw = body.orderIndex ?? body.order_index;
+    const isActiveRaw = body.isActive ?? body.is_active;
 
     const result = await lmsService.updateCategory(parseInt(id), {
       name: body.name,
       description: body.description,
       icon: body.icon,
       color: body.color,
-      order_index: body.order_index,
-      is_active: body.is_active,
+      orderIndex: typeof orderIndexRaw === "number" ? orderIndexRaw : undefined,
+      isActive: typeof isActiveRaw === "boolean" ? isActiveRaw : undefined,
     });
 
     if (!result.success) {
@@ -168,7 +203,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.data,
+      data: result.data ? toLegacyCategory(result.data as CategoryEntityLike) : null,
       meta: result.meta,
     });
   } catch (_error) {

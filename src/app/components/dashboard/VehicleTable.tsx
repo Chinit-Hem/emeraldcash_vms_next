@@ -278,7 +278,7 @@ const SortHeader = ({ field, children, sortField, sortDirection, onSort }: SortH
     <th
       onClick={() => onSort(field)}
       className={cn(
-        "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#4a4a5a] bg-[#e6e9ef] cursor-pointer select-none transition-all duration-200 hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
+        "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#4a4a5a] bg-slate-100 cursor-pointer select-none transition-all duration-200 hover:bg-slate-50"
       )}
     >
       <div className="flex items-center gap-1">
@@ -411,21 +411,21 @@ export default function VehicleTable({
             onClick={() => setShowColumnMenu(!showColumnMenu)}
             className={cn(
               "group flex items-center gap-2 pl-3 pr-2.5 py-2 rounded-xl bg-[#f0f4f8]",
-              "shadow-[4px_4px_8px_#d1d9e6,-4px_-4px_8px_#ffffff]",
+              "shadow-sm",
               "text-slate-600 font-semibold text-sm",
               "transition-all duration-200 ease-out",
-              "hover:shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] hover:text-slate-800",
+              "hover:bg-slate-50 hover:text-slate-800",
               "hover:-translate-y-0.5",
-              "active:shadow-[inset_3px_3px_6px_#d1d9e6,inset_-3px_-3px_6px_#ffffff] active:translate-y-0",
-              showColumnMenu && "shadow-[inset_3px_3px_6px_#d1d9e6,inset_-3px_-3px_6px_#ffffff] text-emerald-600 translate-y-0"
+              "active:bg-slate-100 active:translate-y-0",
+              showColumnMenu && "shadow-sm text-emerald-600 translate-y-0"
             )}
           >
             {/* Premium Sliders Icon */}
             <div className={cn(
               "flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200",
               "bg-gradient-to-br from-slate-100 to-slate-200",
-              "shadow-[2px_2px_4px_#d1d9e6,-2px_-2px_4px_#ffffff]",
-              showColumnMenu && "shadow-[inset_2px_2px_4px_#d1d9e6,inset_-2px_-2px_4px_#ffffff] from-emerald-50 to-emerald-100"
+              "shadow-sm",
+              showColumnMenu && "shadow-sm from-emerald-50 to-emerald-100"
             )}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -455,9 +455,9 @@ export default function VehicleTable({
             <span className={cn(
               "flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-xs font-bold",
               "bg-gradient-to-br from-emerald-400 to-emerald-500 text-white",
-              "shadow-[1px_1px_3px_rgba(16,185,129,0.3)]",
+              "shadow-sm",
               "transition-all duration-200",
-              showColumnMenu && "shadow-[inset_1px_1px_2px_rgba(0,0,0,0.2)] from-emerald-500 to-emerald-600"
+              showColumnMenu && "shadow-sm from-emerald-500 to-emerald-600"
             )}>
               {visibleColumns.length}
             </span>
@@ -479,7 +479,7 @@ export default function VehicleTable({
           {showColumnMenu && (
             <div 
               onClick={(e) => e.stopPropagation()}
-              className="absolute right-0 z-30 mt-2 w-64 bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] p-6 flex flex-col"
+              className="absolute right-0 z-30 mt-2 w-64 bg-slate-100 rounded-[24px] shadow-sm p-6 flex flex-col"
             >
               {/* Header */}
               <div className="mb-4">
@@ -500,15 +500,15 @@ export default function VehicleTable({
                     className={cn(
                       "flex cursor-pointer items-center gap-3 p-2 rounded-xl transition-all duration-200",
                       "hover:bg-[#dee2e9]",
-                      visibleColumns.includes(column.key) && "bg-[#e6e9ef]"
+                      visibleColumns.includes(column.key) && "bg-slate-100"
                     )}
                   >
                     {/* Neumorphic Checkbox */}
                     <div className={cn(
                       "flex items-center justify-center w-5 h-5 rounded-md transition-all duration-200",
                       visibleColumns.includes(column.key)
-                        ? "bg-[#e6e9ef] shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff]"
-                        : "bg-[#e6e9ef] shadow-[2px_2px_5px_#bebebe,-2px_-2px_5px_#ffffff]"
+                        ? "bg-slate-100 shadow-sm"
+                        : "bg-slate-100 shadow-sm"
                     )}>
                       {visibleColumns.includes(column.key) && (
                         <svg className="w-3 h-3 text-[#10b981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -528,7 +528,7 @@ export default function VehicleTable({
               
               {/* Empty State Message */}
               {visibleColumns.length === 0 && (
-                <div className="mt-3 px-2 py-2 rounded-xl bg-[#e6e9ef] shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff]">
+                <div className="mt-3 px-2 py-2 rounded-xl bg-slate-100 shadow-sm">
                   <p className="text-xs text-[#e53e3e] text-center font-medium">
                     No columns selected. Please select at least one.
                   </p>
@@ -536,7 +536,7 @@ export default function VehicleTable({
               )}
               
               {/* Action Buttons - Neumorphic Style - Always Visible */}
-              <div className="mt-4 pt-4 border-t border-[#bebebe]/30 flex gap-3">
+              <div className="mt-4 pt-4 border-t border-slate-200 flex gap-3">
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
@@ -550,8 +550,8 @@ export default function VehicleTable({
                   className={cn(
                     "flex-1 px-4 py-2 rounded-full text-xs font-bold transition-all duration-200",
                     visibleColumns.length === COLUMNS.length
-                      ? "bg-[#e6e9ef] shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff] text-[#718096] cursor-default"
-                      : "bg-[#e6e9ef] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] text-[#10b981] hover:shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff] active:shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff]"
+                      ? "bg-slate-100 shadow-sm text-[#718096] cursor-default"
+                      : "bg-slate-100 shadow-sm text-[#10b981] hover:bg-slate-50 active:bg-slate-100"
                   )}
                 >
                   {visibleColumns.length === COLUMNS.length ? "All Selected" : "Select All"}
@@ -566,8 +566,8 @@ export default function VehicleTable({
                   className={cn(
                     "flex-1 px-4 py-2 rounded-full text-xs font-bold transition-all duration-200",
                     visibleColumns.length === 0
-                      ? "bg-[#e6e9ef] shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff] text-[#718096] cursor-default"
-                      : "bg-[#e6e9ef] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] text-[#e53e3e] hover:shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff] active:shadow-[inset_2px_2px_5px_#bebebe,inset_-2px_-2px_5px_#ffffff]"
+                      ? "bg-slate-100 shadow-sm text-[#718096] cursor-default"
+                      : "bg-slate-100 shadow-sm text-[#e53e3e] hover:bg-slate-50 active:bg-slate-100"
                   )}
                 >
                   {visibleColumns.length === 0 ? "All Cleared" : "Clear"}
@@ -579,17 +579,17 @@ export default function VehicleTable({
       </div>
 
       {/* Scrollable Table Container - Both Horizontal & Vertical */}
-      <div className="rounded-2xl bg-[#e6e9ef] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] overflow-hidden">
+      <div className="rounded-2xl bg-slate-100 shadow-sm overflow-hidden">
         <div 
           className="overflow-auto max-h-[65vh] custom-scrollbar"
           style={{
             scrollbarWidth: 'thin',
-            scrollbarColor: '#bebebe #e6e9ef'
+            scrollbarColor: '#94a3b8 #f1f5f9'
           }}
         >
           <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-[#e6e9ef] shadow-[0_2px_4px_#bebebe]">
+            <tr className="bg-slate-100 shadow-sm">
               {visibleColumns.includes('id') && (
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#4a4a5a]">
                   ID
@@ -655,7 +655,7 @@ export default function VehicleTable({
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#bebebe]/20">
+          <tbody className="divide-y divide-slate-200">
             {vehicles.map((vehicle, index) => {
               const derived = derivePrices(vehicle.PriceNew);
               const price40 = vehicle.Price40 ?? derived.Price40;
@@ -672,8 +672,8 @@ export default function VehicleTable({
                 key={vehicleId || `row-${index}`}
                 onClick={() => router.push(`/vehicles/${encodeURIComponent(vehicleId)}/view`)}
                 className={cn(
-                  "transition-all duration-150 cursor-pointer hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]",
-                  index % 2 !== 0 && "bg-[#e6e9ef]/50"
+                  "transition-all duration-150 cursor-pointer hover:bg-slate-50",
+                  index % 2 !== 0 && "bg-slate-100/50"
                 )}
               >
                 {visibleColumns.includes('id') && (
@@ -690,12 +690,12 @@ export default function VehicleTable({
                         alt={`${vehicle.Brand} ${vehicle.Model}`}
                         width={48}
                         height={48}
-                        className="h-12 w-12 rounded-lg shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] bg-[#e6e9ef] object-cover"
+                        className="h-12 w-12 rounded-lg shadow-sm bg-slate-100 object-cover"
                         onError={() => handleImageError(vehicleId)}
                         loading="lazy"
                       />
                     ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] bg-[#e6e9ef]">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg shadow-sm bg-slate-100">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 24 24"
@@ -770,12 +770,12 @@ export default function VehicleTable({
                 {visibleColumns.includes('condition') && (
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff] ${
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shadow-sm ${
                         vehicle.Condition === "New"
-                          ? "bg-[#e6e9ef] text-[#10b981]"
+                          ? "bg-slate-100 text-[#10b981]"
                           : vehicle.Condition === "Used"
-                          ? "bg-[#e6e9ef] text-[#ef4444]"
-                          : "bg-[#e6e9ef] text-[#4a4a5a]"
+                          ? "bg-slate-100 text-[#ef4444]"
+                          : "bg-slate-100 text-[#4a4a5a]"
                       }`}
                     >
                       {vehicle.Condition || "Unknown"}
@@ -795,10 +795,10 @@ export default function VehicleTable({
                       {vehicle.Color ? (
                         <>
                           <div 
-                            className="w-4 h-4 rounded-full shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff] border-2 border-[#e6e9ef]"
+                            className="w-4 h-4 rounded-full shadow-sm border-2 border-slate-200"
                             style={{ 
                               backgroundColor: getColorHex(vehicle.Color),
-                              boxShadow: `inset 1px 1px 2px rgba(0,0,0,0.2), 2px 2px 4px #bebebe, -2px -2px 4px #ffffff`
+                              boxShadow: "0 1px 2px rgba(15, 23, 42, 0.12)"
                             }}
                             title={vehicle.Color}
                           />
@@ -821,7 +821,7 @@ export default function VehicleTable({
                           e.stopPropagation();
                           router.push(`/vehicles/${encodeURIComponent(vehicleId)}/view`);
                         }}
-                        className="rounded-lg p-2 text-[#4a4a5a] transition-all duration-200 hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] hover:text-[#1a1a2e]"
+                        className="rounded-lg p-2 text-[#4a4a5a] transition-all duration-200 hover:bg-slate-50 hover:text-[#1a1a2e]"
                         title="View"
                       >
                         <svg
@@ -843,7 +843,7 @@ export default function VehicleTable({
                               e.stopPropagation();
                               onEdit ? onEdit(vehicle) : router.push(`/vehicles/${encodeURIComponent(vehicleId)}/edit`);
                             }}
-                            className="rounded-lg p-2 text-[#10b981] transition-all duration-200 hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
+                            className="rounded-lg p-2 text-[#10b981] transition-all duration-200 hover:bg-slate-50"
                             title="Edit"
                           >
                             <svg
@@ -867,7 +867,7 @@ export default function VehicleTable({
                               "rounded-lg p-2 transition-all duration-200",
                               deletingId === vehicleId
                                 ? "text-[#9ca3af] cursor-not-allowed"
-                                : "text-[#ef4444] hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
+                                : "text-[#ef4444] hover:bg-slate-50"
                             )}
                             title={deletingId === vehicleId ? "Deleting..." : "Delete"}
                           >

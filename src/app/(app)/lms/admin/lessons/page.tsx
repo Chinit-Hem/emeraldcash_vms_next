@@ -1,23 +1,23 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useAuthUser } from "@/app/components/AuthContext";
+import type { LessonWithStatus, LmsCategory } from "@/lib/lms-types";
 import {
-  PlayCircle,
-  Plus,
-  Edit2,
-  Trash2,
   ArrowLeft,
-  Save,
-  X,
-  Loader2,
   BookOpen,
   ChevronDown,
   ChevronUp,
+  Edit2,
+  Loader2,
+  PlayCircle,
+  Plus,
+  Save,
+  Trash2,
   Video,
+  X,
 } from "lucide-react";
-import { useAuthUser } from "@/app/components/AuthContext";
-import type { LmsCategory, LessonWithStatus } from "@/lib/lms-types";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface LessonFormData {
   title: string;
@@ -75,7 +75,7 @@ export default function LessonsAdminPage() {
       if (lessonsData.success) {
         setLessons(lessonsData.data);
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Failed to load data");
     } finally {
       setLoading(false);
@@ -103,6 +103,31 @@ export default function LessonsAdminPage() {
     setSaving(true);
     setError("");
 
+    // OPTIMISTIC UPDATE: Update UI immediately before API response
+    const optimisticLesson: LessonWithStatus = {
+      id: editingId || Date.now(),
+      title: formData.title.trim(),
+      description: formData.description,
+      category_id: formData.category_id,
+      youtube_url: formData.youtube_url,
+      youtube_video_id: "", // Will be set by server
+      duration_minutes: formData.duration_minutes,
+      order_index: formData.order_index,
+      is_completed: false,
+      is_unlocked: true,
+      completed_at: null,
+      category_name: categories.find(c => c.id === formData.category_id)?.name || "",
+      category_color: categories.find(c => c.id === formData.category_id)?.color || "emerald",
+    };
+
+    // Update local state immediately (optimistic)
+    if (editingId) {
+      setLessons(prev => prev.map(l => l.id === editingId ? optimisticLesson : l));
+    } else {
+      setLessons(prev => [...prev, optimisticLesson]);
+    }
+    resetForm(); // Close form immediately for better UX
+
     try {
       const url = editingId 
         ? `/api/lms/lessons?id=${editingId}`
@@ -119,12 +144,29 @@ export default function LessonsAdminPage() {
       const data = await res.json();
       
       if (data.success) {
-        await fetchData();
-        resetForm();
+        // Replace optimistic data with real data from server
+        if (editingId) {
+          setLessons(prev => prev.map(l => l.id === editingId ? { ...data.data, is_completed: l.is_completed, is_unlocked: l.is_unlocked, completed_at: l.completed_at, category_name: categories.find(c => c.id === data.data.category_id)?.name || "", category_color: categories.find(c => c.id === data.data.category_id)?.color || "emerald" } : l));
+        } else {
+          setLessons(prev => prev.map(l => l.id === optimisticLesson.id ? { ...data.data, is_completed: false, is_unlocked: true, completed_at: null, category_name: categories.find(c => c.id === data.data.category_id)?.name || "", category_color: categories.find(c => c.id === data.data.category_id)?.color || "emerald" } : l));
+        }
+        // ❌ REMOVED: await fetchData(); - No need to refetch all data!
       } else {
+        // Rollback on error
+        if (editingId) {
+          setLessons(prev => prev.map(l => l.id === editingId ? lessons.find(ol => ol.id === editingId) || l : l));
+        } else {
+          setLessons(prev => prev.filter(l => l.id !== optimisticLesson.id));
+        }
         setError(data.error || "Failed to save lesson");
       }
-    } catch (err) {
+    } catch (_err) {
+      // Rollback on error
+      if (editingId) {
+        setLessons(prev => prev.map(l => l.id === editingId ? lessons.find(ol => ol.id === editingId) || l : l));
+      } else {
+        setLessons(prev => prev.filter(l => l.id !== optimisticLesson.id));
+      }
       setError("Failed to save lesson");
     } finally {
       setSaving(false);
@@ -148,7 +190,7 @@ export default function LessonsAdminPage() {
       } else {
         setError(data.error || "Failed to delete lesson");
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Failed to delete lesson");
     }
   };
@@ -194,14 +236,21 @@ export default function LessonsAdminPage() {
     });
   };
 
-  const filteredLessons = selectedCategory === "all" 
-    ? lessons 
-    : lessons.filter(l => l.category_id === selectedCategory);
+  // MEMOIZED: Filter lessons to avoid recomputation on every render
+  const filteredLessons = useMemo(() => {
+    if (selectedCategory === "all") return lessons;
+    return lessons.filter(l => l.category_id === selectedCategory);
+  }, [lessons, selectedCategory]);
 
-  const lessonsByCategory = categories.map(cat => ({
-    ...cat,
-    lessons: filteredLessons.filter(l => l.category_id === cat.id).sort((a, b) => a.order_index - b.order_index),
-  }));
+  // MEMOIZED: Group lessons by category for better performance
+  const lessonsByCategory = useMemo(() => {
+    return categories.map(cat => ({
+      ...cat,
+      lessons: filteredLessons
+        .filter(l => l.category_id === cat.id)
+        .sort((a, b) => a.order_index - b.order_index),
+    }));
+  }, [categories, filteredLessons]);
 
   if (!isAdmin) return null;
 

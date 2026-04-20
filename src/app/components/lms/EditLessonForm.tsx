@@ -14,21 +14,17 @@
 
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
-import {
-  Save,
-  Link2,
-  Clock,
-  FileText,
-  BookOpen,
-  AlertCircle,
-  CheckCircle2,
-  X,
-} from "lucide-react";
-import { GlassCard } from "@/components/ui/glass/GlassCard";
 import { GlassButton } from "@/components/ui/glass/GlassButton";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
 import { extractYoutubeVideoId } from "@/lib/lms-schema";
 import { useBodyScrollLock } from "@/lib/useBodyScrollLock";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Save,
+  X
+} from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
 
 // ============================================================================
 // Types
@@ -192,10 +188,8 @@ export function EditLessonForm({
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("[EditLessonForm] Form submitted", formData);
 
     if (!validateForm()) {
-      console.log("[EditLessonForm] Validation failed", errors);
       // Scroll to first error
       const firstError = document.querySelector('.text-red-500, .border-red-500');
       firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -206,9 +200,7 @@ export function EditLessonForm({
     setErrors((prev) => ({ ...prev, submit: undefined }));
 
     try {
-      console.log("[EditLessonForm] Calling onSubmit...");
       await onSubmit(formData);
-      console.log("[EditLessonForm] onSubmit completed successfully");
     } catch (error) {
       console.error("[EditLessonForm] Submit error:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to update lesson. Please try again.";

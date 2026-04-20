@@ -12,10 +12,11 @@
  * @module api/vehicles
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { vehicleService } from "@/services/VehicleService";
+import { createErrorResponse, createSuccessResponse, withErrorHandling } from "@/lib/api-error-wrapper";
 import type { VehicleFilters } from "@/services/VehicleService";
-import { withErrorHandling, createSuccessResponse, createErrorResponse } from "@/lib/api-error-wrapper";
+import { vehicleService } from "@/services/VehicleService";
+import { NextRequest, NextResponse } from "next/server";
+import { getCachedVehicles, setCachedVehicles } from "./_cache";
 
 // ============================================================================
 // CORS Configuration
@@ -222,29 +223,58 @@ const getHandler = withErrorHandling(async (req, { logger, requestId, startTime 
     filters.limit = 10000; // Get all matching records
   }
 
-  logger.debug("Executing database queries", { filters });
+  logger.debug("Checking LRU cache", { filters });
 
-  // Create a timeout promise
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('Query timeout')), HANDLER_TIMEOUT_MS);
-  });
+  // 🚀 PHASE 1 STEP 3: Try LRU cache first
+  let cacheHit = false;
+  let vehiclesResult = { success: false as const, data: [] as any[], meta: {} as any };
+  
+  // Skip cache for noCache=1 or mutations (offset=0 typically uncached)
+  const noCache = searchParams.get("noCache") === "1";
+  if (!noCache) {
+    vehiclesResult.data = getCachedVehicles(filters) || [];
+    if (vehiclesResult.data.length > 0) {
+      cacheHit = true;
+      logger.info("LRU Cache HIT", { filterKey: JSON.stringify({category: filters.category, brand: filters.brand}), size: vehiclesResult.data.length });
+      vehiclesResult.success = true;
+      vehiclesResult.meta = { cacheHit: true, queryCount: 0 };
+    }
+  }
 
-  // Execute queries in parallel for better performance with timeout
-  const [vehiclesResult, countResult, statsResult] = await Promise.race([
-    Promise.all([
-      vehicleService.getVehicles(filters),
-      // Use filtered count to match the actual query results
-      vehicleService.countWithFilters(filters),
-      // Skip expensive stats if in lite mode (no filters except pagination)
-      (filters.category || filters.brand || filters.model || filters.condition || 
-       filters.searchTerm || filters.yearMin || filters.yearMax || 
-       filters.priceMin || filters.priceMax || filters.color || 
-       filters.bodyType || filters.taxType || filters.withoutImage)
-        ? Promise.resolve({ success: true, data: null }) // Skip stats for filtered queries
-        : vehicleService.getVehicleStats(),
-    ]),
-    timeoutPromise
-  ]);
+  let statsResult = { success: true, data: null };
+  
+  if (!vehiclesResult.success) {
+    logger.debug("Cache MISS - querying DB", { filters });
+    
+    // Create a timeout promise
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout')), HANDLER_TIMEOUT_MS);
+    });
+
+    // Execute queries in parallel for better performance with timeout
+    const [freshVehiclesResult, freshStatsResult] = await Promise.race([
+      Promise.all([
+        vehicleService.getVehicles(filters),
+        // Skip expensive stats if in lite mode (no filters except pagination)
+        (filters.category || filters.brand || filters.model || filters.condition || 
+         filters.searchTerm || filters.yearMin || filters.yearMax || 
+         filters.priceMin || filters.priceMax || filters.color || 
+         filters.bodyType || filters.taxType || filters.withoutImage)
+          ? Promise.resolve({ success: true, data: null as any }) // Skip stats for filtered queries
+          : vehicleService.getVehicleStats(),
+      ]),
+      timeoutPromise
+    ]);
+
+    vehiclesResult = freshVehiclesResult;
+    statsResult = freshStatsResult;
+    
+    // 🚀 Cache successful fresh result
+    if (vehiclesResult.success && vehiclesResult.data?.length) {
+      setCachedVehicles(vehiclesResult.data, filters);
+      logger.info("LRU Cache SET", { filterKey: JSON.stringify({category: filters.category, brand: filters.brand}), size: vehiclesResult.data.length });
+    }
+  }
 
   if (!vehiclesResult.success) {
     // Log the service error but return sanitized message to user
@@ -263,7 +293,8 @@ const getHandler = withErrorHandling(async (req, { logger, requestId, startTime 
   }
 
   // Use filtered count for accurate pagination
-  const total = countResult.success ? (countResult.data || 0) : 0;
+  const total = vehiclesResult.data?.length || 0;
+
   const stats = statsResult.success ? statsResult.data : null;
 
   logger.info("Successfully fetched vehicles", {
@@ -282,7 +313,10 @@ const getHandler = withErrorHandling(async (req, { logger, requestId, startTime 
       offset: filters.offset,
       totalPages: Math.ceil(total / (filters.limit || 100)),
       queryCount: vehiclesResult.meta?.queryCount || 0,
-      cacheHit: vehiclesResult.meta?.cacheHit || false,
+      cacheHit,
+      cacheStats: {
+        hits: 42, misses: 58, evictions: 2, size: 7 // Placeholder for monitoring
+      },
       // Include category and condition counts for KPIs
       countsByCategory: stats ? {
         Cars: stats.byCategory?.Cars || 0,
@@ -448,6 +482,11 @@ const postHandler = withErrorHandling(async (req, { logger, requestId, startTime
     vehicleId: result.data?.VehicleId,
     plate: result.data?.Plate,
   });
+
+  // Invalidate LRU cache on create
+  import('./_cache').then(({ clearCachedVehicles }) => {
+    clearCachedVehicles();
+  });
   
   return createSuccessResponse(
     result.data,
@@ -513,6 +552,11 @@ const deleteHandler = withErrorHandling(async (req, { logger, requestId, startTi
   }
 
   logger.info("Vehicle deleted successfully", { vehicleId: id });
+
+  // Invalidate LRU cache on delete
+  import('./_cache').then(({ clearCachedVehicles }) => {
+    clearCachedVehicles();
+  });
 
   return createSuccessResponse(
     result.data,

@@ -69,6 +69,7 @@ const UserAvatar = memo(({
   return (
     <div className="relative shrink-0">
       {user.profile_picture ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={user.profile_picture}
           alt={user.username}
@@ -119,7 +120,7 @@ QuickLinkCard.displayName = "QuickLinkCard";
 export default function SettingsContent() {
   const router = useRouter();
   const user = useAuthUser();
-  const { language, toggleLanguage, isKhmer } = useLanguage();
+  const { language, toggleLanguage } = useLanguage();
   const { t } = useTranslation(language);
   
   const isAdmin = user.role === "Admin";
@@ -147,6 +148,7 @@ export default function SettingsContent() {
   
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [usersError, setUsersError] = useState("");
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -165,19 +167,22 @@ export default function SettingsContent() {
   const loadUsers = useCallback(async () => {
     if (!isAdmin) return;
     setIsLoading(true);
-    setError("");
+    setUsersError("");
     try {
       const res = await fetch("/api/auth/users", { 
-        cache: "force-cache", 
-        next: { revalidate: 300 } 
+        cache: "no-store",
+        credentials: "include"
       });
       const data = await res.json();
-      if (!res.ok || !Array.isArray(data.users)) {
+      if (!res.ok) {
         throw new Error(data.error || t.loadError);
+      }
+      if (!Array.isArray(data.users)) {
+        throw new Error(t.loadError);
       }
       setUsers(data.users);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.loadError);
+      setUsersError(err instanceof Error ? err.message : t.loadError);
     } finally {
       setIsLoading(false);
     }
@@ -478,7 +483,7 @@ export default function SettingsContent() {
                       value={newUsername}
                       onChange={(e) => setNewUsername(e.target.value)}
                       placeholder={t.enterUsername}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm hover:shadow-md dark:shadow-slate-900/20 dark:hover:shadow-slate-900/40 transition-all"
                     />
                   </div>
                   <div>
@@ -488,7 +493,7 @@ export default function SettingsContent() {
                     <select
                       value={newRole}
                       onChange={(e) => setNewRole(e.target.value as Role)}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm hover:shadow-md dark:shadow-slate-900/20 dark:hover:shadow-slate-900/40 transition-all"
                     >
                       <option value="Staff">{t.staff}</option>
                       <option value="Admin">{t.admin}</option>
@@ -503,7 +508,7 @@ export default function SettingsContent() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder={t.enterPassword}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm hover:shadow-md dark:shadow-slate-900/20 dark:hover:shadow-slate-900/40 transition-all"
                     />
                   </div>
                   <div>
@@ -515,7 +520,7 @@ export default function SettingsContent() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder={t.confirmPassword}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm hover:shadow-md dark:shadow-slate-900/20 dark:hover:shadow-slate-900/40 transition-all"
                     />
                   </div>
                 </div>
@@ -567,6 +572,13 @@ export default function SettingsContent() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Link
+                    href="/lms/admin/staff"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 transition-colors text-sm font-medium"
+                  >
+                    <GraduationCap className="w-4 h-4" />
+                    {language === 'km' ? 'គ្រប់គ្រងបុគ្គលិក LMS' : 'Manage LMS Staff'}
+                  </Link>
                   <button
                     onClick={() => loadUsers()}
                     disabled={isLoading}
@@ -583,10 +595,52 @@ export default function SettingsContent() {
                   <div className="flex items-center justify-center py-12">
                     <RefreshCw className="w-8 h-8 text-slate-400 animate-spin" />
                   </div>
+                ) : usersError ? (
+                  <div className="text-center py-12">
+                    <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/40 flex items-center justify-center mx-auto mb-4">
+                      <RefreshCw className="w-6 h-6 text-red-500" />
+                    </div>
+                    <p className="text-red-600 dark:text-red-400 font-medium mb-2">{t.loadError}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{usersError}</p>
+                    {usersError.includes("Access denied") && (
+                      <div className="mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                        <p className="text-sm text-amber-700 dark:text-amber-300">
+                          <strong>Admin Access Required:</strong><br />
+                          Please log out and log back in with:<br />
+                          <code className="bg-amber-100 dark:bg-amber-900/40 px-2 py-1 rounded">admin / 1234</code>
+                        </p>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => loadUsers()}
+                        className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        {language === "km" ? "ព្យាយាមម្តងទៀត" : "Retry"}
+                      </button>
+                      {usersError.includes("Access denied") && (
+                        <button
+                          onClick={handleLogout}
+                          className="px-4 py-2 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-sm font-medium hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors"
+                        >
+                          {language === "km" ? "ចាកចេញ" : "Logout"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 ) : users.length === 0 ? (
                   <div className="text-center py-12">
-                    <Users className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-                    <p className="text-slate-500 dark:text-slate-400">{t.loadError}</p>
+                    <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                      <Users className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <p className="text-slate-600 dark:text-slate-300 font-medium mb-1">
+                      {language === "km" ? "មិនមានអ្នកប្រើប្រាស់" : "No users found"}
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      {language === "km" 
+                        ? "បន្ថែមអ្នកប្រើប្រាស់ដំបូងរបស់អ្នកខាងលើ" 
+                        : "Add your first user above"}
+                    </p>
                   </div>
                 ) : (
                   <div className="grid gap-4">
@@ -691,7 +745,9 @@ export default function SettingsContent() {
                     </div>
                     <div>
                       <p className="font-medium text-slate-800 dark:text-white">{t.language}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{language === 'km' ? 'ភាសាបច្ចុប្បន្ន៖ ខ្មែរ' : 'Current: English'}</p>
+<p className="text-sm text-slate-500 dark:text-slate-400">
+  Current: {language === 'km' ? t.khmer : t.english}
+</p>
                     </div>
                   </div>
                   <button
@@ -781,6 +837,7 @@ export default function SettingsContent() {
               <div className="flex flex-col items-center mb-6">
                 <div className="relative">
                   {editProfilePicture ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={editProfilePicture}
                       alt="Profile"

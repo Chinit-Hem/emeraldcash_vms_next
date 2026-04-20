@@ -10,6 +10,8 @@ const appOrigin = process.env.NEXT_PUBLIC_APP_ORIGIN?.trim() || "";
 const corsOrigin = appOrigin || vercelOrigin || "*";
 const allowCredentials = corsOrigin !== "*";
 const devLanIp = process.env.DEV_LAN_IP?.trim() || "";
+  // Added new development origin as per task
+  const newDevOrigin = "192.168.1.50"; // Specify your new IP here
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -70,7 +72,7 @@ const nextConfig = {
 
   // Allow LAN device testing in development (mobile Safari/Chrome).
   // Added 192.168.195.1 for local network access
-  allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.1.100", "192.168.195.1", devLanIp].filter(Boolean),
+allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.1.100", "192.168.195.1", "192.168.1.7", "192.168.1.50", devLanIp].filter(Boolean),
 
   // Add Cloudinary image domain for Next.js Image component
   images: {

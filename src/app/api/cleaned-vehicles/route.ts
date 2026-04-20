@@ -184,14 +184,18 @@ const limit = parseInt(searchParams.get("limit") || "500"); // Increased for pag
       });
     }
 
-    // Get total count for pagination
-    const statsResult = await vehicleService.getVehicleStatsLite();
-    const total = statsResult.success ? statsResult.data?.total || 0 : 0;
+    // Get accurate total count with no-cache (force fresh data)
+    console.log('[API/cleaned-vehicles] Fetching fresh total count...');
+    const totalResult = await vehicleService.getTotalCount(true); // noCache=true
+    const total = totalResult.success ? totalResult.data : 0;
+    console.log(`[API/cleaned-vehicles] DB total: ${total} (filters: category=${category}, brand=${brand})`);
 
-    // Add performance headers for monitoring
+    // Add performance headers for monitoring + total debug header
     const responseHeaders = new Headers(buildCorsHeaders(req));
     responseHeaders.set("X-Response-Time", `${Date.now() - startTime}ms`);
     responseHeaders.set("X-Query-Count", String(result.meta?.queryCount || 1));
+    responseHeaders.set("X-Total-Count", String(total));
+    responseHeaders.set("X-Filter-Info", `limit=${limit},offset=${offset},category=${category||'none'},brand=${brand||'none'}`);
 
     return NextResponse.json({
       success: true,
@@ -202,6 +206,7 @@ const limit = parseInt(searchParams.get("limit") || "500"); // Increased for pag
         offset,
         hasMore: offset + (result.data?.length || 0) < total,
         durationMs: result.meta?.durationMs || (Date.now() - startTime),
+        totalSource: 'getTotalCount(true)', // Debug info
       },
     }, {
       headers: responseHeaders,

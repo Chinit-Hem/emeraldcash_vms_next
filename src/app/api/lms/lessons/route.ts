@@ -9,8 +9,47 @@
 
 import { canAccessLMS, canManageLMS, getSession } from "@/lib/auth-helpers";
 import { getCachedLessonsByCategory, getCachedSequentialLessons, invalidateCategoryCache, setCachedLessonsByCategory, setCachedSequentialLessons } from "@/lib/lms-cache";
+import { type LmsLesson, type SequentialLesson } from "@/lib/lms-schema";
 import { lmsService } from "@/services/LmsService";
 import { NextRequest, NextResponse } from "next/server";
+
+type LessonEntityLike = {
+  id: string | number;
+  categoryId: number;
+  title: string;
+  description: string | null;
+  youtubeUrl: string;
+  youtubeVideoId: string;
+  stepByStepInstructions: string | null;
+  durationMinutes: number | null;
+  orderIndex: number;
+  isActive: boolean;
+  isCompleted?: boolean;
+  isUnlocked?: boolean;
+  completedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+function toLegacyLesson(lesson: LessonEntityLike): LmsLesson & Partial<SequentialLesson> {
+  return {
+    id: Number(lesson.id),
+    category_id: lesson.categoryId,
+    title: lesson.title,
+    description: lesson.description,
+    youtube_url: lesson.youtubeUrl,
+    youtube_video_id: lesson.youtubeVideoId,
+    step_by_step_instructions: lesson.stepByStepInstructions,
+    duration_minutes: lesson.durationMinutes,
+    order_index: lesson.orderIndex,
+    is_active: lesson.isActive,
+    created_at: lesson.createdAt ?? "",
+    updated_at: lesson.updatedAt ?? "",
+    ...(lesson.isCompleted !== undefined ? { is_completed: lesson.isCompleted } : {}),
+    ...(lesson.isUnlocked !== undefined ? { is_unlocked: lesson.isUnlocked } : {}),
+    ...(lesson.completedAt !== undefined ? { completed_at: lesson.completedAt } : {}),
+  };
+}
 
 // ============================================================================
 // GET /api/lms/lessons?categoryId=1 or ?id=1 - Both Admin and Staff can view
@@ -53,7 +92,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.data,
+      data: result.data ? toLegacyLesson(result.data as LessonEntityLike) : null,
       meta: result.meta,
     });
   }
@@ -69,9 +108,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const legacyLessons = (result.data ?? []).map((lesson) =>
+      toLegacyLesson(lesson as LessonEntityLike)
+    );
+
     return NextResponse.json({
       success: true,
-      data: result.data,
+      data: legacyLessons,
       meta: result.meta,
     });
   }
@@ -95,7 +138,7 @@ export async function GET(request: NextRequest) {
     if (cacheResult.success) {
       return NextResponse.json({
         success: true,
-        data: cacheResult.data as SequentialLesson[],
+        data: cacheResult.data,
         meta: {
           ...cacheResult,
           fromCache: true,
@@ -110,7 +153,10 @@ export async function GET(request: NextRequest) {
     const result = await lmsService.getSequentialLessonsForStaff(categoryIdNum, staffId);
     
     if (result.success) {
-      await setCachedSequentialLessons(categoryIdNum, staffId, result.data as SequentialLesson[]);
+      const legacySequentialLessons = (result.data ?? []).map((lesson) =>
+        toLegacyLesson(lesson as LessonEntityLike)
+      ) as SequentialLesson[];
+      await setCachedSequentialLessons(categoryIdNum, staffId, legacySequentialLessons);
     }
     
     if (!result.success) {
@@ -120,9 +166,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const legacySequentialLessons = (result.data ?? []).map((lesson) =>
+      toLegacyLesson(lesson as LessonEntityLike)
+    );
+
     return NextResponse.json({
       success: true,
-      data: result.data,
+      data: legacySequentialLessons,
       meta: result.meta,
     });
   }
@@ -148,7 +198,10 @@ export async function GET(request: NextRequest) {
   const result = await lmsService.getLessonsByCategory(categoryIdNum);
   
   if (result.success) {
-    await setCachedLessonsByCategory(categoryIdNum, result.data as LmsLesson[]);
+    const legacyLessons = (result.data ?? []).map((lesson) =>
+      toLegacyLesson(lesson as LessonEntityLike)
+    ) as LmsLesson[];
+    await setCachedLessonsByCategory(categoryIdNum, legacyLessons);
   }
   
   if (!result.success) {
@@ -158,9 +211,13 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const legacyLessons = (result.data ?? []).map((lesson) =>
+    toLegacyLesson(lesson as LessonEntityLike)
+  );
+
   return NextResponse.json({
     success: true,
-    data: result.data,
+    data: legacyLessons,
     meta: result.meta,
   });
 
@@ -190,11 +247,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+    const categoryId = body.categoryId ?? body.category_id;
+    const youtubeUrl = body.youtubeUrl ?? body.youtube_url;
+    const stepByStepInstructions = body.stepByStepInstructions ?? body.step_by_step_instructions;
+    const durationMinutes = body.durationMinutes ?? body.duration_minutes;
+    const orderIndex = body.orderIndex ?? body.order_index;
 
     // Validate required fields
-    if (!body.category_id || typeof body.category_id !== "number") {
+    if (!categoryId || typeof categoryId !== "number") {
       return NextResponse.json(
-        { success: false, error: "category_id is required and must be a number" },
+        { success: false, error: "category_id/categoryId is required and must be a number" },
         { status: 400 }
       );
     }
@@ -206,26 +268,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!body.youtube_url || typeof body.youtube_url !== "string") {
+    if (!youtubeUrl || typeof youtubeUrl !== "string") {
       return NextResponse.json(
-        { success: false, error: "youtube_url is required and must be a string" },
+        { success: false, error: "youtube_url/youtubeUrl is required and must be a string" },
         { status: 400 }
       );
     }
 
     const result = await lmsService.createLesson({
-      category_id: body.category_id,
+      categoryId,
       title: body.title,
       description: body.description,
-      youtube_url: body.youtube_url,
-      step_by_step_instructions: body.step_by_step_instructions,
-      duration_minutes: body.duration_minutes,
-      order_index: body.order_index,
+      youtubeUrl,
+      stepByStepInstructions,
+      durationMinutes: typeof durationMinutes === "number" ? durationMinutes : undefined,
+      orderIndex: typeof orderIndex === "number" ? orderIndex : undefined,
     });
 
     // INVALIDATE CACHE for this category
-    if (result.success && body.category_id) {
-      await invalidateCategoryCache(body.category_id);
+    if (result.success && categoryId) {
+      await invalidateCategoryCache(categoryId);
     }
 
     if (!result.success) {
@@ -237,7 +299,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.data,
+      data: result.data ? toLegacyLesson(result.data as LessonEntityLike) : null,
       meta: result.meta,
     }, { 
       status: 201,
@@ -285,21 +347,27 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
+    const categoryId = body.categoryId ?? body.category_id;
+    const youtubeUrl = body.youtubeUrl ?? body.youtube_url;
+    const stepByStepInstructions = body.stepByStepInstructions ?? body.step_by_step_instructions;
+    const durationMinutes = body.durationMinutes ?? body.duration_minutes;
+    const orderIndex = body.orderIndex ?? body.order_index;
+    const isActive = body.isActive ?? body.is_active;
 
     const result = await lmsService.updateLesson(parseInt(id), {
-      category_id: body.category_id,
+      categoryId: typeof categoryId === "number" ? categoryId : undefined,
       title: body.title,
       description: body.description,
-      youtube_url: body.youtube_url,
-      step_by_step_instructions: body.step_by_step_instructions,
-      duration_minutes: body.duration_minutes,
-      order_index: body.order_index,
-      is_active: body.is_active,
+      youtubeUrl: typeof youtubeUrl === "string" ? youtubeUrl : undefined,
+      stepByStepInstructions,
+      durationMinutes: typeof durationMinutes === "number" ? durationMinutes : undefined,
+      orderIndex: typeof orderIndex === "number" ? orderIndex : undefined,
+      isActive: typeof isActive === "boolean" ? isActive : undefined,
     });
 
     // INVALIDATE CACHE
-    if (result.success && body.category_id) {
-      await invalidateCategoryCache(body.category_id);
+    if (result.success && typeof categoryId === "number") {
+      await invalidateCategoryCache(categoryId);
     }
 
     if (!result.success) {
@@ -311,7 +379,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.data,
+      data: result.data ? toLegacyLesson(result.data as LessonEntityLike) : null,
       meta: result.meta,
     }, {
       headers: { 'X-Cache': 'INVALIDATED' }
@@ -363,8 +431,8 @@ export async function DELETE(request: NextRequest) {
     if (result.success) {
       try {
         const lessonQuery = await lmsService.getLessonById(parseInt(id));
-        if (lessonQuery.success && lessonQuery.data?.category_id) {
-          await invalidateCategoryCache(lessonQuery.data.category_id);
+        if (lessonQuery.success && lessonQuery.data?.categoryId) {
+          await invalidateCategoryCache(lessonQuery.data.categoryId);
         }
       } catch {}
     }

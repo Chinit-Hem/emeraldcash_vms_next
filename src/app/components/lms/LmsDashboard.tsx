@@ -41,9 +41,11 @@ import {
   LmsCategory,
   LessonWithStatus,
   StaffProgress,
+  InitialLmsData
 } from "@/lib/lms-types";
 import { useAuthUser } from "@/app/components/AuthContext";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import { useTransition } from "react";
 import LmsErrorBoundary from "./LmsErrorBoundary";
 
 type TabType = "learning" | "progress" | "achievements" | "my-process";
@@ -57,7 +59,11 @@ class LmsApiService {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.TIMEOUT);
     try {
-      const response = await fetch(url, { ...options, signal: controller.signal });
+      const response = await fetch(url, { 
+        ...options, 
+        signal: controller.signal,
+        credentials: "include"
+      });
       clearTimeout(timeoutId);
       return response;
     } catch (error) {
@@ -119,7 +125,7 @@ class LmsApiService {
 // Skeleton Component
 function CardSkeleton() {
   return (
-    <div className="p-6 rounded-3xl bg-gradient-to-br from-[#f0f4f8] to-[#e6e9ef] shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]">
+    <div className="p-6 rounded-3xl bg-gradient-to-br from-[#f0f4f8] to-[#e6e9ef] shadow-sm">
       <div className="flex items-center gap-4 mb-4">
         <div className="h-12 w-12 rounded-xl bg-slate-200 animate-pulse" />
         <div className="flex-1 space-y-2">
@@ -159,7 +165,7 @@ function StatCard({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-[#f0f4f8] to-[#e6e9ef] shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] transition-all duration-300 hover:shadow-[12px_12px_24px_#b8b9be,-12px_-12px_24px_#ffffff] group">
+    <div className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-[#f0f4f8] to-[#e6e9ef] shadow-sm transition-all duration-300 hover:bg-slate-50 group">
       <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${colorClasses[color]} opacity-10 rounded-full blur-3xl transform translate-x-16 -translate-y-16 transition-opacity group-hover:opacity-20`} />
       <div className="relative flex items-start justify-between">
         <div className="flex-1 min-w-0">
@@ -207,7 +213,7 @@ function CategoryCard({
   return (
     <button
       onClick={onClick}
-      className="w-full text-left group relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-[#f0f4f8] to-[#e6e9ef] shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff] hover:shadow-[12px_12px_24px_#b8b9be,-12px_-12px_24px_#ffffff] transition-all duration-300 hover:-translate-y-1"
+      className="w-full text-left group relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-[#f0f4f8] to-[#e6e9ef] shadow-sm hover:bg-slate-50 transition-all duration-300 hover:-translate-y-1"
     >
       <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${gradientColor} opacity-10 rounded-full blur-2xl transform translate-x-8 -translate-y-8`} />
       <div className="relative">
@@ -271,7 +277,7 @@ function AchievementCard({
   };
 
   return (
-    <div className={`relative overflow-hidden rounded-3xl p-6 ${unlocked ? 'bg-gradient-to-br from-[#f0f4f8] to-[#e6e9ef] shadow-[8px_8px_16px_#b8b9be,-8px_-8px_16px_#ffffff]' : 'bg-slate-100/50 shadow-[inset_4px_4px_8px_#d1d5db,inset_-4px_-4px_8px_#ffffff]'} transition-all duration-300`}>
+    <div className={`relative overflow-hidden rounded-3xl p-6 ${unlocked ? 'bg-gradient-to-br from-[#f0f4f8] to-[#e6e9ef] shadow-sm' : 'bg-slate-100/50 shadow-sm'} transition-all duration-300`}>
       <div className="relative">
         <div className="flex flex-col items-center text-center">
           <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${unlocked ? `bg-gradient-to-br ${colorClasses[color]} text-white shadow-lg` : 'bg-slate-200 text-slate-400'} transition-transform duration-300`}>
@@ -325,12 +331,17 @@ function exportToCSV(data: StaffProgress[], filename: string) {
 }
 
 // Main LMS Dashboard Component
-function LmsDashboard() {
+interface LmsDashboardProps {
+  initialData?: InitialLmsData | null;
+}
+
+function LmsDashboard({ initialData }: LmsDashboardProps) {
   const router = useRouter();
-  const [stats, setStats] = useState<LmsDashboardStats | null>(null);
-  const [categories, setCategories] = useState<LmsCategory[]>([]);
-  const [lessons, setLessons] = useState<LessonWithStatus[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<LmsDashboardStats | null>(initialData?.stats || null);
+  const [categories, setCategories] = useState<LmsCategory[]>(initialData?.categories || []);
+  const [lessons, setLessons] = useState<LessonWithStatus[]>(initialData?.lessons || []);
+  const [loading, setLoading] = useState(!initialData);
+  const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<TabType>("learning");
   const [isExporting, setIsExporting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -342,21 +353,23 @@ function LmsDashboard() {
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
 
   const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [statsData, categoriesData] = await Promise.all([
-        LmsApiService.fetchDashboardData(),
-        LmsApiService.fetchCategories(),
-      ]);
-      const lessonsData = categoriesData.length > 0 ? await LmsApiService.fetchAllLessons(categoriesData) : [];
-      setStats(statsData);
-      setCategories(categoriesData);
-      setLessons(lessonsData);
-    } catch (error) {
-      console.error("Error loading dashboard data:", error);
-    } finally {
-      setLoading(false);
-    }
+    startTransition(async () => {
+      setLoading(true);
+      try {
+        const [statsData, categoriesData] = await Promise.all([
+          LmsApiService.fetchDashboardData(),
+          LmsApiService.fetchCategories(),
+        ]);
+        const lessonsData = categoriesData.length > 0 ? await LmsApiService.fetchAllLessons(categoriesData) : [];
+        setStats(statsData);
+        setCategories(categoriesData);
+        setLessons(lessonsData);
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -412,7 +425,10 @@ function LmsDashboard() {
 
   const currentLesson = useMemo(() => lessons.find((l) => l.is_unlocked && !l.is_completed), [lessons]);
 
-  if (loading) {
+  // Instant render with skeleton if no initial data or refreshing
+  const isSkeleton = loading || !stats || !categories.length;
+  
+  if (isSkeleton) {
     return (
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
@@ -428,15 +444,41 @@ function LmsDashboard() {
 
   if (!stats) {
     return (
-      <div className="max-w-md mx-auto bg-white rounded-3xl shadow-2xl p-8 text-center mt-12">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-100 flex items-center justify-center">
-          <BookOpen className="w-10 h-10 text-red-500" />
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center py-20">
+          <div className="w-24 h-24 mx-auto mb-8 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 flex items-center justify-center">
+            <BookOpen className="w-12 h-12 text-slate-400" />
+          </div>
+          <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-4">No Training Content Yet</h2>
+          <p className="text-xl text-slate-600 dark:text-slate-400 mb-8 max-w-md mx-auto leading-relaxed">
+            The training portal is ready, but no courses have been added.
+          </p>
+          {isAdmin ? (
+            <div className="space-y-4">
+              <a 
+                href="/lms/admin/categories" 
+                className="block w-full max-w-sm mx-auto px-8 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-emerald-700 transition-all text-center"
+              >
+                🏗️ Add First Training Category
+              </a>
+              <p className="text-sm text-slate-500 dark:text-slate-400 text-center">
+                Admin: Create categories → lessons → assign staff
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-slate-500 dark:text-slate-400 text-center">
+                Contact your administrator to set up training modules.
+              </p>
+              <button 
+                onClick={handleRefresh} 
+                className="px-8 py-3 bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-semibold rounded-2xl shadow-sm transition-all hover:bg-slate-300 dark:hover:bg-slate-600 mx-auto block"
+              >
+                🔄 Refresh
+              </button>
+            </div>
+          )}
         </div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Failed to Load</h2>
-        <p className="text-slate-500 mb-6">We couldn't load your training data.</p>
-        <button onClick={handleRefresh} className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-2xl shadow-lg shadow-emerald-500/30 hover:shadow-xl transition-all active:scale-95">
-          Try Again
-        </button>
       </div>
     );
   }
@@ -486,7 +528,7 @@ function LmsDashboard() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex flex-wrap gap-2 p-2 bg-white rounded-2xl shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff]">
+        <div className="flex flex-wrap gap-2 p-2 bg-white rounded-2xl shadow-sm">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -507,28 +549,28 @@ function LmsDashboard() {
             </span>
             <button
               onClick={() => router.push("/lms/admin/categories")}
-              className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-[4px_4px_8px_#e2e8f0,-4px_-4px_8px_#ffffff] text-sm font-medium text-emerald-700 hover:shadow-[6px_6px_12px_#e2e8f0,-6px_-6px_12px_#ffffff] transition-all active:scale-95"
+              className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm text-sm font-medium text-emerald-700 hover:bg-slate-50 transition-all active:scale-95"
             >
               <BookOpen className="w-4 h-4" />
               Manage Categories
             </button>
             <button
               onClick={() => router.push("/lms/admin/lessons")}
-              className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-[4px_4px_8px_#e2e8f0,-4px_-4px_8px_#ffffff] text-sm font-medium text-blue-700 hover:shadow-[6px_6px_12px_#e2e8f0,-6px_-6px_12px_#ffffff] transition-all active:scale-95"
+              className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm text-sm font-medium text-blue-700 hover:bg-slate-50 transition-all active:scale-95"
             >
               <PlayCircle className="w-4 h-4" />
               Manage Lessons
             </button>
             <button
               onClick={() => router.push("/lms/admin/staff")}
-              className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-[4px_4px_8px_#e2e8f0,-4px_-4px_8px_#ffffff] text-sm font-medium text-purple-700 hover:shadow-[6px_6px_12px_#e2e8f0,-6px_-6px_12px_#ffffff] transition-all active:scale-95"
+              className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm text-sm font-medium text-purple-700 hover:bg-slate-50 transition-all active:scale-95"
             >
               <Users className="w-4 h-4" />
               Manage Staff
             </button>
             <button
               onClick={() => router.push("/settings")}
-              className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-[4px_4px_8px_#e2e8f0,-4px_-4px_8px_#ffffff] text-sm font-medium text-orange-700 hover:shadow-[6px_6px_12px_#e2e8f0,-6px_-6px_12px_#ffffff] transition-all active:scale-95 border-l-4 border-orange-400"
+              className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm text-sm font-medium text-orange-700 hover:bg-slate-50 transition-all active:scale-95 border-l-4 border-orange-400"
               title="Go to Settings to sync users with LMS staff"
             >
               <RefreshCw className="w-4 h-4" />
@@ -545,7 +587,7 @@ function LmsDashboard() {
               <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400">
                 <Search className="w-5 h-5" />
               </div>
-              <input id="lms-search" type="text" placeholder="Search categories... (Cmd/Ctrl+K)" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-14 pr-14 py-4 rounded-2xl bg-white shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff] text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:shadow-[6px_6px_16px_#e2e8f0,-6px_-6px_16px_#ffffff] transition-all text-base" />
+              <input id="lms-search" type="text" placeholder="Search categories... (Cmd/Ctrl+K)" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-14 pr-14 py-4 rounded-2xl bg-white shadow-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:ring-2 focus:ring-emerald-500/20 transition-all text-base" />
               {debouncedSearch !== searchQuery && (
                 <div className="absolute inset-y-0 right-0 pr-5 flex items-center">
                   <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
@@ -555,7 +597,7 @@ function LmsDashboard() {
 
             {/* Continue Learning */}
             {currentLesson && (
-              <div className="p-6 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff] border border-emerald-200/50">
+              <div className="p-6 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-3xl shadow-sm border border-emerald-200/50">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/30 flex items-center justify-center">
                     <PlayCircle className="w-6 h-6 text-white" />
@@ -565,7 +607,7 @@ function LmsDashboard() {
                     <p className="text-sm text-slate-500">Pick up where you left off</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-4 bg-white rounded-2xl shadow-[4px_4px_12px_#e2e8f0,-4px_-4px_12px_#ffffff]">
+                <div className="flex items-center justify-between p-4 bg-white rounded-2xl shadow-sm">
                   <div>
                     <p className="font-semibold text-slate-800">{currentLesson.title}</p>
                     <p className="text-sm text-slate-500">{currentLesson.category_name} • {currentLesson.duration_minutes || 0} min</p>
@@ -585,7 +627,7 @@ function LmsDashboard() {
               {filteredCategories.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {filteredCategories.map((category) => {
-                    const completion = stats.category_completion.find((c) => c.category_id === category.id);
+                    const completion = stats.category_completion?.find((c) => c.category_id === category.id);
                     const categoryLessons = lessons.filter((l) => l.category_id === category.id);
                     return (
                       <CategoryCard key={category.id} category={category} completionRate={completion?.completion_rate || 0} lessonCount={categoryLessons.length} onClick={() => handleCategoryClick(category.id)} />
@@ -593,7 +635,7 @@ function LmsDashboard() {
                   })}
                 </div>
               ) : (
-                <div className="text-center py-12 bg-white rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff]">
+                <div className="text-center py-12 bg-white rounded-3xl shadow-sm">
                   <Search className="w-12 h-12 mx-auto mb-4 text-slate-300" />
                   <h3 className="text-lg font-semibold text-slate-800 mb-2">No Categories Found</h3>
                   <p className="text-slate-500">Try adjusting your search query</p>
@@ -606,7 +648,7 @@ function LmsDashboard() {
         {activeTab === "progress" && (
           <div className="space-y-6">
             {/* Overall Progress */}
-            <div className="p-6 bg-white rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff]">
+            <div className="p-6 bg-white rounded-3xl shadow-sm">
               <h3 className="text-lg font-bold text-slate-800 mb-6">Overall Progress</h3>
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="text-center p-4 bg-emerald-50 rounded-2xl">
@@ -635,7 +677,7 @@ function LmsDashboard() {
 
             {/* Staff Progress Table */}
             {isAdmin && (
-              <div className="p-6 bg-white rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff]">
+              <div className="p-6 bg-white rounded-3xl shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-slate-800">Staff Progress</h3>
                   <button
@@ -720,8 +762,8 @@ function LmsDashboard() {
               title="Category Master" 
               description="Complete all lessons in a category" 
               icon={Target} 
-              unlocked={stats.category_completion.some((c) => c.completion_rate === 100)} 
-              progress={Math.max(...stats.category_completion.map((c) => c.completion_rate), 0)} 
+              unlocked={stats.category_completion?.some((c) => c.completion_rate === 100) ?? false} 
+              progress={stats.category_completion?.length ? Math.max(...stats.category_completion.map((c) => c.completion_rate), 0) : 0} 
               color="blue" 
             />
             <AchievementCard 
@@ -738,7 +780,7 @@ function LmsDashboard() {
         {activeTab === "my-process" && (
           <div className="space-y-6">
             {/* My Process Overview */}
-            <div className="p-6 bg-white rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff]">
+            <div className="p-6 bg-white rounded-3xl shadow-sm">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/30 flex items-center justify-center">
                   <Clock className="w-8 h-8 text-white" />
@@ -794,7 +836,7 @@ function LmsDashboard() {
             </div>
 
             {/* Category Progress */}
-            <div className="p-6 bg-white rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff]">
+            <div className="p-6 bg-white rounded-3xl shadow-sm">
               <h3 className="text-lg font-bold text-slate-800 mb-4">Category Progress</h3>
               <div className="space-y-4">
                 {categories.map((category) => {
@@ -820,7 +862,7 @@ function LmsDashboard() {
             </div>
 
             {/* Recent Activity */}
-            <div className="p-6 bg-white rounded-3xl shadow-[8px_8px_24px_#e2e8f0,-8px_-8px_24px_#ffffff]">
+            <div className="p-6 bg-white rounded-3xl shadow-sm">
               <h3 className="text-lg font-bold text-slate-800 mb-4">Recent Activity</h3>
               <div className="space-y-3">
                 {lessons

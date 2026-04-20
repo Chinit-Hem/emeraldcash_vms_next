@@ -11,6 +11,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { lmsService } from "@/services/LmsService";
 import { canManageLMS, getSession } from "@/lib/auth-helpers";
 
+type StaffEntityLike = {
+  id: string | number;
+  fullName: string;
+  email: string | null;
+  branchLocation: string | null;
+  role: string;
+  phone: string | null;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+function toLegacyStaff(staff: StaffEntityLike) {
+  return {
+    id: Number(staff.id),
+    full_name: staff.fullName,
+    email: staff.email,
+    branch_location: staff.branchLocation,
+    role: staff.role,
+    phone: staff.phone,
+    is_active: staff.isActive,
+    created_at: staff.createdAt ?? null,
+    updated_at: staff.updatedAt ?? null,
+  };
+}
+
 // ============================================================================
 // GET /api/lms/staff - Admin only
 // ============================================================================
@@ -44,7 +70,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    data: result.data,
+    data: (result.data ?? []).map((staff) => toLegacyStaff(staff as StaffEntityLike)),
     meta: result.meta,
   });
 }
@@ -73,19 +99,21 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+    const fullName = body.fullName ?? body.full_name;
+    const branchLocation = body.branchLocation ?? body.branch_location;
 
     // Validate required fields
-    if (!body.full_name || typeof body.full_name !== "string") {
+    if (!fullName || typeof fullName !== "string") {
       return NextResponse.json(
-        { success: false, error: "full_name is required and must be a string" },
+        { success: false, error: "full_name/fullName is required and must be a string" },
         { status: 400 }
       );
     }
 
     const result = await lmsService.createStaff({
-      full_name: body.full_name,
+      fullName,
       email: body.email,
-      branch_location: body.branch_location,
+      branchLocation: typeof branchLocation === "string" ? branchLocation : null,
       role: body.role,
       phone: body.phone,
     });
@@ -99,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.data,
+      data: result.data ? toLegacyStaff(result.data as StaffEntityLike) : null,
       meta: result.meta,
     }, { status: 201 });
   } catch (_error) {
@@ -144,14 +172,17 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
+    const fullName = body.fullName ?? body.full_name;
+    const branchLocation = body.branchLocation ?? body.branch_location;
+    const isActive = body.isActive ?? body.is_active;
 
     const result = await lmsService.updateStaff(parseInt(id), {
-      full_name: body.full_name,
+      fullName: typeof fullName === "string" ? fullName : undefined,
       email: body.email,
-      branch_location: body.branch_location,
+      branchLocation: typeof branchLocation === "string" ? branchLocation : undefined,
       role: body.role,
       phone: body.phone,
-      is_active: body.is_active,
+      isActive: typeof isActive === "boolean" ? isActive : undefined,
     });
 
     if (!result.success) {
@@ -163,7 +194,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.data,
+      data: result.data ? toLegacyStaff(result.data as StaffEntityLike) : null,
       meta: result.meta,
     });
   } catch (_error) {

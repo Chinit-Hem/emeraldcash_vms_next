@@ -21,6 +21,7 @@ interface LazyLoadWrapperProps {
   fadeIn?: boolean;
   className?: string;
   minHeight?: string | number;
+  disableSuspense?: boolean;
 }
 
 export function LazyLoadWrapper({
@@ -32,6 +33,7 @@ export function LazyLoadWrapper({
   fadeIn = true,
   className = "",
   minHeight = "200px",
+  disableSuspense = false,
 }: LazyLoadWrapperProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [hasTriggered, setHasTriggered] = useState(false);
@@ -85,10 +87,12 @@ export function LazyLoadWrapper({
       className={`${className} ${fadeIn && isVisible ? "animate-fade-in" : ""}`}
       style={containerStyle}
     >
-      {isVisible ? (
-        <Suspense fallback={skeleton || <DefaultSkeleton />}>
-          {children}
-        </Suspense>
+{isVisible ? (
+        disableSuspense ? children : (
+          <Suspense fallback={skeleton || <DefaultSkeleton />}>
+            {children}
+          </Suspense>
+        )
       ) : (
         skeleton || <DefaultSkeleton />
       )}
@@ -101,8 +105,11 @@ export function LazyLoadWrapper({
  */
 function DefaultSkeleton() {
   return (
-    <div className="w-full h-full min-h-[200px] bg-[#e0e5ec] rounded-2xl shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] animate-pulse flex items-center justify-center">
-      <div className="w-12 h-12 border-4 border-[#d1d5db] border-t-emerald-500 rounded-full animate-spin" />
+    <div className="w-full h-full min-h-[200px] bg-white rounded-2xl shadow-sm animate-pulse flex items-center justify-center">
+      <div className="flex flex-col items-center gap-2">
+        <div className="w-12 h-12 border-4 border-[#d1d5db] border-t-emerald-500 rounded-full animate-spin" />
+        <p className="text-sm text-slate-500 font-medium">Loading form...</p>
+      </div>
     </div>
   );
 }

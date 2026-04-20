@@ -1,36 +1,34 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useRef, memo } from "react";
 import { ImageInput } from "@/components/ui/ImageInput";
-import { formatCurrency } from "@/lib/format";
-import { derivePrices } from "@/lib/pricing";
 import { formatFileSize as formatImageSize } from "@/lib/compressImage";
 import { safeBase64ToFile } from "@/lib/fileToDataUrl";
-import { useLanguage } from "@/lib/LanguageContext";
+import { formatCurrency } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n";
+import { useLanguage } from "@/lib/LanguageContext";
+import { derivePrices } from "@/lib/pricing";
 import type { Vehicle } from "@/lib/types";
 import {
   COLOR_OPTIONS,
-  TAX_TYPE_METADATA,
-  PLATE_NUMBER_MAX_LENGTH,
   PLATE_NUMBER_HINTS,
+  PLATE_NUMBER_MAX_LENGTH,
+  TAX_TYPE_METADATA,
 } from "@/lib/types";
-import { 
-  Car, 
-  Image as ImageIcon, 
-  Wrench, 
-  DollarSign, 
-  AlertCircle, 
-  CheckCircle2,
-  X,
-  ChevronRight,
-  Sparkles,
-  Upload,
-  Loader2,
-  ArrowLeft,
-  Save
-} from "lucide-react";
 import { cn } from "@/lib/ui";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Car,
+  CheckCircle2,
+  ChevronRight,
+  DollarSign,
+  Image as ImageIcon,
+  Loader2,
+  Save,
+  Wrench,
+  X
+} from "lucide-react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 
 const CATEGORY_OPTIONS = ["Cars", "Motorcycles", "Tuk Tuk"] as const;
 
@@ -66,9 +64,9 @@ function ModernCard({
   return (
     <div className={cn(
       "bg-white rounded-2xl",
-      "shadow-[0_4px_20px_rgba(0,0,0,0.08)]",
+      "shadow-sm",
       "border border-slate-100",
-      hover && "hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5",
+      hover && "hover:bg-slate-50 transition-all duration-300 hover:-translate-y-0.5",
       className
     )}>
       {children}
@@ -103,10 +101,10 @@ const ModernInput = memo(function ModernInput({
       <div className={cn(
         "relative flex items-center",
         "bg-white rounded-xl",
-        "shadow-[0_2px_8px_rgba(0,0,0,0.06)]",
+        "shadow-sm",
         isFocused 
-          ? "shadow-[0_4px_16px_rgba(16,185,129,0.15)] ring-2 ring-emerald-100"
-          : "hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]",
+          ? "shadow-sm ring-2 ring-emerald-100"
+          : "hover:bg-slate-50",
         "transition-all duration-200",
         className
       )}>
@@ -176,10 +174,10 @@ const ModernSelect = memo(function ModernSelect({
       <div className={cn(
         "relative",
         "bg-white rounded-xl",
-        "shadow-[0_2px_8px_rgba(0,0,0,0.06)]",
+        "shadow-sm",
         isFocused 
-          ? "shadow-[0_4px_16px_rgba(16,185,129,0.15)] ring-2 ring-emerald-100"
-          : "hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]",
+          ? "shadow-sm ring-2 ring-emerald-100"
+          : "hover:bg-slate-50",
         "transition-all duration-200"
       )}>
         <select
@@ -248,21 +246,21 @@ const ModernButton = memo(function ModernButton({
   const variantStyles = {
     primary: cn(
       "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white",
-      "shadow-[0_4px_15px_rgba(16,185,129,0.3)]",
+      "shadow-sm",
       "hover:from-emerald-600 hover:to-emerald-700",
-      "hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)]"
+      "hover:bg-slate-50"
     ),
     secondary: cn(
       "bg-white text-slate-700 border border-slate-200",
-      "shadow-[0_2px_8px_rgba(0,0,0,0.05)]",
+      "shadow-sm",
       "hover:bg-slate-50 hover:border-slate-300",
-      "hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+      "hover:bg-slate-50"
     ),
     danger: cn(
       "bg-gradient-to-r from-red-500 to-red-600 text-white",
-      "shadow-[0_4px_15px_rgba(239,68,68,0.3)]",
+      "shadow-sm",
       "hover:from-red-600 hover:to-red-700",
-      "hover:shadow-[0_6px_20px_rgba(239,68,68,0.4)]"
+      "hover:bg-slate-50"
     ),
   };
 
@@ -660,7 +658,7 @@ export const VehicleForm = memo(function VehicleForm({
               { value: "", label: isKm ? "ជ្រើសរើសប្រភេទ" : "Select category" },
               ...categoryOptions.map((cat) => ({ 
                 value: cat, 
-                label: isKm ? (cat === "Cars" ? "រថយន្ត" : cat === "Motorcycles" ? "ម៉ូតូ" : "ទុកទុក") : cat 
+label: isKm ? (cat === "Cars" ? "រថយន្ត" : cat === "Motorcycles" ? "ម៉ូតូ" : "កង់បី") : cat
               }))
             ]}
           />

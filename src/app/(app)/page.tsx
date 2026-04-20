@@ -4,7 +4,8 @@ import EnhancedDashboard from "@/app/components/dashboard/EnhancedDashboard";
 import ErrorBoundary from "@/app/components/ErrorBoundary";
 import { NeuDashboardSkeleton } from "@/app/components/skeletons";
 import { useVehiclesNeon, useVehicleStats } from "@/lib/useVehiclesNeon";
-import { Suspense } from "react";
+import { mutate } from "swr";
+import { Suspense, useEffect } from "react";
 
 type DashboardMeta = {
   total: number;
@@ -26,11 +27,32 @@ type DashboardMeta = {
  * Provides initial props to EnhancedDashboard from useVehiclesNeon
  */
 export default function Page() {
+  // Clear SWR cache on mount to ensure fresh data
+  useEffect(() => {
+    // Clear all vehicle-related SWR cache including stats
+    mutate(
+      (key) => typeof key === "string" && (key.startsWith("/api/vehicles") || key.includes("/stats")),
+      undefined,
+      { revalidate: true }
+    );
+  }, []);
+
   const { vehicles, meta, error, loading } = useVehiclesNeon();
   const { stats, loading: statsLoading } = useVehicleStats();
 
+  // DEBUG: Log the values to see what's happening
+  useEffect(() => {
+    console.log('[DEBUG] stats:', stats);
+    console.log('[DEBUG] dashboardMeta:', {
+      total: stats?.total ?? meta?.total ?? 0,
+      noImageCount: (stats?.noImageCount ?? meta?.noImageCount) || 0,
+      avgPrice: stats?.avgPrice || 0,
+    });
+  }, [stats, meta]);
+
   const dashboardMeta: DashboardMeta = {
-    total: stats?.total || meta?.total || vehicles.length || 0,
+    // Use stats.total if available (accurate count from DB), otherwise show loading state
+    total: stats?.total ?? meta?.total ?? 0,
     countsByCategory: {
       Cars: stats?.byCategory?.Cars || 0,
       Motorcycles: stats?.byCategory?.Motorcycles || 0,
@@ -40,7 +62,7 @@ export default function Page() {
       New: stats?.byCondition?.New || 0,
       Used: stats?.byCondition?.Used || 0,
     },
-    noImageCount: stats?.noImageCount || 0,
+    noImageCount: (stats?.noImageCount ?? meta?.noImageCount) || 0,
     avgPrice: stats?.avgPrice || 0,
   };
 

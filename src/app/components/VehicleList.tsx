@@ -105,10 +105,10 @@ function VehicleRow({ vehicle, isAdmin, onDelete, onClick }: {
   return (
     <div 
       onClick={onClick}
-      className="bg-[#e0e5ec] mx-4 my-2 p-4 rounded-[20px] shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] flex flex-row items-center gap-4 cursor-pointer active:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] transition-all hover:translate-y-[-1px] min-w-[1100px] whitespace-nowrap"
+      className="bg-white mx-4 my-2 p-4 rounded-[20px] shadow-sm flex flex-row items-center gap-4 cursor-pointer active:bg-slate-100 transition-all hover:translate-y-[-1px] min-w-[1100px] whitespace-nowrap"
     >
       {/* Image or Placeholder */}
-      <div className={`w-16 h-16 rounded-xl flex items-center justify-center shrink-0 ${hasImage ? 'bg-[#e0e5ec] shadow-[3px_3px_6px_#bebebe,-3px_-3px_6px_#ffffff]' : 'bg-[#e0e5ec] shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]'}`}>
+      <div className={`w-16 h-16 rounded-xl flex items-center justify-center shrink-0 ${hasImage ? 'bg-white shadow-sm' : 'bg-white shadow-sm'}`}>
         {thumbUrl ? (
           <img src={thumbUrl} alt="" className="w-12 h-12 rounded-lg object-cover" />
         ) : (
@@ -130,7 +130,7 @@ function VehicleRow({ vehicle, isAdmin, onDelete, onClick }: {
         
         {/* Category */}
         <div className="w-32 shrink-0 text-center">
-          <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#e0e5ec] shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff] text-[#4a4a5a]">
+          <span className="px-3 py-1 rounded-full text-xs font-medium bg-white shadow-sm text-[#4a4a5a]">
             {vehicle.Category}
           </span>
         </div>
@@ -152,7 +152,7 @@ function VehicleRow({ vehicle, isAdmin, onDelete, onClick }: {
       <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={() => router.push(`/vehicles/${vehicle.VehicleId}/view`)}
-          className="p-2 bg-[#e0e5ec] text-[#2d3748] rounded-xl shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] font-semibold transition-all flex items-center gap-2 text-sm"
+          className="p-2 bg-white text-[#2d3748] rounded-xl shadow-sm active:bg-slate-100 font-semibold transition-all flex items-center gap-2 text-sm"
         >
           {Icons.view}
           <span>View</span>
@@ -161,14 +161,14 @@ function VehicleRow({ vehicle, isAdmin, onDelete, onClick }: {
           <>
             <button
               onClick={() => router.push(`/vehicles/${vehicle.VehicleId}/edit`)}
-              className="p-2 bg-[#2ecc71] text-white rounded-xl shadow-[4px_4px_8px_#27ad60,-4px_-4px_8px_#35eb82] active:shadow-[inset_3px_3px_6px_#27ad60,inset_-3px_-3px_6px_#35eb82] font-semibold transition-all flex items-center gap-2 text-sm"
+              className="p-2 bg-[#2ecc71] text-white rounded-xl shadow-sm active:bg-slate-100 font-semibold transition-all flex items-center gap-2 text-sm"
             >
               {Icons.edit}
               <span>Edit</span>
             </button>
             <button
               onClick={() => onDelete(vehicle)}
-              className="p-2 bg-[#e74c3c] text-white rounded-xl shadow-[4px_4px_8px_#c0392b,-4px_-4px_8px_#ff5f4d] active:shadow-[inset_3px_3px_6px_#c0392b,inset_-3px_-3px_6px_#ff5f4d] font-semibold transition-all flex items-center gap-2 text-sm"
+              className="p-2 bg-[#e74c3c] text-white rounded-xl shadow-sm active:bg-slate-100 font-semibold transition-all flex items-center gap-2 text-sm"
             >
               {Icons.trash}
               <span>Delete</span>
@@ -185,7 +185,9 @@ export default function VehicleList({ category }: VehicleListProps) {
   const user = useAuthUser();
   const isAdmin = user.role === "Admin";
   
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -197,7 +199,8 @@ export default function VehicleList({ category }: VehicleListProps) {
   const [conditionFilter, setConditionFilter] = useState("All");
   const [brandFilter, setBrandFilter] = useState("All");
   
-  const debouncedSearch = useDebouncedValue(searchQuery, 200);
+  const debouncedSearch = useDebouncedValue(searchQuery, 300); // Optimal for API
+  const infiniteScrollKey = debouncedSearch || categoryFilter;
 
   // Fetch vehicles - with search support
   useEffect(() => {
@@ -291,8 +294,8 @@ export default function VehicleList({ category }: VehicleListProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#e0e5ec] p-6 flex items-center justify-center">
-        <div className="bg-[#e0e5ec] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-8">
+      <div className="min-h-screen bg-white p-6 flex items-center justify-center">
+        <div className="bg-white rounded-[30px] shadow-sm p-8">
           <div className="w-12 h-12 border-4 border-[#2ecc71] border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-[#718096] mt-4 text-lg">Loading vehicles...</p>
         </div>
@@ -302,12 +305,12 @@ export default function VehicleList({ category }: VehicleListProps) {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#e0e5ec] p-6">
-        <div className="bg-[#e0e5ec] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-8 max-w-md mx-auto mt-20 text-center">
+      <div className="min-h-screen bg-white p-6">
+        <div className="bg-white rounded-[30px] shadow-sm p-8 max-w-md mx-auto mt-20 text-center">
           <p className="text-[#e74c3c] font-medium text-lg mb-4">{error}</p>
           <button 
             onClick={handleRefresh}
-            className="px-8 py-3 bg-[#e74c3c] text-white rounded-2xl shadow-[6px_6px_12px_#c0392b,-6px_-6px_12px_#ff5f4d] active:shadow-[inset_4px_4px_8px_#c0392b,inset_-4px_-4px_8px_#ff5f4d] font-semibold transition-all"
+            className="px-8 py-3 bg-[#e74c3c] text-white rounded-2xl shadow-sm active:bg-slate-100 font-semibold transition-all"
           >
             Retry
           </button>
@@ -317,11 +320,11 @@ export default function VehicleList({ category }: VehicleListProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#e0e5ec] p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-[1600px] mx-auto space-y-8">
         
         {/* Header */}
-        <div className="bg-[#e0e5ec] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="bg-white rounded-[30px] shadow-sm p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-[#2d3748]">Vehicles</h1>
             <p className="text-lg text-[#718096] mt-2">{filteredVehicles.length} of {vehicles.length} vehicles</p>
@@ -330,14 +333,14 @@ export default function VehicleList({ category }: VehicleListProps) {
             {isAdmin && (
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('openAddVehicleModal'))}
-                className="px-6 py-4 bg-[#2ecc71] text-white rounded-xl shadow-[4px_4px_8px_#27ad60,-4px_-4px_8px_#35eb82] active:shadow-[inset_3px_3px_6px_#27ad60,inset_-3px_-3px_6px_#35eb82] font-semibold transition-all flex items-center gap-2"
+                className="px-6 py-4 bg-[#2ecc71] text-white rounded-xl shadow-sm active:bg-slate-100 font-semibold transition-all flex items-center gap-2"
               >
                 + Add Vehicle
               </button>
             )}
             <button
               onClick={handleRefresh}
-              className="px-6 py-4 bg-[#e0e5ec] text-[#2d3748] rounded-xl shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] font-semibold transition-all flex items-center gap-2"
+              className="px-6 py-4 bg-white text-[#2d3748] rounded-xl shadow-sm active:bg-slate-100 font-semibold transition-all flex items-center gap-2"
             >
               {Icons.refresh}
               <span className="hidden sm:inline">Refresh</span>
@@ -346,7 +349,7 @@ export default function VehicleList({ category }: VehicleListProps) {
         </div>
 
         {/* Search & Filters */}
-        <div className="bg-[#e0e5ec] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6 space-y-6">
+        <div className="bg-white rounded-[30px] shadow-sm p-6 space-y-6">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <NeuInput 
@@ -361,8 +364,8 @@ export default function VehicleList({ category }: VehicleListProps) {
                 onClick={() => setShowFilters(!showFilters)}
                 className={`p-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
                   showFilters
-                    ? 'bg-[#2ecc71] text-white shadow-[4px_4px_8px_#27ad60,-4px_-4px_8px_#35eb82] active:shadow-[inset_3px_3px_6px_#27ad60,inset_-3px_-3px_6px_#35eb82]'
-                    : 'bg-[#e0e5ec] text-[#2d3748] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]'
+                    ? 'bg-[#2ecc71] text-white shadow-sm active:bg-slate-100'
+                    : 'bg-white text-[#2d3748] shadow-sm active:bg-slate-100'
                 }`}
               >
                 {Icons.filter}
@@ -370,7 +373,7 @@ export default function VehicleList({ category }: VehicleListProps) {
               </button>
               <button
                 onClick={() => window.print()}
-                className="p-3 bg-[#e0e5ec] text-[#2d3748] rounded-xl shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] font-semibold transition-all flex items-center gap-2"
+                className="p-3 bg-white text-[#2d3748] rounded-xl shadow-sm active:bg-slate-100 font-semibold transition-all flex items-center gap-2"
               >
                 {Icons.print}
                 Print
@@ -384,7 +387,7 @@ export default function VehicleList({ category }: VehicleListProps) {
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full bg-[#e0e5ec] rounded-full shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff] px-6 py-4 outline-none text-[#2d3748] text-base appearance-none cursor-pointer"
+                  className="w-full bg-white rounded-full shadow-sm px-6 py-4 outline-none text-[#2d3748] text-base appearance-none cursor-pointer"
                 >
                   <option value="All">All Categories</option>
                   <option value="Cars">Cars</option>
@@ -399,7 +402,7 @@ export default function VehicleList({ category }: VehicleListProps) {
                 <select
                   value={conditionFilter}
                   onChange={(e) => setConditionFilter(e.target.value)}
-                  className="w-full bg-[#e0e5ec] rounded-full shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff] px-6 py-4 outline-none text-[#2d3748] text-base appearance-none cursor-pointer"
+                  className="w-full bg-white rounded-full shadow-sm px-6 py-4 outline-none text-[#2d3748] text-base appearance-none cursor-pointer"
                 >
                   <option value="All">All Conditions</option>
                   <option value="New">New</option>
@@ -413,7 +416,7 @@ export default function VehicleList({ category }: VehicleListProps) {
                 <select
                   value={brandFilter}
                   onChange={(e) => setBrandFilter(e.target.value)}
-                  className="w-full bg-[#e0e5ec] rounded-full shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff] px-6 py-4 outline-none text-[#2d3748] text-base appearance-none cursor-pointer"
+                  className="w-full bg-white rounded-full shadow-sm px-6 py-4 outline-none text-[#2d3748] text-base appearance-none cursor-pointer"
                 >
                   {brands.map(b => (
                     <option key={b} value={b}>{b}</option>
@@ -434,11 +437,11 @@ export default function VehicleList({ category }: VehicleListProps) {
         </div>
 
         {/* Vehicle List - Horizontal Scroll Container with Table Headers */}
-        <div className="bg-[#e0e5ec] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-6">
+        <div className="bg-white rounded-[30px] shadow-sm p-6">
           <div className="overflow-x-auto pb-4 custom-scrollbar">
             <div className="min-w-[1400px]">
               {/* Table Header */}
-              <div className="flex items-center gap-4 px-4 py-3 mb-3 bg-[#e0e5ec] rounded-[16px] shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] text-sm font-semibold text-[#4a4a5a] uppercase tracking-wider">
+              <div className="flex items-center gap-4 px-4 py-3 mb-3 bg-white rounded-[16px] shadow-sm text-sm font-semibold text-[#4a4a5a] uppercase tracking-wider">
                 <div className="w-16 shrink-0 text-center">Image</div>
                 <div className="w-56 shrink-0">Brand / Model</div>
                 <div className="w-24 shrink-0 text-center">Year</div>
@@ -466,7 +469,7 @@ export default function VehicleList({ category }: VehicleListProps) {
 
         {/* Empty State */}
         {filteredVehicles.length === 0 && (
-          <div className="bg-[#e0e5ec] rounded-[30px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] p-12 text-center">
+          <div className="bg-white rounded-[30px] shadow-sm p-12 text-center">
             <p className="text-[#718096] text-xl mb-2">No vehicles found</p>
             <p className="text-[#718096] text-base">Try adjusting your filters</p>
           </div>

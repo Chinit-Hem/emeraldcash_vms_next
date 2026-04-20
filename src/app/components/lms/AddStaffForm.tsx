@@ -12,7 +12,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   User,
@@ -44,6 +44,26 @@ export interface StaffFormData {
 }
 
 // ============================================================================
+// Debounce Hook
+// ============================================================================
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
@@ -61,25 +81,37 @@ export function AddStaffForm({
 
   const [errors, setErrors] = useState<Partial<Record<keyof StaffFormData, string>> & { submit?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [touched, setTouched] = useState<Partial<Record<keyof StaffFormData, boolean>>>({});
 
-  // Clear fullName error when user types
-  useEffect(() => {
-    if (formData.fullName.trim()) {
-      setErrors((prev) => {
-        if (prev.fullName) {
-          return { ...prev, fullName: undefined };
-        }
-        return prev;
-      });
+  // Debounced values for validation
+  const debouncedFullName = useDebounce(formData.fullName, 300);
+  const debouncedEmail = useDebounce(formData.email, 300);
+
+  // Optimized input change handler
+  const handleInputChange = useCallback((field: keyof StaffFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    
+    // Clear error immediately for better UX
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
-  }, [formData.fullName]);
+  }, [errors]);
 
-  // Validate form
-  const validateForm = (data: StaffFormData = formData): boolean => {
+  // Handle field blur for validation
+  const handleBlur = useCallback((field: keyof StaffFormData) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  }, []);
+
+  // Validate form - memoized
+  const validateForm = useCallback((data: StaffFormData = formData): boolean => {
     const newErrors: Partial<Record<keyof StaffFormData, string>> = {};
 
     if (!data.fullName || !data.fullName.trim()) {
       newErrors.fullName = "Full name is required";
+    } else if (data.fullName.trim().length < 2) {
+      newErrors.fullName = "Full name must be at least 2 characters";
+    } else if (data.fullName.trim().length > 50) {
+      newErrors.fullName = "Full name must be less than 50 characters";
     }
 
     if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
@@ -88,11 +120,40 @@ export function AddStaffForm({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [formData]);
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Validate on debounced changes
+  useEffect(() => {
+    if (touched.fullName && debouncedFullName) {
+      validateForm();
+    }
+  }, [debouncedFullName, touched.fullName, validateForm]);
+
+  useEffect(() => {
+    if (touched.email && debouncedEmail) {
+      validateForm();
+    }
+  }, [debouncedEmail, touched.email, validateForm]);
+
+  // Reset form to initial state
+  const resetForm = useCallback(() => {
+    setFormData({
+      fullName: "",
+      email: "",
+      branchLocation: "",
+      role: "Staff",
+      phone: "",
+    });
+    setErrors({});
+    setTouched({});
+  }, []);
+
+  // Handle form submission with optimistic updates
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Mark all fields as touched
+    setTouched({ fullName: true, email: true, branchLocation: true, role: true, phone: true });
 
     // Clear any previous submit errors
     setErrors((prev) => ({ ...prev, submit: undefined }));
@@ -105,16 +166,23 @@ export function AddStaffForm({
     setIsSubmitting(true);
 
     try {
-      await onSubmit(formData);
+      // Optimistic update - clear form immediately for better UX
+      const submitData = { ...formData };
+      resetForm();
+      
+      await onSubmit(submitData);
     } catch (error) {
+      console.error("[AddStaffForm] Submit error:", error);
       setErrors((prev) => ({
         ...prev,
         submit: "Failed to create staff member. Please try again.",
       }));
+      // Restore form data on error
+      setFormData(formData);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [formData, validateForm, onSubmit, resetForm]);
 
   // Role options for select
   const roleOptions = LMS_ROLES.map((role) => ({
@@ -132,13 +200,13 @@ export function AddStaffForm({
       <div className="min-h-screen px-4 py-4 md:py-8 pb-24 md:pb-8 flex items-center justify-center">
         <div className="max-w-2xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-300 my-4">
           {/* Neumorphism Card Container */}
-          <div className="rounded-[24px] bg-[#e0e5ec] shadow-[12px_12px_24px_#a3b1c6,-12px_-12px_24px_#ffffff] overflow-visible">
+          <div className="rounded-[24px] bg-white shadow-sm overflow-visible">
             {/* Header - Neumorphism */}
-            <div className="sticky top-0 z-10 p-4 md:p-6 rounded-t-[24px] bg-[#e0e5ec] shadow-[0_4px_12px_#a3b1c6]">
+            <div className="sticky top-0 z-10 p-4 md:p-6 rounded-t-[24px] bg-white shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {/* Icon Container - Neumorphism */}
-                  <div className="p-3 rounded-[12px] bg-[#e0e5ec] shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff]">
+                  <div className="p-3 rounded-[12px] bg-white shadow-sm">
                     <User className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
@@ -154,7 +222,7 @@ export function AddStaffForm({
                 <button
                   onClick={onCancel}
                   disabled={isSubmitting}
-                  className="p-2 rounded-[10px] bg-[#e0e5ec] shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff] hover:shadow-[inset_2px_2px_4px_#a3b1c6,inset_-2px_-2px_4px_#ffffff] transition-all disabled:opacity-50"
+                  className="p-2 rounded-[10px] bg-white shadow-sm hover:bg-slate-50 transition-all disabled:opacity-50"
                 >
                   <X className="w-5 h-5 text-[#4a4a5a]" />
                 </button>
@@ -165,7 +233,7 @@ export function AddStaffForm({
             <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-6">
               {/* Error Summary - Neumorphism */}
               {errors.submit && (
-                <div className="p-4 rounded-[16px] bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff] flex items-start gap-3">
+                <div className="p-4 rounded-[16px] bg-white shadow-sm flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-red-600 font-medium">{errors.submit}</p>
                 </div>
@@ -239,13 +307,13 @@ export function AddStaffForm({
               />
 
               {/* Actions - Neumorphism Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-[#a3b1c6]/30 relative z-50">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-200 relative z-50">
                 {/* Cancel Button */}
                 <button
                   type="button"
                   onClick={onCancel}
                   disabled={isSubmitting}
-                  className="sm:flex-1 px-4 py-3 rounded-[12px] bg-[#e0e5ec] text-[#4a4a5a] font-semibold shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff] hover:shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff] active:shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff] transition-all disabled:opacity-50"
+                  className="sm:flex-1 px-4 py-3 rounded-[12px] bg-white text-[#4a4a5a] font-semibold shadow-sm hover:bg-slate-50 active:bg-slate-100 transition-all disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -253,7 +321,7 @@ export function AddStaffForm({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="sm:flex-1 px-4 py-3 rounded-[12px] bg-[#e0e5ec] text-emerald-600 font-semibold shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff] hover:shadow-[inset_3px_3px_6px_#a3b1c6,inset_-3px_-3px_6px_#ffffff] active:shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="sm:flex-1 px-4 py-3 rounded-[12px] bg-white text-emerald-600 font-semibold shadow-sm hover:bg-slate-50 active:bg-slate-100 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>

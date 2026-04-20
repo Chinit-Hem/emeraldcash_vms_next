@@ -241,13 +241,13 @@ export default function FiltersBar({
   }, [handleChange]);
 
   return (
-    <div className="w-full bg-[#e0e5ec] rounded-[24px] shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] overflow-hidden">
+    <div className="w-full bg-white rounded-[24px] shadow-sm overflow-hidden">
       {/* Header Section */}
-      <div className="px-6 py-5 border-b border-[#bebebe]/30">
+      <div className="px-6 py-5 border-b border-slate-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           {/* Title & Count */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-[#e0e5ec] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] text-[#2ecc71]">
+            <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-white shadow-sm text-[#2ecc71]">
               {Icons.filter}
             </div>
             <div>
@@ -270,12 +270,12 @@ export default function FiltersBar({
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               className={cn(
                 "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium",
-                "bg-[#e0e5ec] text-[#1a1a2e]",
-                "shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff]",
-                "hover:shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff]",
-                "active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+                "bg-white text-[#1a1a2e]",
+                "shadow-sm",
+                "hover:bg-slate-50",
+                "active:bg-slate-100",
                 "transition-all duration-200",
-                showAdvancedFilters && "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] text-[#2ecc71]"
+                showAdvancedFilters && "shadow-sm text-[#2ecc71]"
               )}
             >
               <span className="hidden sm:inline">{showAdvancedFilters ? "Hide Filters" : "More Filters"}</span>
@@ -293,8 +293,8 @@ export default function FiltersBar({
                 "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium",
                 "transition-all duration-200",
                 hasActiveFilters
-                  ? "bg-[#e0e5ec] text-[#e74c3c] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] hover:shadow-[6px_6px_12px_#bebebe,-6px_-6px_12px_#ffffff] active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]"
-                  : "bg-[#e0e5ec] text-[#4a4a5a]/50 cursor-not-allowed shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
+                  ? "bg-white text-[#e74c3c] shadow-sm hover:bg-slate-50 active:bg-slate-100"
+                  : "bg-white text-[#4a4a5a]/50 cursor-not-allowed shadow-sm"
               )}
             >
               {Icons.reset}
@@ -320,9 +320,9 @@ export default function FiltersBar({
             onChange={(e) => handleChange("search", e.target.value)}
             className={cn(
               "w-full h-12 pl-12 pr-4 rounded-xl text-sm font-medium",
-              "bg-[#e0e5ec] text-[#1a1a2e] placeholder:text-[#4a4a5a]/60",
-              "shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff_!important]",
-              "focus:shadow-[inset_5px_5px_10px_#b8b9be,inset_-5px_-5px_10px_#ffffff_!important]",
+              "bg-white text-[#1a1a2e] placeholder:text-[#4a4a5a]/60",
+              "shadow-sm",
+              "focus:ring-2 focus:ring-emerald-500/20",
               "border-none outline-none focus:outline-none focus:ring-0",
               "transition-all duration-200"
             )}
@@ -333,9 +333,9 @@ export default function FiltersBar({
               className={cn(
                 "absolute right-3 top-1/2 -translate-y-1/2",
                 "flex items-center justify-center w-7 h-7 rounded-lg",
-                "bg-[#e0e5ec] text-[#4a4a5a]",
-                "shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff]",
-                "hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]",
+                "bg-white text-[#4a4a5a]",
+                "shadow-sm",
+                "hover:bg-slate-50",
                 "hover:text-[#e74c3c]",
                 "transition-all duration-200"
               )}
@@ -359,16 +359,16 @@ export default function FiltersBar({
                 onClick={() => removeFilter(filter.key)}
                 className={cn(
                   "group inline-flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-xl text-xs font-medium",
-                  "bg-[#e0e5ec] text-[#1a1a2e]",
-                  "shadow-[3px_3px_6px_#bebebe,-3px_-3px_6px_#ffffff]",
-                  "hover:shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff]",
-                  "active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]",
+                  "bg-white text-[#1a1a2e]",
+                  "shadow-sm",
+                  "hover:bg-slate-50",
+                  "active:bg-slate-100",
                   "transition-all duration-200"
                 )}
               >
                 <span className="text-[#2ecc71]">{filter.icon}</span>
                 <span className="max-w-[150px] truncate">{filter.label}</span>
-                <span className="ml-1 flex items-center justify-center w-5 h-5 rounded-md bg-[#e0e5ec] shadow-[1px_1px_2px_#bebebe,-1px_-1px_2px_#ffffff] text-[#4a4a5a] group-hover:text-[#e74c3c] group-hover:shadow-[inset_1px_1px_2px_#bebebe,inset_-1px_-1px_2px_#ffffff] transition-all">
+                <span className="ml-1 flex items-center justify-center w-5 h-5 rounded-md bg-white shadow-sm text-[#4a4a5a] group-hover:text-[#e74c3c] group-hover:bg-slate-50 transition-all">
                   {Icons.close}
                 </span>
               </button>
@@ -392,7 +392,7 @@ export default function FiltersBar({
           showAdvancedFilters ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
         )}
       >
-        <div className="px-6 pb-6 border-t border-[#bebebe]/30 pt-5">
+        <div className="px-6 pb-6 border-t border-slate-200 pt-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             
             {/* Category */}
@@ -406,11 +406,11 @@ export default function FiltersBar({
                   onChange={(e) => handleChange("category", e.target.value)}
                   className={cn(
                     "w-full px-4 py-2.5 rounded-xl text-sm font-medium appearance-none cursor-pointer",
-                    "bg-[#e0e5ec] text-[#1a1a2e]",
-                    "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+                    "bg-white text-[#1a1a2e]",
+                    "shadow-sm",
                     "border-none outline-none",
-                    "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-                    "focus:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
+                    "hover:bg-slate-50",
+                    "focus:ring-2 focus:ring-emerald-500/20",
                     "transition-all duration-200"
                   )}
                 >
@@ -435,11 +435,11 @@ export default function FiltersBar({
                   onChange={(e) => handleChange("brand", e.target.value)}
                   className={cn(
                     "w-full px-4 py-2.5 rounded-xl text-sm font-medium appearance-none cursor-pointer",
-                    "bg-[#e0e5ec] text-[#1a1a2e]",
-                    "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+                    "bg-white text-[#1a1a2e]",
+                    "shadow-sm",
                     "border-none outline-none",
-                    "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-                    "focus:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
+                    "hover:bg-slate-50",
+                    "focus:ring-2 focus:ring-emerald-500/20",
                     "transition-all duration-200"
                   )}
                 >
@@ -464,11 +464,11 @@ export default function FiltersBar({
                   onChange={(e) => handleChange("condition", e.target.value)}
                   className={cn(
                     "w-full px-4 py-2.5 rounded-xl text-sm font-medium appearance-none cursor-pointer",
-                    "bg-[#e0e5ec] text-[#1a1a2e]",
-                    "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+                    "bg-white text-[#1a1a2e]",
+                    "shadow-sm",
                     "border-none outline-none",
-                    "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-                    "focus:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
+                    "hover:bg-slate-50",
+                    "focus:ring-2 focus:ring-emerald-500/20",
                     "transition-all duration-200"
                   )}
                 >
@@ -493,11 +493,11 @@ export default function FiltersBar({
                   onChange={(e) => handleChange("color", e.target.value)}
                   className={cn(
                     "w-full px-4 py-2.5 rounded-xl text-sm font-medium appearance-none cursor-pointer",
-                    "bg-[#e0e5ec] text-[#1a1a2e]",
-                    "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+                    "bg-white text-[#1a1a2e]",
+                    "shadow-sm",
                     "border-none outline-none",
-                    "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-                    "focus:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
+                    "hover:bg-slate-50",
+                    "focus:ring-2 focus:ring-emerald-500/20",
                     "transition-all duration-200"
                   )}
                 >
@@ -525,11 +525,11 @@ export default function FiltersBar({
                   onChange={(e) => handleChange("yearMin", e.target.value)}
                   className={cn(
                     "flex-1 px-4 py-2.5 rounded-xl text-sm font-medium",
-                    "bg-[#e0e5ec] text-[#1a1a2e] placeholder:text-[#4a4a5a]/50",
-                    "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+                    "bg-white text-[#1a1a2e] placeholder:text-[#4a4a5a]/50",
+                    "shadow-sm",
                     "border-none outline-none",
-                    "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-                    "focus:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
+                    "hover:bg-slate-50",
+                    "focus:ring-2 focus:ring-emerald-500/20",
                     "transition-all duration-200"
                   )}
                 />
@@ -541,11 +541,11 @@ export default function FiltersBar({
                   onChange={(e) => handleChange("yearMax", e.target.value)}
                   className={cn(
                     "flex-1 px-4 py-2.5 rounded-xl text-sm font-medium",
-                    "bg-[#e0e5ec] text-[#1a1a2e] placeholder:text-[#4a4a5a]/50",
-                    "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+                    "bg-white text-[#1a1a2e] placeholder:text-[#4a4a5a]/50",
+                    "shadow-sm",
                     "border-none outline-none",
-                    "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-                    "focus:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
+                    "hover:bg-slate-50",
+                    "focus:ring-2 focus:ring-emerald-500/20",
                     "transition-all duration-200"
                   )}
                 />
@@ -567,11 +567,11 @@ export default function FiltersBar({
                     onChange={(e) => handleChange("priceMin", e.target.value)}
                     className={cn(
                       "w-full pl-8 pr-4 py-2.5 rounded-xl text-sm font-medium",
-                      "bg-[#e0e5ec] text-[#1a1a2e] placeholder:text-[#4a4a5a]/50",
-                      "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+                      "bg-white text-[#1a1a2e] placeholder:text-[#4a4a5a]/50",
+                      "shadow-sm",
                       "border-none outline-none",
-                      "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-                      "focus:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
+                      "hover:bg-slate-50",
+                      "focus:ring-2 focus:ring-emerald-500/20",
                       "transition-all duration-200"
                     )}
                   />
@@ -586,11 +586,11 @@ export default function FiltersBar({
                     onChange={(e) => handleChange("priceMax", e.target.value)}
                     className={cn(
                       "w-full pl-8 pr-4 py-2.5 rounded-xl text-sm font-medium",
-                      "bg-[#e0e5ec] text-[#1a1a2e] placeholder:text-[#4a4a5a]/50",
-                      "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+                      "bg-white text-[#1a1a2e] placeholder:text-[#4a4a5a]/50",
+                      "shadow-sm",
                       "border-none outline-none",
-                      "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-                      "focus:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
+                      "hover:bg-slate-50",
+                      "focus:ring-2 focus:ring-emerald-500/20",
                       "transition-all duration-200"
                     )}
                   />
@@ -611,11 +611,11 @@ export default function FiltersBar({
                     onChange={(e) => handleChange("dateFrom", e.target.value)}
                     className={cn(
                       "w-full px-4 py-2.5 rounded-xl text-sm font-medium",
-                      "bg-[#e0e5ec] text-[#1a1a2e]",
-                      "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+                      "bg-white text-[#1a1a2e]",
+                      "shadow-sm",
                       "border-none outline-none",
-                      "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-                    "focus:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
+                      "hover:bg-slate-50",
+                    "focus:ring-2 focus:ring-emerald-500/20",
                     "transition-all duration-200"
                     )}
                   />
@@ -628,11 +628,11 @@ export default function FiltersBar({
                     onChange={(e) => handleChange("dateTo", e.target.value)}
                     className={cn(
                       "w-full px-4 py-2.5 rounded-xl text-sm font-medium",
-                      "bg-[#e0e5ec] text-[#1a1a2e]",
-                      "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+                      "bg-white text-[#1a1a2e]",
+                      "shadow-sm",
                       "border-none outline-none",
-                      "hover:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
-                      "focus:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]",
+                      "hover:bg-slate-50",
+                      "focus:ring-2 focus:ring-emerald-500/20",
                       "transition-all duration-200"
                     )}
                   />
@@ -649,11 +649,11 @@ export default function FiltersBar({
                 onClick={() => handleChange("withoutImage", !filters.withoutImage)}
                 className={cn(
                   "w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium",
-                  "bg-[#e0e5ec] border-none outline-none",
+                  "bg-white border-none outline-none",
                   "transition-all duration-200",
                   filters.withoutImage
-                    ? "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] text-[#e74c3c]"
-                    : "shadow-[3px_3px_6px_#bebebe,-3px_-3px_6px_#ffffff] text-[#1a1a2e] hover:shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff]"
+                    ? "shadow-sm text-[#e74c3c]"
+                    : "shadow-sm text-[#1a1a2e] hover:bg-slate-50"
                 )}
               >
                 <span className="flex items-center gap-2">
@@ -663,11 +663,11 @@ export default function FiltersBar({
                 <div className={cn(
                   "w-10 h-5 rounded-full relative transition-colors duration-200",
                   filters.withoutImage 
-                    ? "bg-[#e74c3c] shadow-[inset_2px_2px_4px_#c0392b,inset_-2px_-2px_4px_#ff5f4d]"
-                    : "bg-[#2ecc71] shadow-[inset_2px_2px_4px_#27ad60,inset_-2px_-2px_4px_#35eb82]"
+                    ? "bg-[#e74c3c] shadow-sm"
+                    : "bg-[#2ecc71] shadow-sm"
                 )}>
                   <div className={cn(
-                    "absolute top-0.5 w-4 h-4 rounded-full bg-[#e0e5ec] shadow-[1px_1px_2px_#bebebe,-1px_-1px_2px_#ffffff] transition-transform duration-200",
+                    "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200",
                     filters.withoutImage ? "translate-x-5" : "translate-x-0.5"
                   )} />
                 </div>
@@ -682,9 +682,9 @@ export default function FiltersBar({
               className={cn(
                 "w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold",
                 "bg-[#2ecc71] text-white",
-                "shadow-[4px_4px_8px_#27ad60,-4px_-4px_8px_#35eb82]",
-                "hover:shadow-[6px_6px_12px_#27ad60,-6px_-6px_12px_#35eb82]",
-                "active:shadow-[inset_3px_3px_6px_#27ad60,inset_-3px_-3px_6px_#35eb82]",
+                "shadow-sm",
+                "hover:bg-slate-50",
+                "active:bg-slate-100",
                 "transition-all duration-200"
               )}
             >

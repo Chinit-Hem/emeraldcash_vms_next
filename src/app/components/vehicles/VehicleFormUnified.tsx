@@ -16,20 +16,22 @@
 
 "use client";
 
-import React, { useMemo } from "react";
-import { useVehicleForm, type Vehicle, type UseVehicleFormOptions } from "@/lib/useVehicleForm";
-import { GlassField } from "@/components/ui/glass/GlassField";
-import { SectionCard } from "@/components/ui/SectionCard";
 import { GlassButton } from "@/components/ui/glass/GlassButton";
+import { GlassField } from "@/components/ui/glass/GlassField";
 import { ImageInput } from "@/components/ui/ImageInput";
-import { formatCurrency } from "@/lib/format";
+import { SectionCard } from "@/components/ui/SectionCard";
 import { formatFileSize as formatImageSize } from "@/lib/compressImage";
+import { formatCurrency } from "@/lib/format";
 import {
   COLOR_OPTIONS,
-  TAX_TYPE_METADATA,
-  PLATE_NUMBER_MAX_LENGTH,
   PLATE_NUMBER_HINTS,
+  PLATE_NUMBER_MAX_LENGTH,
+  TAX_TYPE_METADATA,
 } from "@/lib/types";
+import { useVehicleFormUnified as useVehicleForm, type Vehicle } from "@/lib/useVehicleFormUnified";
+import React, { useMemo } from "react";
+
+
 
 // ============================================================================
 // Types & Interfaces
@@ -77,7 +79,7 @@ export interface VehicleFormUnifiedProps {
 /**
  * Form sections that can be disabled
  */
-export type FormSection = "image" | "basic" | "specs" | "pricing";
+export type FormSection = "image" | "basic" | "specs" | "pricing" | "assignment";
 
 /**
  * Special field configuration for composition
@@ -471,6 +473,7 @@ export function VehicleFormUnified({
     validateOnChange: false,
   }), [vehicle, onSubmit]);
   
+
   const {
     formData,
     errors,
@@ -488,6 +491,32 @@ export function VehicleFormUnified({
     validateForm,
     handleSubmit,
   } = useVehicleForm(hookOptions);
+
+  // Stock tracking users and status
+  const [users, setUsers] = useState<UnifiedUser[]>([]);
+  const [statusOptions] = useState([
+    { value: 'PENDING', label: 'Pending Assignment' },
+    { value: 'ASSIGNED', label: 'Assigned' },
+    { value: 'ACCEPTED', label: 'Accepted' },
+    { value: 'LOST', label: 'Lost / Missing' },
+    { value: 'RETURNED', label: 'Returned' },
+  ]);
+  
+  // Load users for dropdowns
+  useEffect(() => {
+    const loadUsers = async () => {
+      const result = await userStaffService.getAllUsers();
+      if (result.success) {
+        setUsers(result.data || []);
+      }
+    };
+    loadUsers();
+  }, []);
+
+  const userOptions = useMemo(() => 
+    users.map(user => ({ value: String(user.staff_id || 0), label: `${user.full_name} (${user.username})` }))
+  , [users]);
+
   
   // Clear external error when form changes
   React.useEffect(() => {
@@ -780,4 +809,5 @@ export function VehicleFormUnified({
 export default VehicleFormUnified;
 
 // Re-export types from useVehicleForm for convenience
-export type { Vehicle, UseVehicleFormOptions } from "@/lib/useVehicleForm";
+export type { UseVehicleFormOptions, Vehicle } from "@/lib/useVehicleForm";
+

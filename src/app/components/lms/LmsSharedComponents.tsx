@@ -107,7 +107,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
   return (
     <div className="flex items-center gap-3">
-      <div className={`flex-1 bg-[#e6e9ef] rounded-full overflow-hidden shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] ${sizeClasses[size]}`}>
+      <div className={`flex-1 bg-slate-100 rounded-full overflow-hidden shadow-sm ${sizeClasses[size]}`}>
         <div
           className={`h-full rounded-full transition-all duration-700 ease-out bg-gradient-to-r ${colorClasses.gradient} ${
             animated ? "animate-pulse-subtle" : ""
@@ -156,7 +156,7 @@ export const LmsStatCard: React.FC<LmsStatCardProps> = ({
 
   return (
     <div
-      className={`p-5 sm:p-6 bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] transition-all duration-300 hover:shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] active:shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff] ${
+      className={`p-5 sm:p-6 bg-slate-100 rounded-[24px] shadow-sm transition-all duration-300 hover:bg-slate-50 active:bg-slate-100 ${
         onClick ? "cursor-pointer" : ""
       } ${className}`}
       onClick={onClick}
@@ -183,7 +183,7 @@ export const LmsStatCard: React.FC<LmsStatCardProps> = ({
             </div>
           )}
         </div>
-        <div className={`p-3 rounded-[16px] bg-[#e6e9ef] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] ${colorClasses.text} flex-shrink-0 ml-4`}>
+        <div className={`p-3 rounded-[16px] bg-slate-100 shadow-sm ${colorClasses.text} flex-shrink-0 ml-4`}>
           {icon}
         </div>
       </div>
@@ -218,13 +218,13 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
 
   return (
     <div
-      className={`p-6 bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] cursor-pointer transition-all duration-300 hover:shadow-[12px_12px_24px_#bebebe,-12px_-12px_24px_#ffffff] active:shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff] group ${
+      className={`p-6 bg-slate-100 rounded-[24px] shadow-sm cursor-pointer transition-all duration-300 hover:bg-slate-50 active:bg-slate-100 group ${
         isComplete ? "ring-2 ring-emerald-500/50" : ""
       }`}
       onClick={onClick}
     >
       <div className="flex items-start justify-between mb-4">
-        <div className={`p-3 rounded-[16px] bg-[#e6e9ef] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff]`}>
+        <div className={`p-3 rounded-[16px] bg-slate-100 shadow-sm`}>
           <IconComponent
             name={category.icon}
             className={`w-6 h-6 ${colorClasses.text}`}
@@ -232,11 +232,11 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
         </div>
         <div className="flex items-center gap-2">
           {isComplete ? (
-            <div className="p-2 rounded-full bg-[#e6e9ef] shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]">
+            <div className="p-2 rounded-full bg-slate-100 shadow-sm">
               <CheckCircle2 className="w-5 h-5 text-emerald-500" />
             </div>
           ) : (
-            <div className="p-2 rounded-full bg-[#e6e9ef] shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]">
+            <div className="p-2 rounded-full bg-slate-100 shadow-sm">
               <Circle className="w-5 h-5 text-[#4a4a5a]" />
             </div>
           )}
@@ -248,7 +248,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
                     e.stopPropagation();
                     onEdit();
                   }}
-                  className="p-2 rounded-[10px] bg-[#e6e9ef] shadow-[3px_3px_6px_#bebebe,-3px_-3px_6px_#ffffff] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] transition-all"
+                  className="p-2 rounded-[10px] bg-slate-100 shadow-sm active:bg-slate-100 transition-all"
                 >
                   <Edit2 className="w-4 h-4 text-[#4a4a5a]" />
                 </button>
@@ -259,7 +259,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
                     e.stopPropagation();
                     onDelete();
                   }}
-                  className="p-2 rounded-[10px] bg-[#e6e9ef] shadow-[3px_3px_6px_#bebebe,-3px_-3px_6px_#ffffff] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] transition-all"
+                  className="p-2 rounded-[10px] bg-slate-100 shadow-sm active:bg-slate-100 transition-all"
                 >
                   <Trash2 className="w-4 h-4 text-red-500" />
                 </button>
@@ -343,8 +343,8 @@ export const StaffProgressTable: React.FC<StaffProgressTableProps> = ({
 
   if (visibleStaff.length === 0) {
     return (
-      <div className="p-8 text-center bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff]">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-[16px] bg-[#e6e9ef] shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] flex items-center justify-center">
+      <div className="p-8 text-center bg-slate-100 rounded-[24px] shadow-sm">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-[16px] bg-slate-100 shadow-sm flex items-center justify-center">
           <Users className="w-8 h-8 text-[#4a4a5a]" />
         </div>
         <p className="text-[#1a1a2e] font-medium">No progress data available</p>
@@ -354,12 +354,12 @@ export const StaffProgressTable: React.FC<StaffProgressTableProps> = ({
   }
 
   return (
-    <div className="bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff] overflow-hidden">
+    <div className="bg-slate-100 rounded-[24px] shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-5 bg-[#e6e9ef] shadow-[0_4px_8px_#bebebe]">
+      <div className="px-6 py-5 bg-slate-100 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-[14px] bg-[#e6e9ef] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] text-emerald-600">
+            <div className="p-2.5 rounded-[14px] bg-slate-100 shadow-sm text-emerald-600">
               <Users className="w-5 h-5" />
             </div>
             <div>
@@ -372,7 +372,7 @@ export const StaffProgressTable: React.FC<StaffProgressTableProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium px-3 py-1.5 bg-[#e6e9ef] text-emerald-600 rounded-full shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]">
+            <span className="text-xs font-medium px-3 py-1.5 bg-slate-100 text-emerald-600 rounded-full shadow-sm">
               {Math.round(visibleStaff.reduce((acc, s) => acc + s.completion_percentage, 0) / visibleStaff.length)}% Avg
             </span>
           </div>
@@ -410,12 +410,12 @@ export const StaffProgressTable: React.FC<StaffProgressTableProps> = ({
             {visibleStaff.map((staff, index) => (
               <tr
                 key={staff.staff_id}
-                className="transition-all duration-300 hover:bg-[#e6e9ef]/50"
+                className="transition-all duration-300 hover:bg-slate-100/50"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-[12px] bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold text-sm shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff]">
+                    <div className="h-10 w-10 rounded-[12px] bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
                       {staff.staff_name
                         .split(" ")
                         .map((n) => n[0])
@@ -431,21 +431,21 @@ export const StaffProgressTable: React.FC<StaffProgressTableProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-1.5 text-sm text-[#1a1a2e]">
-                    <div className="p-1 rounded-lg bg-[#e6e9ef] shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]">
+                    <div className="p-1 rounded-lg bg-slate-100 shadow-sm">
                       <Building2 className="w-3.5 h-3.5 text-[#4a4a5a]" />
                     </div>
                     <span className="font-medium">{staff.branch || "Main Branch"}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="inline-flex items-center rounded-full bg-[#e6e9ef] px-3 py-1 text-xs font-bold text-[#2ecc71] shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]">
+                  <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-[#2ecc71] shadow-sm">
                     {staff.role || "Staff"}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
                     <div className="flex-1 w-24">
-                      <div className="h-2 bg-[#e6e9ef] rounded-full overflow-hidden shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]">
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden shadow-sm">
                         <div
                           className={`h-full rounded-full transition-all duration-700 ease-out ${
                             staff.completion_percentage === 100
@@ -485,13 +485,13 @@ export const StaffProgressTable: React.FC<StaffProgressTableProps> = ({
                     {staff.completion_percentage === 100 ? (
                       <button
                         onClick={() => onViewCertificate(staff.staff_id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2ecc71] text-white text-xs font-medium rounded-[10px] shadow-[3px_3px_6px_#27ad60,-3px_-3px_6px_#35eb82] active:shadow-[inset_2px_2px_4px_#27ad60,inset_-2px_-2px_4px_#35eb82] transition-all"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2ecc71] text-white text-xs font-medium rounded-[10px] shadow-sm active:bg-slate-100 transition-all"
                       >
                         <Trophy className="w-3.5 h-3.5" />
                         View
                       </button>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#4a4a5a] bg-[#e6e9ef] rounded-[10px] shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#4a4a5a] bg-slate-100 rounded-[10px] shadow-sm">
                         <Lock className="w-3.5 h-3.5" />
                         Locked
                       </span>
@@ -565,7 +565,7 @@ export const LastUpdated: React.FC<LastUpdatedProps> = ({
         <button
           onClick={onRefresh}
           disabled={isLoading}
-          className={`p-2 rounded-[10px] bg-[#e6e9ef] shadow-[3px_3px_6px_#bebebe,-3px_-3px_6px_#ffffff] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] transition-all ${
+          className={`p-2 rounded-[10px] bg-slate-100 shadow-sm active:bg-slate-100 transition-all ${
             isLoading ? "animate-spin" : ""
           }`}
         >
@@ -597,7 +597,7 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
     <button
       onClick={onExport}
       disabled={isExporting}
-      className={`inline-flex items-center gap-2 px-4 py-2 bg-[#e6e9ef] text-[#1a1a2e] text-sm font-medium rounded-[12px] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] transition-all disabled:opacity-50 ${className}`}
+      className={`inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-[#1a1a2e] text-sm font-medium rounded-[12px] shadow-sm active:bg-slate-100 transition-all disabled:opacity-50 ${className}`}
     >
       {isExporting ? (
         <RefreshCw className="w-4 h-4 animate-spin" />
@@ -640,7 +640,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div className="flex items-center gap-4">
         {icon && (
-          <div className={`p-3 rounded-[16px] bg-[#e6e9ef] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] ${colorClasses.text}`}>
+          <div className={`p-3 rounded-[16px] bg-slate-100 shadow-sm ${colorClasses.text}`}>
             {icon}
           </div>
         )}
@@ -695,7 +695,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   className = "",
 }) => {
   return (
-    <div className={`flex flex-wrap gap-2 p-2 bg-[#e6e9ef] rounded-[16px] shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] ${className}`}>
+    <div className={`flex flex-wrap gap-2 p-2 bg-slate-100 rounded-[16px] shadow-sm ${className}`}>
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -706,7 +706,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
             onClick={() => onTabChange(tab.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-[12px] transition-all whitespace-nowrap ${
               isActive
-                ? "bg-[#e6e9ef] text-emerald-600 shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff]"
+                ? "bg-slate-100 text-emerald-600 shadow-sm"
                 : "text-[#4a4a5a] hover:text-[#1a1a2e]"
             }`}
           >
@@ -715,8 +715,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
             {tab.badge !== undefined && tab.badge > 0 && (
               <span className={`ml-1 px-2 py-0.5 text-xs rounded-full ${
                 isActive
-                  ? "bg-emerald-100 text-emerald-700 shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
-                  : "bg-[#e6e9ef] text-[#4a4a5a] shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
+                  ? "bg-emerald-100 text-emerald-700 shadow-sm"
+                  : "bg-slate-100 text-[#4a4a5a] shadow-sm"
               }`}>
                 {tab.badge}
               </span>
@@ -749,9 +749,9 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   action,
 }) => {
   return (
-    <div className="p-8 text-center bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff]">
+    <div className="p-8 text-center bg-slate-100 rounded-[24px] shadow-sm">
       {icon && (
-        <div className="mx-auto w-16 h-16 mb-4 rounded-[16px] bg-[#e6e9ef] shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] flex items-center justify-center">
+        <div className="mx-auto w-16 h-16 mb-4 rounded-[16px] bg-slate-100 shadow-sm flex items-center justify-center">
           {icon}
         </div>
       )}
@@ -766,7 +766,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       {action && (
         <button
           onClick={action.onClick}
-          className="px-6 py-2.5 bg-[#2ecc71] text-white font-medium rounded-[12px] shadow-[4px_4px_8px_#27ad60,-4px_-4px_8px_#35eb82] active:shadow-[inset_3px_3px_6px_#27ad60,inset_-3px_-3px_6px_#35eb82] transition-all"
+          className="px-6 py-2.5 bg-[#2ecc71] text-white font-medium rounded-[12px] shadow-sm active:bg-slate-100 transition-all"
         >
           {action.label}
         </button>
@@ -795,7 +795,7 @@ export const SkeletonGrid: React.FC<SkeletonProps> = ({
       {Array.from({ length: rows * columns }).map((_, i) => (
         <div
           key={i}
-          className="h-32 bg-[#e6e9ef] rounded-[20px] shadow-[inset_6px_6px_12px_#bebebe,inset_-6px_-6px_12px_#ffffff] animate-pulse"
+          className="h-32 bg-slate-100 rounded-[20px] shadow-sm animate-pulse"
         />
       ))}
     </div>
@@ -804,11 +804,11 @@ export const SkeletonGrid: React.FC<SkeletonProps> = ({
 
 export const SkeletonTable: React.FC<{ rows?: number }> = ({ rows = 5 }) => {
   return (
-    <div className="space-y-3 p-6 bg-[#e6e9ef] rounded-[24px] shadow-[10px_10px_20px_#bebebe,-10px_-10px_20px_#ffffff]">
+    <div className="space-y-3 p-6 bg-slate-100 rounded-[24px] shadow-sm">
       {Array.from({ length: rows }).map((_, i) => (
         <div
           key={i}
-          className="h-12 bg-[#e6e9ef] rounded-[12px] shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] animate-pulse"
+          className="h-12 bg-slate-100 rounded-[12px] shadow-sm animate-pulse"
         />
       ))}
     </div>

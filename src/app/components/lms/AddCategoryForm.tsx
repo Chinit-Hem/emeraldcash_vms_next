@@ -12,7 +12,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   Plus,
   BookOpen,
@@ -78,6 +78,26 @@ const AVAILABLE_COLORS = [
 ];
 
 // ============================================================================
+// Debounce Hook
+// ============================================================================
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+// ============================================================================
 // Main Component
 // ============================================================================
 
@@ -95,21 +115,36 @@ export function AddCategoryForm({
 
   const [errors, setErrors] = useState<Partial<Record<keyof CategoryFormData, string>> & { submit?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [touched, setTouched] = useState<Partial<Record<keyof CategoryFormData, boolean>>>({});
 
-  // Validate form
-  const validateForm = (): boolean => {
+  // Debounced form data for validation
+  const debouncedName = useDebounce(formData.name, 300);
+
+  // Validate form - memoized based on debounced values
+  const validateForm = useCallback((): boolean => {
     const newErrors: Partial<Record<keyof CategoryFormData, string>> = {};
 
     if (!formData.name.trim()) {
       newErrors.name = "Category name is required";
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = "Category name must be at least 2 characters";
+    } else if (formData.name.trim().length > 50) {
+      newErrors.name = "Category name must be less than 50 characters";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [formData.name]);
+
+  // Validate on debounced name change
+  useEffect(() => {
+    if (touched.name && debouncedName) {
+      validateForm();
+    }
+  }, [debouncedName, touched.name, validateForm]);
 
   // Reset form to initial state
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
       name: "",
       description: "",
@@ -118,11 +153,31 @@ export function AddCategoryForm({
       orderIndex: 0,
     });
     setErrors({});
-  };
+    setTouched({});
+  }, []);
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Optimized input change handler with debounced error clearing
+  const handleInputChange = useCallback((field: keyof CategoryFormData, value: string | number) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    
+    // Clear error immediately for better UX
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  }, [errors]);
+
+  // Handle field blur for validation
+  const handleBlur = useCallback((field: keyof CategoryFormData) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    validateForm();
+  }, [validateForm]);
+
+  // Handle form submission with optimistic updates
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Mark all fields as touched
+    setTouched({ name: true, description: true, icon: true, color: true, orderIndex: true });
 
     if (!validateForm()) {
       return;
@@ -131,19 +186,23 @@ export function AddCategoryForm({
     setIsSubmitting(true);
 
     try {
-      await onSubmit(formData);
-      // Reset form after successful submission
+      // Optimistic update - clear form immediately for better UX
+      const submitData = { ...formData };
       resetForm();
+      
+      await onSubmit(submitData);
     } catch (error) {
       console.error("[AddCategoryForm] Submit error:", error);
       setErrors((prev) => ({
         ...prev,
         submit: "Failed to create category. Please try again.",
       }));
+      // Restore form data on error
+      setFormData(formData);
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [formData, validateForm, onSubmit, resetForm]);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm">
@@ -194,10 +253,8 @@ export function AddCategoryForm({
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => {
-                    setFormData((prev) => ({ ...prev, name: e.target.value }));
-                    if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
-                  }}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  onBlur={() => handleBlur("name")}
                   placeholder="e.g., Vehicle Valuation"
                   className={`w-full px-4 py-2.5 rounded-lg border ${
                     errors.name 

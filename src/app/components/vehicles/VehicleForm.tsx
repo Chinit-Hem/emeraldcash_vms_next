@@ -1,34 +1,20 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useRef, memo } from "react";
 import { ImageInput } from "@/components/ui/ImageInput";
-import { formatCurrency } from "@/lib/format";
-import { derivePrices } from "@/lib/pricing";
 import { formatFileSize as formatImageSize } from "@/lib/compressImage";
 import { safeBase64ToFile } from "@/lib/fileToDataUrl";
-import { useLanguage } from "@/lib/LanguageContext";
+import { formatCurrency } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n";
+import { useLanguage } from "@/lib/LanguageContext";
+import { derivePrices } from "@/lib/pricing";
 import type { Vehicle } from "@/lib/types";
 import {
   COLOR_OPTIONS,
-  TAX_TYPE_METADATA,
-  PLATE_NUMBER_MAX_LENGTH,
   PLATE_NUMBER_HINTS,
+  PLATE_NUMBER_MAX_LENGTH,
+  TAX_TYPE_METADATA,
 } from "@/lib/types";
-import { 
-  Car, 
-  Image as ImageIcon, 
-  Wrench, 
-  DollarSign, 
-  AlertCircle, 
-  CheckCircle2,
-  X,
-  ChevronRight,
-  Sparkles,
-  Upload,
-  Loader2
-} from "lucide-react";
-import { cn } from "@/lib/ui";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 const CATEGORY_OPTIONS = ["Cars", "Motorcycles", "Tuk Tuk"] as const;
 
@@ -92,7 +78,7 @@ function GlassCard({
       bg-slate-900/40 backdrop-blur-2xl
       border border-white/[0.08]
       rounded-2xl
-      shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)]
+      shadow-sm
       ${className}
     `}>
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
@@ -195,7 +181,7 @@ function GlassButton({
 }) {
   const baseStyles = "inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl font-medium transition-all duration-200 active:scale-[0.98]";
   const variantStyles = {
-    primary: "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_30px_rgba(16,185,129,0.4)]",
+    primary: "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm hover:bg-slate-50",
     secondary: "bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:border-white/20 hover:text-white",
   };
   
@@ -712,7 +698,7 @@ export function VehicleForm({
               { value: "", label: isKm ? "ជ្រើសរើសប្រភេទ" : "Select category" },
               ...categoryOptions.map((cat) => ({ 
                 value: cat, 
-                label: isKm ? (cat === "Cars" ? "រថយន្ត" : cat === "Motorcycles" ? "ម៉ូតូ" : "ទុកទុក") : cat 
+label: isKm ? (cat === "Cars" ? "រថយន្ត" : cat === "Motorcycles" ? "ម៉ូតូ" : "កង់បី") : cat
               }))
             ]}
           />

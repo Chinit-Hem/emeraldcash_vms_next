@@ -44,13 +44,13 @@ export default function VehicleCardMobile({
 
   return (
     <div
-      className={`lg:hidden rounded-xl overflow-hidden bg-[#e6e9ef] shadow-[8px_8px_16px_#bebebe,-8px_-8px_16px_#ffffff] ${
-        index % 2 === 0 ? "" : "bg-[#e6e9ef]/80"
+      className={`lg:hidden rounded-xl overflow-hidden bg-slate-100 shadow-sm ${
+        index % 2 === 0 ? "" : "bg-slate-100/80"
       }`}
     >
       {/* Main Card Content */}
       <div
-        className="p-4 flex gap-4 cursor-pointer active:shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff] transition-all duration-200"
+        className="p-4 flex gap-4 cursor-pointer active:bg-slate-100 transition-all duration-200"
         onClick={() => setExpanded(!expanded)}
       >
         {/* Image */}
@@ -60,11 +60,11 @@ export default function VehicleCardMobile({
             <img
               src={thumbUrl}
               alt={`${vehicle.Brand} ${vehicle.Model}`}
-              className="h-20 w-20 rounded-xl object-cover shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] bg-[#e6e9ef]"
+              className="h-20 w-20 rounded-xl object-cover shadow-sm bg-slate-100"
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="h-20 w-20 rounded-xl bg-[#e6e9ef] flex items-center justify-center shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]">
+            <div className="h-20 w-20 rounded-xl bg-slate-100 flex items-center justify-center shadow-sm">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -93,12 +93,12 @@ export default function VehicleCardMobile({
               </p>
             </div>
             <span
-              className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shadow-[2px_2px_4px_#bebebe,-2px_-2px_4px_#ffffff] ${
+              className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shadow-sm ${
                 vehicle.Condition === "New"
-                  ? "bg-[#e6e9ef] text-[#10b981]"
+                  ? "bg-slate-100 text-[#10b981]"
                   : vehicle.Condition === "Used"
-                  ? "bg-[#e6e9ef] text-[#3b82f6]"
-                  : "bg-[#e6e9ef] text-[#4a4a5a]"
+                  ? "bg-slate-100 text-[#3b82f6]"
+                  : "bg-slate-100 text-[#4a4a5a]"
               }`}
             >
               {vehicle.Condition || "Unknown"}
@@ -128,7 +128,7 @@ export default function VehicleCardMobile({
 
       {/* Expanded Details */}
       {expanded && (
-        <div className="px-4 pb-4 border-t border-[#bebebe]/30">
+        <div className="px-4 pb-4 border-t border-slate-200">
           <div className="pt-3 grid grid-cols-2 gap-3 text-sm">
             <div>
               <span className="text-[#4a4a5a]">Vehicle ID:</span>
@@ -169,7 +169,7 @@ export default function VehicleCardMobile({
           <div className="mt-4 flex gap-2">
             <button
               onClick={() => router.push(`/vehicles/${encodeURIComponent(vehicleId)}/view`)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#e6e9ef] text-[#10b981] rounded-xl font-medium shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] transition-all duration-200"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 text-[#10b981] rounded-xl font-medium shadow-sm active:bg-slate-100 transition-all duration-200"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -188,7 +188,7 @@ export default function VehicleCardMobile({
               <>
                 <button
                   onClick={() => onEdit ? onEdit(vehicle) : router.push(`/vehicles/${encodeURIComponent(vehicleId)}/edit`)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#e6e9ef] text-[#3b82f6] rounded-xl font-medium shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] transition-all duration-200"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 text-[#3b82f6] rounded-xl font-medium shadow-sm active:bg-slate-100 transition-all duration-200"
                 >
 
                   <svg
@@ -205,7 +205,7 @@ export default function VehicleCardMobile({
                 </button>
                 <button
                   onClick={() => onDelete(vehicle)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#e6e9ef] text-[#ef4444] rounded-xl font-medium shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] active:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff] transition-all duration-200"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 text-[#ef4444] rounded-xl font-medium shadow-sm active:bg-slate-100 transition-all duration-200"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"

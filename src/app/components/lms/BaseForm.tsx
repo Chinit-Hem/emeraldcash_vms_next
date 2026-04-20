@@ -240,7 +240,7 @@ export function BaseForm<T extends Record<string, unknown>>({
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="p-2 rounded-xl bg-[#e0e5ec] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] hover:shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff] transition-all text-slate-500 hover:text-slate-700"
+                  className="p-2 rounded-xl bg-white shadow-sm hover:bg-slate-50 transition-all text-slate-500 hover:text-slate-700"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -301,8 +301,8 @@ function FormFieldRenderer<T>({
   onChange: (value: unknown) => void;
 }) {
   const baseInputClass = cn(
-    "w-full h-11 px-4 bg-[#e0e5ec] rounded-xl",
-    "shadow-[inset_3px_3px_6px_#bebebe,inset_-3px_-3px_6px_#ffffff]",
+    "w-full h-11 px-4 bg-white rounded-xl border border-slate-200",
+    "shadow-sm",
     "text-slate-800 placeholder-slate-400",
     "focus:outline-none focus:ring-2 focus:ring-emerald-500/20",
     "transition-all duration-200",

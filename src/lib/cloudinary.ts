@@ -68,7 +68,7 @@ export const cloudinary = new Proxy({} as typeof import("cloudinary").v2, {
 });
 
 // Default upload preset for unsigned uploads
-const DEFAULT_UPLOAD_PRESET = process.env.CLOUDINARY_UPLOAD_PRESET || "vms_unsigned";
+const _DEFAULT_UPLOAD_PRESET = process.env.CLOUDINARY_UPLOAD_PRESET || "vms_unsigned";
 
 // Helper function to check if an error is transient (retryable)
 function isTransientError(error: Error): boolean {
@@ -127,7 +127,7 @@ async function compressImageForUpload(
     
     // Image compressed successfully
     return processed;
-  } catch (error) {
+  } catch (_error) {
     // Compression failed, use original
     const arrayBuffer = await imageData.arrayBuffer();
     return Buffer.from(arrayBuffer);
@@ -418,16 +418,16 @@ export async function uploadImage(
         originalSize,
         compressedSize,
       };
-    } catch (error) {
-      const attemptDuration = Date.now() - attemptStartTime;
+    } catch (_error) {
+      const _attemptDuration = Date.now() - attemptStartTime;
       
       // Properly extract error message from various error types
       let errorMessage: string;
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null) {
+      if (_error instanceof Error) {
+        errorMessage = _error.message;
+      } else if (typeof _error === 'object' && _error !== null) {
         // Handle Cloudinary error objects that may have nested error properties
-        const cloudinaryError = error as { 
+        const cloudinaryError = _error as { 
           message?: string; 
           error?: { message?: string };
           json?: { error?: { message?: string } };
@@ -435,16 +435,16 @@ export async function uploadImage(
         errorMessage = cloudinaryError.message 
           || cloudinaryError.error?.message 
           || cloudinaryError.json?.error?.message 
-          || JSON.stringify(error);
+          || JSON.stringify(_error);
       } else {
-        errorMessage = String(error);
+        errorMessage = String(_error);
       }
       
       lastError = new Error(errorMessage);
       
       // Copy over any Cloudinary-specific properties
-      if (typeof error === 'object' && error !== null) {
-        const cloudinaryError = error as { http_code?: number; error_code?: string };
+      if (typeof _error === 'object' && _error !== null) {
+        const cloudinaryError = _error as { http_code?: number; error_code?: string };
         (lastError as Error & { http_code?: number }).http_code = cloudinaryError.http_code;
         (lastError as Error & { error_code?: string }).error_code = cloudinaryError.error_code;
       }
@@ -657,7 +657,7 @@ export async function testCloudinaryConnection(): Promise<{
 
   try {
     const cloudinary = await getCloudinary();
-    const result = await cloudinary.api.ping();
+    const _result = await cloudinary.api.ping();
     return {
       success: true,
       message: `Cloudinary connected successfully. Cloud: ${CLOUDINARY_CLOUD_NAME}`,

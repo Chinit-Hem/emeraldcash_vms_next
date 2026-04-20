@@ -10,7 +10,7 @@ import Pagination from "@/app/components/dashboard/Pagination";
 import VehicleCardMobile from "@/app/components/dashboard/VehicleCardMobile";
 import VehicleModal from "@/app/components/dashboard/VehicleModal";
 import VehicleTable from "@/app/components/dashboard/VehicleTable";
-import { GlassButton } from "@/app/components/ui/GlassButton";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { useDeleteVehicleOptimistic } from "@/app/components/vehicles/useDeleteVehicleOptimistic";
 import { useUpdateVehicleOptimistic } from "@/app/components/vehicles/useUpdateVehicleOptimistic";
 import { extractDriveFileId } from "@/lib/drive";
@@ -1482,7 +1482,7 @@ export default function VehiclesClient() {
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <GlassButton onClick={refetch}>Try Again</GlassButton>
+                <GlassButton onClick={() => refetch()}>Try Again</GlassButton>
                 {process.env.NODE_ENV === 'development' && (
                   <GlassButton 
                     onClick={() => window.location.reload()} 

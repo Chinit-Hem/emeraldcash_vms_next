@@ -19,8 +19,15 @@ import {
   getCategorySearchPattern
 } from "@/lib/categoryMapping";
 import { dbManager } from "@/lib/db-singleton";
-import type { Vehicle } from "@/lib/types";
+import type { 
+  Vehicle, 
+  StockItem, 
+  StockStats, 
+  StockMovementType,
+  StockItemTable 
+} from "@/lib/types";
 import { BaseFilters, BaseService, ServiceResult } from "./BaseService";
+
 
 // ============================================================================
 // Types & Interfaces
@@ -446,8 +453,293 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
   }
 
   // ============================================================================
+  // STOCK MANAGEMENT METHODS
+  // ============================================================================
+
+  /**
+   * Generate model key for stock tracking
+   * Format: brand_model_year_condition_color (sanitized)
+   */
+  private generateModelKey(vehicle: VehicleDB | VehicleEntity): string {
+    let brand: string, model: string, year: number | null, condition: string, color: string;
+    
+    if ('brand' in vehicle && 'model' in vehicle) {
+      const vdb = vehicle as VehicleDB;
+      brand = vdb.brand || '';
+      model = vdb.model || '';
+      year = vdb.year;
+      condition = vdb.condition || '';
+      color = vdb.color || '';
+    } else {
+      const vent = vehicle as VehicleEntity;
+      brand = vent.Brand || '';
+      model = vent.Model || '';
+      year = vent.Year;
+      condition = vent.Condition || '';
+      color = vent.Color || '';
+    }
+    
+    const parts = [
+      brand.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(),
+      model.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(),
+      year?.toString() || '0',
+      condition.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(),
+      color.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(),
+    ].filter(Boolean);
+    return parts.join('_');
+  }
+
+
+  /**
+   * Get stock levels for model key or all
+   */
+  public async getStockLevels(modelKey?: string): Promise<ServiceResult<StockItem[]>> {
+    const startTime = Date.now();
+    try {
+      let query = `
+        SELECT 
+          si.*,
+          CASE 
+            WHEN si.quantity <= si.min_stock THEN true 
+            ELSE false 
+          END as is_low_stock
+        FROM stock_items si
+      `;
+      const params: any[] = [];
+      let paramIndex = 1;
+
+      if (modelKey) {
+        query += ` WHERE si.model_key = $${paramIndex}`;
+        params.push(modelKey);
+        paramIndex++;
+      }
+
+      query += ` ORDER BY si.brand, si.model, si.location`;
+
+        const result = await dbManager.executeUnsafe<any[]>(query) as StockItem[];
+
+
+      return {
+        success: true,
+        data: result,
+        meta: { durationMs: Date.now() - startTime, queryCount: 1 },
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stock levels';
+      console.error('[VehicleService.getStockLevels] Error:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+        meta: { durationMs: Date.now() - startTime, queryCount: 1 },
+      };
+    }
+  }
+
+  /**
+   * Get stock stats summary
+   */
+  public async getStockStats(): Promise<ServiceResult<StockStats>> {
+    const startTime = Date.now();
+    try {
+      const query = `
+        SELECT 
+          COUNT(*) as total_items,
+          SUM(quantity) as total_quantity,
+          SUM(CASE WHEN quantity <= min_stock THEN 1 ELSE 0 END)::integer as low_stock_items,
+          array_agg(DISTINCT location) as locations
+        FROM stock_items
+      `;
+
+      const result = await dbManager.executeUnsafe<any[]>(query);
+      const row = (result[0] || {}) as any;
+
+
+      const stats: StockStats = {
+        total_items: parseInt(row.total_items) || 0,
+        total_quantity: parseInt(row.total_quantity) || 0,
+        low_stock_items: parseInt(row.low_stock_items) || 0,
+        locations: row.locations || [],
+      };
+
+      return {
+        success: true,
+        data: stats,
+        meta: { durationMs: Date.now() - startTime, queryCount: 1 },
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stock stats';
+      console.error('[VehicleService.getStockStats] Error:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+        meta: { durationMs: Date.now() - startTime, queryCount: 1 },
+      };
+    }
+  }
+
+  /**
+   * Adjust stock quantity (IN/OUT/ADJUST)
+   */
+  public async adjustStock(
+    modelKey: string,
+    delta: number,
+    reason: string,
+    location: string,
+    userId: number,
+    type: StockMovementType = delta > 0 ? 'IN' : 'OUT'
+  ): Promise<ServiceResult<boolean>> {
+    const startTime = Date.now();
+    try {
+      // Begin transaction
+      await dbManager.query(async () => {
+        const sql = dbManager.getClient();
+
+        // Lock the stock item row
+        const itemQuery = await sql`
+          SELECT * FROM stock_items 
+          WHERE model_key = ${modelKey} AND location = ${location} 
+          FOR UPDATE
+        `;
+        
+        let stockItem: StockItemTable | undefined;
+        if (itemQuery.length > 0) {
+          stockItem = itemQuery[0];
+        } else {
+          // Create new stock item if not exists
+          await sql`
+            INSERT INTO stock_items (model_key, location, quantity, available, reserved, min_stock, brand, model, year, condition, color)
+            VALUES (${modelKey}, ${location}, ${Math.max(0, delta)}, ${Math.max(0, delta)}, 0, 5, '', '', null, '', '')
+            ON CONFLICT (model_key, location) DO NOTHING
+          `;
+          
+          // Get the newly created item
+          const newItemQuery = await sql`
+            SELECT * FROM stock_items WHERE model_key = ${modelKey} AND location = ${location}
+          `;
+          stockItem = newItemQuery[0];
+        }
+
+        if (!stockItem) {
+          throw new Error('Stock item not found');
+        }
+
+        // Update quantity
+        const newQuantity = Math.max(0, stockItem.quantity + delta);
+        const newAvailable = Math.max(0, stockItem.available + delta);
+        
+        await sql`
+          UPDATE stock_items 
+          SET 
+            quantity = ${newQuantity},
+            available = ${newAvailable},
+            last_updated = NOW(),
+            is_low_stock = (${newQuantity} <= min_stock)
+          WHERE id = ${stockItem.id}
+        `;
+
+        // Log movement
+        await sql`
+          INSERT INTO stock_movements (stock_item_id, type, quantity, reason, user_id)
+          VALUES (${stockItem.id}, ${type}, ${delta}, ${reason}, ${userId})
+        `;
+      });
+
+      return {
+        success: true,
+        data: true,
+        meta: { durationMs: Date.now() - startTime, queryCount: 3 },
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to adjust stock';
+      console.error('[VehicleService.adjustStock] Error:', errorMessage);
+      return {
+        success: false,
+        error: errorMessage,
+        meta: { durationMs: Date.now() - startTime, queryCount: 1 },
+      };
+    }
+  }
+
+  /**
+   * Transfer stock between locations
+   */
+  public async transferStock(
+    modelKey: string,
+    quantity: number,
+    fromLocation: string,
+    toLocation: string,
+    reason: string,
+    userId: number
+  ): Promise<ServiceResult<boolean>> {
+    if (quantity <= 0) {
+      return {
+        success: false,
+        error: 'Quantity must be positive',
+        meta: { durationMs: 0, queryCount: 0 },
+      };
+    }
+
+    // Adjust OUT from fromLocation, IN to toLocation
+    const outResult = await this.adjustStock(modelKey, -quantity, reason, fromLocation, userId, 'TRANSFER');
+    if (!outResult.success) return outResult;
+
+    const inResult = await this.adjustStock(modelKey, quantity, reason, toLocation, userId, 'TRANSFER');
+    return inResult;
+  }
+
+  /**
+   * Seed stock from existing vehicles
+   */
+  public async seedStockFromVehicles(): Promise<ServiceResult<number>> {
+    try {
+      const vehiclesResult = await this.getAll({ limit: 10000 }) as ServiceResult<VehicleDB[]>;
+
+      if (!vehiclesResult.success) {
+        return { success: false, error: 'Failed to fetch vehicles' };
+      }
+
+      let seeded = 0;
+      const stockMap = new Map<string, { brand: string, model: string, year: number | null, condition: string, color: string, count: number }>();
+
+      for (const v of vehiclesResult.data) {
+        const key = this.generateModelKey(v);
+        if (!stockMap.has(key)) {
+          stockMap.set(key, {
+            brand: v.brand || '',
+            model: v.model || '',
+            year: v.year,
+            condition: v.condition || '',
+            color: v.color || '',
+            count: 0
+          });
+
+        }
+        stockMap.get(key)!.count++;
+      }
+
+      for (const [key, data] of stockMap) {
+        // Create in default location
+        const result = await this.adjustStock(key, data.count, 'Initial seed from vehicles', 'Warehouse', 1, 'IN');
+        if (result.success) seeded++;
+      }
+
+      return {
+        success: true,
+        data: seeded,
+        meta: {},
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Seeding failed',
+      };
+    }
+  }
+
+  // ============================================================================
   // VEHICLE-SPECIFIC METHODS
   // ============================================================================
+
 
   /**
    * Convert VehicleEntity to legacy Vehicle format
@@ -490,9 +782,16 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
   /**
    * Get a single vehicle by ID
    * Returns legacy Vehicle format for backward compatibility
+   * ✅ FIXED: Added logging for debugging 500 errors
    */
   public async getVehicleById(id: number): Promise<ServiceResult<Vehicle>> {
+    console.log(`[VehicleService] Looking up vehicle ID: ${id}`);
     const result = await this.getById(id);
+    if (!result.success) {
+      console.info(`[VehicleService] Vehicle ID ${id} NOT FOUND`);
+    } else {
+      console.info(`[VehicleService] Vehicle ID ${id} FOUND: ${result.data.Plate || 'N/A'}`);
+    }
     if (result.success && result.data) {
       return {
         ...result,
@@ -605,7 +904,8 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
     const startTime = Date.now();
 
     try {
-      const cacheKey = "vehicle:stats:v5";
+      // 🚀 FIX: Updated cache key to v6 to bust stale cache
+      const cacheKey = "vehicle:stats:v6";
       
       // Check cache unless force refresh is requested
       if (!forceRefresh) {
@@ -632,7 +932,7 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
       const query = `
         SELECT 
           COUNT(*) as total,
-          COUNT(*) FILTER (WHERE category ILIKE ANY(ARRAY['%car%','cars','car'])) as cars_count,
+          COUNT(*) FILTER (WHERE LOWER(category) LIKE '%car%') as cars_count,
           COUNT(*) FILTER (WHERE category ILIKE ANY(ARRAY['%motor%','motorcycle%','bike%'])) as motorcycles_count,
           COUNT(*) FILTER (WHERE category ILIKE ANY(ARRAY['%tuk%','tuktuk','tuk tuk'])) as tuktuks_count,
           COUNT(*) FILTER (WHERE category ILIKE ANY(ARRAY['%truck%'])) as trucks_count,
@@ -642,7 +942,7 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
           COUNT(*) FILTER (WHERE LOWER(TRIM(condition)) = 'new') as new_count,
           COUNT(*) FILTER (WHERE LOWER(TRIM(condition)) = 'used') as used_count,
           COUNT(*) FILTER (WHERE LOWER(TRIM(condition)) NOT IN ('new','used')) as other_condition_count,
-          COALESCE(AVG(market_price) FILTER (WHERE market_price > 0), 0) as avg_price,
+AVG(CASE WHEN market_price > 0 THEN market_price ELSE NULL END)::numeric as avg_price,
           COUNT(*) FILTER (WHERE image_id IS NULL OR TRIM(image_id) = '') as no_image_count
         FROM vehicles
       `;
@@ -765,8 +1065,9 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
 
       console.log("[VehicleService.getVehicleStats] Parsed result:", result);
 
-      // Cache for 30 seconds using extended TTL (stats don't change frequently)
-      this.setCache(cacheKey, result, this.LONG_CACHE_TTL_MS); // 5min cache for stats
+      // 🚀 FIX: Reduced cache TTL from 5 minutes to 30 seconds for fresher stats
+      const STATS_CACHE_TTL_MS = 30000; // 30 seconds
+      this.setCache(cacheKey, result, STATS_CACHE_TTL_MS);
 
       return {
         success: true,
@@ -789,18 +1090,46 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
    * Get lightweight stats (total count only)
    * Returns POJO for SSR compatibility
    */
-  public async getVehicleStatsLite(): Promise<ServiceResult<{ total: number }>> {
+  public async getVehicleStatsLite(noCache = false): Promise<ServiceResult<{ total: number }>> {
     const startTime = Date.now();
+    // 🚀 FIX: Updated cache key to v6 to bust stale cache
+    const cacheKey = "vehicles:total:lite:v6";
+
+    // Skip cache if requested
+    if (!noCache) {
+      const cached = this.getFromCache<{ total: number }>(cacheKey);
+      if (cached) {
+        console.log(`[VehicleService.getVehicleStatsLite] Cache hit: ${cached.total}`);
+        return {
+          success: true,
+          data: cached,
+          meta: { durationMs: 0, queryCount: 0, cacheHit: true },
+        };
+      }
+    }
 
     try {
-      const query = `SELECT COUNT(*) as count FROM ${this.tableName}`;
-      const result = await dbManager.executeUnsafe<{ count: string | number }>(query);
+      const query = `SELECT COUNT(*) as count, COUNT(id) as id_count FROM ${this.tableName}`;
+      console.log(`[VehicleService.getVehicleStatsLite] Executing: ${query}`);
+      const result = await dbManager.executeUnsafe<{ count: string | number; id_count: string | number }>(query);
+      
+      console.log(`[VehicleService.getVehicleStatsLite] Raw result:`, JSON.stringify(result[0] || {}, null, 2));
 
-      const count = result[0]?.count || 0;
+      const row = result[0] || { count: 0, id_count: 0 };
+      const totalCount = parseInt(String(row.count)) || 0;
+      const idCount = parseInt(String(row.id_count)) || 0;
+
+      const total = Math.max(totalCount, idCount);
+      console.log(`[VehicleService.getVehicleStatsLite] Parsed total: ${total} (count=${totalCount}, id_count=${idCount})`);
+
+      const data = { total };
+
+      // Cache for 30s
+      this.setCache(cacheKey, data, 30000);
 
       return {
         success: true,
-        data: { total: parseInt(String(count)) || 0 },
+        data,
         meta: { durationMs: Date.now() - startTime, queryCount: 1 },
       };
     } catch (error) {
@@ -813,6 +1142,25 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
         meta: { durationMs: Date.now() - startTime, queryCount: 1 },
       };
     }
+  }
+
+  /**
+   * Dedicated total count method with validation and no-cache option
+   */
+  public async getTotalCount(noCache = false): Promise<ServiceResult<number>> {
+    const statsResult = await this.getVehicleStatsLite(noCache);
+    if (!statsResult.success) {
+      return {
+        success: false,
+        error: statsResult.error,
+        meta: statsResult.meta,
+      };
+    }
+    return {
+      success: true,
+      data: statsResult.data.total,
+      meta: statsResult.meta,
+    };
   }
 
   /**

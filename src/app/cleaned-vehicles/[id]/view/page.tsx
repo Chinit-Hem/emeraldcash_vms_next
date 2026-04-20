@@ -1,34 +1,24 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
 import { useAuthUser } from "@/app/components/AuthContext";
-import TopBar from "@/app/components/TopBar";
+import ImageModal from "@/app/components/ImageModal";
 import Sidebar from "@/app/components/Sidebar";
-import MobileBottomNav from "@/app/components/MobileBottomNav";
+import TopBar from "@/app/components/TopBar";
+import { useRouter, useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getVehicleFullImageUrl, getVehicleThumbnailUrl, formatPrice } from "@/lib/vehicle-helpers";
 import { GlassToast, useToast } from "@/components/ui/glass/GlassToast";
-import { formatPrice, getVehicleFullImageUrl } from "@/lib/vehicle-helpers";
-import { 
-  Car, 
-  Calendar, 
-  DollarSign, 
-  Palette, 
-  FileText, 
-  CheckCircle2, 
-  ArrowLeft,
-  Tag,
-  Hash,
-  Info
-} from "lucide-react";
+import { VehicleHeader } from "@/app/components/vehicles/VehicleHeader";
+import { VehicleStatsCard } from "@/app/components/vehicles/VehicleStatsCard";
 
-interface CleanedVehicle {
+interface CleanedVehicleDetail {
   id: number;
   category: string;
   brand: string;
   model: string;
   year: number;
   plate: string;
-  market_price: string | number;
+  market_price: number;
   tax_type: string | null;
   condition: string;
   body_type: string | null;
@@ -38,307 +28,261 @@ interface CleanedVehicle {
   updated_at: string;
 }
 
-// Color name to hex mapping
-const getColorHex = (colorName: string): string => {
-  const colorMap: Record<string, string> = {
-    "red": "#ef4444", "blue": "#3b82f6", "green": "#10b981", "yellow": "#f59e0b",
-    "orange": "#f97316", "purple": "#8b5cf6", "pink": "#ec4899", "black": "#1a1a2e",
-    "white": "#f8fafc", "gray": "#6b7280", "grey": "#6b7280", "silver": "#9ca3af",
-    "gold": "#fbbf24", "brown": "#92400e", "beige": "#d4c5b0", "navy": "#1e3a8a",
-    "teal": "#14b8a6", "cyan": "#06b6d4", "lime": "#84cc16", "maroon": "#991b1b",
-    "olive": "#65a30d", "coral": "#f87171", "ivory": "#fffff0", "khaki": "#c3b091",
-    "lavender": "#c4b5fd", "magenta": "#d946ef", "mint": "#6ee7b7", "peach": "#fdba74",
-    "plum": "#a855f7", "tan": "#d2b48c", "turquoise": "#40e0d0", "violet": "#8b5cf6",
-    "indigo": "#6366f1", "charcoal": "#374151", "cream": "#fffdd0", "burgundy": "#9f1239",
-  };
-  
-  const normalized = colorName?.toLowerCase().trim() || "";
-  return colorMap[normalized] || "#718096";
-};
-
-export default function CleanedVehicleViewPage() {
+export default function VehicleDetailView() {
   const user = useAuthUser();
   const router = useRouter();
   const params = useParams();
-  const { toasts, removeToast, error: showError } = useToast();
-  
-  const [vehicle, setVehicle] = useState<CleanedVehicle | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { toasts, removeToast, error: showErrorToast } = useToast();
+
+  const id = params.id as string;
+  const [vehicle, setVehicle] = useState<CleanedVehicleDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const vehicleId = params?.id as string;
-
-  const fetchVehicle = useCallback(async () => {
-    if (!vehicleId) return;
-    
-    setIsLoading(true);
+  const fetchVehicle = async () => {
+    setLoading(true);
     setError("");
-    
     try {
-      // Fetch from the cleaned-vehicles API
-      const res = await fetch(`/api/cleaned-vehicles?id=${vehicleId}`, {
-        cache: "no-store",
-      });
-      
-      if (!res.ok) {
-        if (res.status === 404) {
-          throw new Error("Vehicle not found");
-        }
-        throw new Error("Failed to fetch vehicle details");
-      }
-      
+      const res = await fetch(`/api/cleaned-vehicles/${id}`);
+      if (!res.ok) throw new Error("Vehicle not found");
       const data = await res.json();
-      if (data.success && data.data && data.data.length > 0) {
-        setVehicle(data.data[0]);
+      if (data.success) {
+        setVehicle(data.data);
       } else {
-        throw new Error("Vehicle not found");
+        throw new Error(data.error || "Failed to load vehicle");
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error loading vehicle";
       setError(message);
-      showError(message, 3000);
+      showErrorToast(message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [vehicleId, showError]);
+  };
 
   useEffect(() => {
-    if (user === null) {
-      router.push("/login");
-      return;
-    }
-    if (user && user.role && vehicleId) {
-      fetchVehicle();
-    }
-  }, [user, router, vehicleId, fetchVehicle]);
+    if (id) fetchVehicle();
+  }, [id]);
 
-  if (!user || !user.role) {
+  if (!user) {
+    router.push("/login");
+    return null;
+  }
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p>Loading vehicle...</p>
         </div>
       </div>
     );
   }
 
+  if (error || !vehicle) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <TopBar user={user} onMenuClick={() => {}} />
+        <Sidebar user={user} onNavigate={() => {}} />
+        <main className="lg:pl-64 pt-16 p-8">
+          <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8 text-center">
+            <h1 className="text-2xl font-bold text-slate-800 mb-4">{error || "Vehicle not found"}</h1>
+            <button 
+              onClick={() => router.back()} 
+              className="px-6 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700"
+            >
+              Go Back
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Calculate derived prices
+  const price40 = vehicle.market_price * 0.4;
+  const price70 = vehicle.market_price * 0.7;
+
+  // Color hex for indicator
+  const getColorHex = (colorName: string): string => {
+    const colorMap = {
+      "red": "#ef4444", "blue": "#3b82f6", "green": "#10b981", "yellow": "#f59e0b",
+      "black": "#1a1a2e", "white": "#f8fafc", "silver": "#9ca3af", "gray": "#6b7280",
+    };
+    const normalized = colorName?.toLowerCase().trim() || "";
+    return colorMap[normalized as keyof typeof colorMap] || "#6b7280";
+  };
+
+  // TukTuk special icon
+  const isTukTuk = vehicle.category.toLowerCase().includes("tuk");
+  const categoryIcon = isTukTuk ? (
+    <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+    </svg>
+  ) : (
+    <svg className="w-12 h-12" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <TopBar user={user} onMenuClick={() => {}} />
-      <Sidebar user={user} onNavigate={() => {}} />
-      
-      <main className="lg:pl-64 pt-16 pb-20 lg:pb-8">
-        <div className="p-4 sm:p-6 lg:p-8">
-          <GlassToast toasts={toasts} onRemove={removeToast} />
-          
-          {/* Back Button */}
-          <button
-            onClick={() => router.push("/cleaned-vehicles")}
-            className="mb-6 flex items-center gap-2 px-4 py-2 rounded-xl bg-[#e0e5ec] shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff] text-[#4a4a5a] font-medium text-sm transition-all duration-250 hover:shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff] active:shadow-[inset_2px_2px_4px_#a3b1c6,inset_-2px_-2px_4px_#ffffff]"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to List
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <TopBar user={user} />
+      <Sidebar user={user} />
 
-          {/* Loading State */}
-          {isLoading && (
-            <div className="p-8 rounded-[24px] bg-[#e0e5ec] shadow-[12px_12px_24px_#a3b1c6,-12px_-12px_24px_#ffffff]">
-              <div className="animate-pulse space-y-6">
-                <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="h-64 bg-slate-200 dark:bg-slate-700 rounded-[20px]"></div>
-                  <div className="space-y-4">
-                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
-                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
-                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-2/3"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+      <main className="lg:pl-64 pt-16 pb-8">
+        <GlassToast toasts={toasts} onRemove={removeToast} />
 
-          {/* Error State */}
-          {error && !isLoading && (
-            <div className="p-8 rounded-[24px] bg-[#e0e5ec] shadow-[12px_12px_24px_#a3b1c6,-12px_-12px_24px_#ffffff] text-center">
-              <div className="flex flex-col items-center gap-4">
-                <div className="p-4 rounded-2xl bg-red-100 text-red-600">
-                  <Info className="w-8 h-8" />
-                </div>
-                <p className="text-lg font-bold text-[#2d3748]">{error}</p>
-                <button
-                  onClick={fetchVehicle}
-                  className="px-6 py-2.5 rounded-xl bg-[#e0e5ec] shadow-[4px_4px_8px_#a3b1c6,-4px_-4px_8px_#ffffff] text-[#10b981] font-semibold text-sm transition-all"
-                >
-                  Retry
-                </button>
-              </div>
-            </div>
-          )}
+        {/* Sticky Header */}
+        <VehicleHeader 
+          vehicleId={String(vehicle.id)}
+          brand={vehicle.brand}
+          model={vehicle.model}
+          onEdit={() => router.push(`/cleaned-vehicles/${id}/edit`)}
+          onDelete={() => {/* confirm delete */}}
+        /> 
 
-          {/* Vehicle Details */}
-          {!isLoading && !error && vehicle && (
+        <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Left Column: Image & Preview */}
             <div className="space-y-6">
-              {/* Header Card */}
-              <div className="p-6 rounded-[24px] bg-[#e0e5ec] shadow-[12px_12px_24px_#a3b1c6,-12px_-12px_24px_#ffffff]">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <h1 className="text-3xl font-bold text-[#2d3748]">
-                      {vehicle.brand} {vehicle.model}
-                    </h1>
-                    <p className="text-[#718096] mt-1">
-                      {vehicle.category} • {vehicle.year}
-                    </p>
+              <div className="bg-white rounded-2xl shadow-xl p-6">
+                <div className="relative">
+                  <div className="absolute top-4 left-4 bg-emerald-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                    #{vehicle.id}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`px-4 py-2 rounded-full text-sm font-medium ${
-                      vehicle.condition === "New" 
-                        ? "bg-blue-100 text-blue-700 shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff]"
-                        : "bg-amber-100 text-amber-700 shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff]"
+                  {vehicle.image_id ? (
+                    <button
+                      onClick={() => setSelectedImage(getVehicleFullImageUrl(vehicle.image_id))}
+                      className="block w-full aspect-[4/3] rounded-xl overflow-hidden group hover:scale-105 transition-all duration-300 shadow-2xl"
+                    >
+                      <img
+                        src={getVehicleThumbnailUrl(vehicle.image_id) || "/placeholder-car.svg"}
+                        alt={`${vehicle.brand} ${vehicle.model}`}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/placeholder-car.svg";
+                        }}
+                      />
+                    </button>
+                  ) : (
+                    <div className="w-full aspect-[4/3] bg-slate-100 rounded-xl flex items-center justify-center text-slate-400">
+                      <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="absolute bottom-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                    <button className="p-2 bg-white/80 hover:bg-white rounded-full shadow-lg">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center mt-6 gap-3">
+                  {categoryIcon}
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800">{vehicle.category}</h2>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Data Cards */}
+            <div className="space-y-6 lg:col-span-1">
+              {/* Stats Card */}
+              <VehicleStatsCard
+                marketPrice={vehicle.market_price}
+                price40={price40}
+                price70={price70}
+              />
+
+              {/* Specs Grid */}
+              <div className="bg-white rounded-2xl shadow-xl p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                  Technical Specs
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Brand</label>
+                    <p className="text-lg font-semibold text-slate-800">{vehicle.brand}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Model</label>
+                    <p className="text-lg font-semibold text-slate-800">{vehicle.model}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Year</label>
+                    <p className="text-lg font-semibold text-slate-800">{vehicle.year}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Plate</label>
+                    <p className="text-lg font-semibold text-slate-800 font-mono">{vehicle.plate}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Condition</label>
+                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${
+                      vehicle.condition === 'New' ? 'bg-emerald-100 text-emerald-800' :
+                      vehicle.condition === 'Used' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'
                     }`}>
                       {vehicle.condition}
                     </span>
                   </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Body Type</label>
+                    <p className="text-lg font-semibold text-slate-800">{vehicle.body_type || '—'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Color</label>
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-6 h-6 rounded-full border-4 border-white shadow-sm ring-2 ring-slate-200" 
+                        style={{ backgroundColor: getColorHex(vehicle.color || '') }}
+                        title={vehicle.color || 'No color'}
+                      />
+                      <p className="text-lg font-semibold text-slate-800 capitalize">{vehicle.color || 'Not specified'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Tax Type</label>
+                    <p className="text-lg font-semibold text-slate-800">{vehicle.tax_type || '—'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Created</label>
+                    <p className="text-lg font-semibold text-slate-800">{new Date(vehicle.created_at).toLocaleDateString()}</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Image Section */}
-                <div className="p-6 rounded-[24px] bg-[#e0e5ec] shadow-[12px_12px_24px_#a3b1c6,-12px_-12px_24px_#ffffff]">
-                  <h2 className="text-lg font-bold text-[#2d3748] mb-4 flex items-center gap-2">
-                    <Car className="w-5 h-5 text-[#10b981]" />
-                    Vehicle Image
-                  </h2>
-                  {vehicle.image_id ? (
-                    <div className="rounded-[20px] overflow-hidden bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff] p-4">
-                      <img
-                        src={getVehicleFullImageUrl(vehicle.image_id) || ""}
-                        alt={`${vehicle.brand} ${vehicle.model}`}
-                        className="w-full h-auto max-h-[400px] object-contain rounded-[16px]"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 75'%3E%3Crect width='100' height='75' fill='%23e2e8f0'/%3E%3Ctext x='50' y='40' text-anchor='middle' font-size='10' fill='%2364748b' font-family='sans-serif'%3ENo Image%3C/text%3E%3C/svg%3E";
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="h-64 rounded-[20px] bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff] flex items-center justify-center">
-                      <div className="text-center">
-                        <Car className="w-16 h-16 text-[#718096] mx-auto mb-2" />
-                        <p className="text-[#718096]">No image available</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Details Section */}
-                <div className="space-y-6">
-                  {/* Basic Info */}
-                  <div className="p-6 rounded-[24px] bg-[#e0e5ec] shadow-[12px_12px_24px_#a3b1c6,-12px_-12px_24px_#ffffff]">
-                    <h2 className="text-lg font-bold text-[#2d3748] mb-4 flex items-center gap-2">
-                      <Info className="w-5 h-5 text-[#10b981]" />
-                      Basic Information
-                    </h2>
-                    <div className="grid grid-cols-2 gap-4">
-                      <DetailItem 
-                        icon={<Tag className="w-4 h-4" />} 
-                        label="Brand" 
-                        value={vehicle.brand} 
-                      />
-                      <DetailItem 
-                        icon={<Tag className="w-4 h-4" />} 
-                        label="Model" 
-                        value={vehicle.model} 
-                      />
-                      <DetailItem 
-                        icon={<Calendar className="w-4 h-4" />} 
-                        label="Year" 
-                        value={vehicle.year.toString()} 
-                      />
-                      <DetailItem 
-                        icon={<Hash className="w-4 h-4" />} 
-                        label="Plate" 
-                        value={vehicle.plate || "—"} 
-                      />
-                    </div>
-                  </div>
-
-                  {/* Pricing */}
-                  <div className="p-6 rounded-[24px] bg-[#e0e5ec] shadow-[12px_12px_24px_#a3b1c6,-12px_-12px_24px_#ffffff]">
-                    <h2 className="text-lg font-bold text-[#2d3748] mb-4 flex items-center gap-2">
-                      <DollarSign className="w-5 h-5 text-[#10b981]" />
-                      Pricing
-                    </h2>
-                    <div className="p-4 rounded-[16px] bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#a3b1c6,inset_-4px_-4px_8px_#ffffff]">
-                      <p className="text-sm text-[#718096] mb-1">Market Price</p>
-                      <p className="text-3xl font-bold text-[#2ecc71]">
-                        {formatPrice(vehicle.market_price)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Additional Details */}
-                  <div className="p-6 rounded-[24px] bg-[#e0e5ec] shadow-[12px_12px_24px_#a3b1c6,-12px_-12px_24px_#ffffff]">
-                    <h2 className="text-lg font-bold text-[#2d3748] mb-4 flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-[#10b981]" />
-                      Additional Details
-                    </h2>
-                    <div className="space-y-3">
-                      <DetailItem 
-                        icon={<FileText className="w-4 h-4" />} 
-                        label="Tax Type" 
-                        value={vehicle.tax_type || "—"} 
-                      />
-                      <DetailItem 
-                        icon={<Tag className="w-4 h-4" />} 
-                        label="Body Type" 
-                        value={vehicle.body_type || "—"} 
-                      />
-                      <DetailItem 
-                        icon={<Palette className="w-4 h-4" />} 
-                        label="Color" 
-                        value={
-                          vehicle.color ? (
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-4 h-4 rounded-full"
-                                style={{ backgroundColor: getColorHex(vehicle.color) }}
-                              />
-                              {vehicle.color}
-                            </div>
-                          ) : "—"
-                        } 
-                      />
-                    </div>
-                  </div>
+              {/* Action Buttons */}
+              <div className="bg-white rounded-2xl shadow-xl p-6">
+                <div className="flex gap-3">
+                  <button className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    Edit Vehicle
+                  </button>
+                  <button className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+                    Delete Vehicle
+                  </button>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </main>
 
-      <MobileBottomNav />
+      {selectedImage && (
+        <ImageModal
+          isOpen={true}
+          imageUrl={selectedImage}
+          alt={`${vehicle.brand} ${vehicle.model}`}
+          onClose={() => setSelectedImage(null)}
+        />
+      )}
     </div>
   );
 }
 
-// Helper component for detail items
-interface DetailItemProps {
-  icon: React.ReactNode;
-  label: string;
-  value: React.ReactNode;
-}
-
-function DetailItem({ icon, label, value }: DetailItemProps) {
-  return (
-    <div className="flex items-start gap-3 p-3 rounded-[12px] bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#a3b1c6,inset_-2px_-2px_4px_#ffffff]">
-      <div className="p-2 rounded-lg bg-[#e0e5ec] shadow-[2px_2px_4px_#a3b1c6,-2px_-2px_4px_#ffffff] text-[#10b981]">
-        {icon}
-      </div>
-      <div>
-        <p className="text-xs text-[#718096] uppercase tracking-wider">{label}</p>
-        <p className="font-semibold text-[#2d3748]">{value}</p>
-      </div>
-    </div>
-  );
-}

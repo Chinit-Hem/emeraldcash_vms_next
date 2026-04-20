@@ -111,14 +111,31 @@ function createSuccessResponse(data: Record<string, unknown>, status: number = 2
 }
 
 
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    // Authenticate session (minimal logging)
+    // Authenticate session with detailed logging for debugging
     const session = getSession(req);
-    if (!session || session.role !== "Admin") {
-      return createErrorResponse("Admin access required", "forbidden", 403);
+    
+    // Debug logging to help diagnose access issues
+    if (!session) {
+      log("WARN", "GET /api/auth/users - No session found", {
+        cookies: req.cookies.get("session")?.value ? "present" : "missing",
+      });
+      return createErrorResponse("Authentication required. Please log in as admin (username: admin, password: 1234)", "unauthorized", 401);
+    }
+    
+    if (session.role !== "Admin") {
+      log("WARN", "GET /api/auth/users - Non-admin access attempt", {
+        username: session.username,
+        role: session.role,
+      });
+      return createErrorResponse(
+        `Access denied. You are logged in as "${session.role}". Please log in as "Admin" to manage users. Default admin: admin / 1234`, 
+        "forbidden", 
+        403
+      );
     }
 
     // Fetch users (cached in userStore)
@@ -143,18 +160,25 @@ export async function POST(req: NextRequest) {
     // Authenticate session
     const session = getSession(req);
     if (!session) {
-      log("WARN", "POST /api/auth/users - Unauthorized access attempt", { requestId });
-      return createErrorResponse("Invalid or expired session", "unauthorized", 401);
+      log("WARN", "POST /api/auth/users - No session found", { 
+        requestId,
+        cookies: req.cookies.get("session")?.value ? "present" : "missing",
+      });
+      return createErrorResponse("Authentication required. Please log in.", "unauthorized", 401);
     }
 
     // Authorize admin access
     if (session.role !== "Admin") {
-      log("WARN", "POST /api/auth/users - Forbidden access attempt", { 
+      log("WARN", "POST /api/auth/users - Non-admin access attempt", { 
         requestId, 
         username: session.username,
         role: session.role 
       });
-      return createErrorResponse("Forbidden. Admin access required.", "forbidden", 403);
+      return createErrorResponse(
+        `Access denied. Admin role required. Current role: ${session.role}`, 
+        "forbidden", 
+        403
+      );
     }
 
     // Parse request body
@@ -378,8 +402,24 @@ export async function DELETE(req: NextRequest) {
   import("@/lib/userStore").then(m => m.invalidateUsersCache());
   
   const session = getSession(req);
-  if (!session || session.role !== "Admin") {
-    return createErrorResponse("Admin access required", "forbidden", 403);
+  
+  if (!session) {
+    log("WARN", "DELETE /api/auth/users - No session found", {
+      cookies: req.cookies.get("session")?.value ? "present" : "missing",
+    });
+    return createErrorResponse("Authentication required. Please log in.", "unauthorized", 401);
+  }
+  
+  if (session.role !== "Admin") {
+    log("WARN", "DELETE /api/auth/users - Non-admin access attempt", {
+      username: session.username,
+      role: session.role,
+    });
+    return createErrorResponse(
+      `Access denied. Admin role required. Current role: ${session.role}`, 
+      "forbidden", 
+      403
+    );
   }
 
   let body;

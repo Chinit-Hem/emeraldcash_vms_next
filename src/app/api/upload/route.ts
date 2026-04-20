@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
 import { uploadImage } from "@/lib/cloudinary";
+import { Buffer } from "node:buffer";
 
 // ============================================================================
 // Types
@@ -39,6 +40,8 @@ const ALLOWED_MIME_TYPES = [
   "image/gif",
 ];
 
+const BASE64_DATA_URL_PREFIX = "data:";
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -48,24 +51,97 @@ const ALLOWED_MIME_TYPES = [
  */
 async function parseFormData(request: NextRequest): Promise<{
   file: File | null;
+  base64Image: string | null;
   vehicleId: string | null;
   category: string | null;
   error?: string;
 }> {
   try {
-    const formData = await request.formData();
+    // First try multipart form-data
+    const contentType = request.headers.get('content-type') || '';
+    if (contentType.includes('multipart/form-data')) {
+      console.log("[Upload API] Processing multipart/form-data");
+      const formData = await request.formData();
+      
+      // Log all form fields for debugging
+      console.log("[Upload API] Form fields:");
+      for (const [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, value instanceof File ? `${value.name} (${value.size} bytes, ${value.type})` : value);
+      }
+      const file = formData.get("file") as File | null || formData.get("image") as File | null;
+      const vehicleId = formData.get("vehicleId") as string | null;
+      const category = formData.get("category") as string | null;
+      
+      return { file, base64Image: null, vehicleId, category };
+    } 
     
-    const file = formData.get("image") as File | null;
-    const vehicleId = formData.get("vehicleId") as string | null;
-    const category = formData.get("category") as string | null;
+    // Fallback: JSON with base64 data URL (edit page)
+    console.log("[Upload API] Processing JSON with base64");
+    const jsonBody = await request.json();
+    console.log("[Upload API] JSON body keys:", Object.keys(jsonBody ?? {}));
     
-    return { file, vehicleId, category };
+    const base64Image = (jsonBody.file || jsonBody.image || '').toString().trim();
+    const vehicleId = (jsonBody.vehicleId || jsonBody.vehicle_id || '').toString() || null;
+    const category = (jsonBody.category || '').toString() || null;
+    
+    return { file: null, base64Image, vehicleId, category };
   } catch (error) {
     return {
       file: null,
       vehicleId: null,
       category: null,
       error: error instanceof Error ? error.message : "Failed to parse form data",
+    };
+  }
+}
+
+/**
+ * Convert base64 data URL into a File so it can use the same upload path
+ * as multipart uploads (more stable than Cloudinary SDK data-url uploads).
+ */
+function dataUrlToFile(
+  dataUrl: string,
+  fallbackName: string
+): { file: File | null; error?: string } {
+  if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith(BASE64_DATA_URL_PREFIX)) {
+    return { file: null, error: "Invalid image format. Expected a base64 data URL." };
+  }
+
+  const commaIndex = dataUrl.indexOf(",");
+  if (commaIndex < 0) {
+    return { file: null, error: "Invalid image data URL format." };
+  }
+
+  const header = dataUrl.slice(0, commaIndex);
+  const base64Payload = dataUrl.slice(commaIndex + 1).trim();
+  const mimeMatch = header.match(/^data:([^;]+);base64$/i);
+  const mimeType = mimeMatch?.[1]?.toLowerCase() || "";
+
+  if (!mimeType) {
+    return { file: null, error: "Missing MIME type in base64 image data." };
+  }
+
+  if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+    return {
+      file: null,
+      error: `Invalid file type: ${mimeType}. Allowed types: ${ALLOWED_MIME_TYPES.join(", ")}`,
+    };
+  }
+
+  try {
+    const buffer = Buffer.from(base64Payload, "base64");
+    if (!buffer.length) {
+      return { file: null, error: "Empty base64 image payload." };
+    }
+
+    const extension = mimeType.split("/")[1] || "jpg";
+    const normalizedExtension = extension === "jpeg" ? "jpg" : extension;
+    const file = new File([buffer], `${fallbackName}.${normalizedExtension}`, { type: mimeType });
+    return { file };
+  } catch (error) {
+    return {
+      file: null,
+      error: error instanceof Error ? error.message : "Failed to decode base64 image data",
     };
   }
 }
@@ -107,7 +183,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
 
   try {
     // Parse form data
-    const { file, vehicleId, category, error: parseError } = await parseFormData(request);
+    const { file, base64Image, vehicleId, category, error: parseError } = await parseFormData(request);
+
+    // Additional debug log
+    console.log(`[Upload API ${requestId}] Parsed: file=${!!file}, base64Image=${!!base64Image}, vehicleId=${vehicleId}, category=${category}`);
 
     if (parseError) {
       return NextResponse.json(
@@ -116,33 +195,70 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
       );
     }
 
-    if (!file) {
+    const imageData = file || base64Image;
+    if (!imageData) {
       return NextResponse.json(
-        { ok: false, error: "No image file provided" },
+        { ok: false, error: "No image file or base64 data provided" },
         { status: 400 }
       );
     }
 
-    // Validate file
-    const validation = validateFile(file);
-    if (!validation.valid) {
-      return NextResponse.json(
-        { ok: false, error: validation.error },
-        { status: 400 }
-      );
-    }
+    let uploadResult;
+    if (typeof imageData === 'string') {
+      // Base64 data URL upload (convert to File for stable upload path)
+      console.log(`[Upload API ${requestId}] Uploading base64 image (length: ${imageData.length})`);
 
-    // Upload to Cloudinary with increased timeout
-    const uploadResult = await uploadImage(file, {
-      category: category || "vehicles",
-      publicId: vehicleId ? `vehicle_${vehicleId}` : undefined,
-      timeout: 120000, // 2 minutes - Cloudinary can be slow
-      retryAttempts: 2, // Reduce retries to avoid long waits
-      retryDelay: 1000,
-      compress: true,
-      maxWidth: 1280,
-      quality: 0.8,
-    });
+      const base64FileName = vehicleId ? `vehicle_${vehicleId}` : `vehicle_${Date.now()}`;
+      const { file: fileFromDataUrl, error: dataUrlError } = dataUrlToFile(imageData, base64FileName);
+      if (dataUrlError || !fileFromDataUrl) {
+        return NextResponse.json(
+          { ok: false, error: dataUrlError || "Invalid base64 image data" },
+          { status: 400 }
+        );
+      }
+
+      const validation = validateFile(fileFromDataUrl);
+      if (!validation.valid) {
+        return NextResponse.json(
+          { ok: false, error: validation.error },
+          { status: 400 }
+        );
+      }
+
+      uploadResult = await uploadImage(fileFromDataUrl, {
+        category: category || "vehicles",
+        publicId: vehicleId ? `vehicle_${vehicleId}` : undefined,
+        timeout: 120000,
+        retryAttempts: 2,
+        retryDelay: 1000,
+        compress: true,
+        maxWidth: 1280,
+        quality: 0.8,
+      });
+    } else {
+      // File upload
+      console.log(`[Upload API ${requestId}] Uploading file: ${file?.name} (${file?.size} bytes)`);
+      
+      // Validate file
+      const validation = validateFile(file!);
+      if (!validation.valid) {
+        return NextResponse.json(
+          { ok: false, error: validation.error },
+          { status: 400 }
+        );
+      }
+      
+      uploadResult = await uploadImage(file!, {
+        category: category || "vehicles",
+        publicId: vehicleId ? `vehicle_${vehicleId}` : undefined,
+        timeout: 120000,
+        retryAttempts: 2,
+        retryDelay: 1000,
+        compress: true,
+        maxWidth: 1280,
+        quality: 0.8,
+      });
+    }
 
     if (!uploadResult.success) {
       return NextResponse.json(

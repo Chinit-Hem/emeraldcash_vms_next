@@ -8,10 +8,9 @@
  * @module api/lms/dashboard
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { lmsService } from "@/services/LmsService";
 import { canAccessLMS, canManageLMS, getSession } from "@/lib/auth-helpers";
-import { listUsersFromDB } from "@/lib/user-db";
+import { lmsService } from "@/services/LmsService";
+import { NextRequest, NextResponse } from "next/server";
 
 // ============================================================================
 // GET /api/lms/dashboard - Admin & Staff can access
@@ -47,13 +46,34 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const legacyData = result.data
+    ? {
+        total_staff: result.data.totalStaff,
+        total_categories: result.data.totalCategories,
+        total_lessons: result.data.totalLessons,
+        overall_completion_rate: result.data.overallCompletionRate,
+        staff_progress: result.data.staffProgress.map((staff) => ({
+          staff_id: staff.staffId,
+          staff_name: staff.staffName,
+          branch: staff.branch,
+          role: staff.role,
+          completion_percentage: staff.completionPercentage,
+          last_activity: staff.lastActivity,
+        })),
+        category_completion: result.data.categoryCompletion.map((category) => ({
+          category_id: category.categoryId,
+          category_name: category.categoryName,
+          completion_rate: category.completionRate,
+        })),
+      }
+    : null;
+
   // If Staff, filter to show only their own progress
-  if (!isAdmin && result.data?.staff_progress) {
-    const staffProgress = result.data.staff_progress.find(
+  if (!isAdmin && legacyData?.staff_progress) {
+    const staffProgress = legacyData.staff_progress.find(
       (s: { staff_name: string }) => s.staff_name === session.username
     );
-    
-    result.data.staff_progress = staffProgress ? [staffProgress] : [];
+    legacyData.staff_progress = staffProgress ? [staffProgress] : [];
   }
 
   // Add cache-busting headers to prevent stale data
@@ -64,7 +84,7 @@ export async function GET(request: NextRequest) {
   
   return NextResponse.json({
     success: true,
-    data: result.data,
+    data: legacyData,
     meta: {
       ...result.meta,
       isAdmin,

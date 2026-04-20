@@ -81,7 +81,7 @@ export default function Pagination({
           <select
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="px-3 py-1.5 bg-[#e6e9ef] rounded-lg text-sm text-[#1a1a2e] focus:outline-none shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]"
+            className="px-3 py-1.5 bg-slate-100 rounded-lg text-sm text-[#1a1a2e] focus:outline-none shadow-sm"
           >
             {PAGE_SIZE_OPTIONS.map((size) => (
               <option key={size} value={size}>
@@ -95,7 +95,7 @@ export default function Pagination({
   }
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4 px-4 sm:px-6 border-t border-[#bebebe]/30">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4 px-4 sm:px-6 border-t border-slate-200">
       {/* Info */}
       <div className="text-sm text-[#4a4a5a]">
         Showing <span className="font-medium text-[#1a1a2e]">{startItem}</span> to{" "}
@@ -111,7 +111,7 @@ export default function Pagination({
           <select
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
-            className="px-3 py-1.5 bg-[#e6e9ef] rounded-lg text-sm text-[#1a1a2e] focus:outline-none shadow-[inset_4px_4px_8px_#bebebe,inset_-4px_-4px_8px_#ffffff]"
+            className="px-3 py-1.5 bg-slate-100 rounded-lg text-sm text-[#1a1a2e] focus:outline-none shadow-sm"
           >
             {PAGE_SIZE_OPTIONS.map((size) => (
               <option key={size} value={size}>
@@ -126,7 +126,7 @@ export default function Pagination({
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="p-2 rounded-lg text-[#4a4a5a] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-200 hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
+            className="p-2 rounded-lg text-[#4a4a5a] shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-200 hover:bg-slate-50"
             aria-label="Previous page"
           >
             <svg
@@ -149,10 +149,10 @@ export default function Pagination({
                 disabled={page === "..."}
                 className={`min-w-[40px] h-10 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                   page === currentPage
-                    ? "bg-[#10b981] text-white shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff]"
+                    ? "bg-[#10b981] text-white shadow-sm"
                     : page === "..."
                     ? "text-[#4a4a5a] cursor-default"
-                    : "text-[#4a4a5a] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
+                    : "text-[#4a4a5a] shadow-sm hover:bg-slate-50"
                 }`}
               >
                 {page}
@@ -163,7 +163,7 @@ export default function Pagination({
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="p-2 rounded-lg text-[#4a4a5a] shadow-[4px_4px_8px_#bebebe,-4px_-4px_8px_#ffffff] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-200 hover:shadow-[inset_2px_2px_4px_#bebebe,inset_-2px_-2px_4px_#ffffff]"
+            className="p-2 rounded-lg text-[#4a4a5a] shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-200 hover:bg-slate-50"
             aria-label="Next page"
           >
             <svg

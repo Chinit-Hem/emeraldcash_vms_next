@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState, useRef, useMemo } from "react";
-import { vehicleApi, isApiError, isConfigError, isNetworkError, type VehicleFilters } from "./api";
-import { onVehicleCacheUpdate, isCacheStale, getCacheAge, clearAllVehicleCache, writeVehicleCache, readVehicleCache, readVehicleMetaCache } from "./vehicleCache";
-import type { Vehicle, VehicleMeta } from "./types";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isApiError, isConfigError, isNetworkError, vehicleApi, type VehicleFilters } from "./api";
 import { isIOSSafariBrowser } from "./platform";
+import type { Vehicle, VehicleMeta } from "./types";
+import { clearAllVehicleCache, getCacheAge, isCacheStale, onVehicleCacheUpdate, readVehicleCache, readVehicleMetaCache, writeVehicleCache } from "./vehicleCache";
 
 // Retry configuration
 const MAX_RETRIES = 3;
@@ -12,8 +12,8 @@ const SEARCH_DEBOUNCE_MS = 500;
 // Debounce delay for other filter changes (ms)
 const FILTER_DEBOUNCE_MS = 150;
 
-// Cache stale time - 5 minutes (300000ms)
-const CACHE_STALE_TIME_MS = 5 * 60 * 1000;
+// Cache stale time - 10 minutes (600000ms)
+const CACHE_STALE_TIME_MS = 10 * 60 * 1000;
 
 interface UseVehiclesReturn {
   vehicles: Vehicle[];
@@ -39,10 +39,15 @@ interface UseVehiclesOptions {
  * Optimized useVehicles hook with proper caching and performance optimizations
  * 
  * Key features:
- * - 5-minute stale time to prevent excessive API calls
+ * - 10-minute stale time (tunable via CACHE_STALE_TIME_MS)
  * - noCache only used for manual refresh, not auto-fetch
  * - Memoized vehicle list to prevent unnecessary re-renders
  * - Stable callbacks to prevent useEffect re-runs
+ * 
+ * Usage with Suspense (recommended for prefetch):
+ * <Suspense fallback={<LoadingSkeleton />}>
+ *   <VehiclesList />
+ * </Suspense>
  */
 export function useVehicles(options: UseVehiclesOptions = {}): UseVehiclesReturn {
   const { 
