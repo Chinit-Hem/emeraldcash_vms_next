@@ -501,6 +501,7 @@ export default function LessonPlayerPage() {
               description={currentLesson.description || ''}
               youtubeUrl={currentLesson.youtube_url}
               youtubeVideoId={currentLesson.youtube_video_id}
+              stepByStepInstructions={currentLesson.step_by_step_instructions || ''}
               durationMinutes={currentLesson.duration_minutes || 0}
               isCompleted={currentLesson.is_completed}
               onComplete={handleMarkComplete}
