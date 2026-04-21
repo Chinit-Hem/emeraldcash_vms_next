@@ -497,13 +497,11 @@ export default function LessonPlayerPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Video Player */}
             <VideoPlayer 
-              lessonId={currentLesson.id}
               title={currentLesson.title}
-              description={currentLesson.description}
+              description={currentLesson.description || ''}
               youtubeUrl={currentLesson.youtube_url}
               youtubeVideoId={currentLesson.youtube_video_id}
-              stepByStepInstructions={currentLesson.step_by_step_instructions}
-              durationMinutes={currentLesson.duration_minutes}
+              durationMinutes={currentLesson.duration_minutes || 0}
               isCompleted={currentLesson.is_completed}
               onComplete={handleMarkComplete}
               onBack={() => router.push("/lms")}
