@@ -13,14 +13,14 @@
 - [x] git add src/components/ui/command.tsx
 - [x] git add src/components/ui/popover.tsx
 
-### 3. Lint and fix
-- [ ] npm run lint -- --fix
+### 3. Lint and fix ✅
+- [x] npm run lint -- --fix
 
 ### 4. Run tests
 - [ ] npm run test:e2e
 
-### 5. Update remote origin
-- [ ] git remote set-url origin https://github.com/Chinit-Hem/emeraldcash_vms_next.git
+### 5. Update remote origin ✅
+- [x] git remote set-url origin https://github.com/Chinit-Hem/emeraldcash_vms_next.git
 
 ### 6. Commit changes
 - [ ] git commit -m "Add shadcn-ui command/popover components, lint fixes; update origin"
