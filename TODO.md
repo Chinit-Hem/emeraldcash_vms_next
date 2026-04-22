@@ -2,8 +2,8 @@
 
 ## Completed Steps
 - [x] Create TODO.md with step-by-step plan ✅
-- [ ] Stage all changes (git add .)
-- [ ] Commit changes (git commit -m "...")
+- [x] Stage all changes (git add .) ✅
+- [x] Commit changes (git commit -m "chore(release): v0.2.0") ✅
 - [ ] Pull latest changes (git pull origin main)
 - [ ] Resolve any merge conflicts (if needed)
 - [ ] Push to origin/main (git push origin main)
@@ -11,7 +11,8 @@
 - [ ] Update CHANGELOG.md version to released
 - [ ] Run lint check (npm run lint)
 
-## Progress: 1/9 steps complete
+## Progress: 3/9 steps complete
 
-**Next step:** Stage all changes with `git add .`
+**Next step:** Pull latest changes with `git pull origin main`
+
 
