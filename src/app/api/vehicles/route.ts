@@ -227,7 +227,11 @@ const getHandler = withErrorHandling(async (req, { logger, requestId, startTime 
 
   // 🚀 PHASE 1 STEP 3: Try LRU cache first
   let cacheHit = false;
-  let vehiclesResult = { success: false as const, data: [] as any[], meta: {} as any };
+  let vehiclesResult: { success: boolean; data?: any[]; meta?: any; error?: string } = {
+    success: false,
+    data: [],
+    meta: {},
+  };
   
   // Skip cache for noCache=1 or mutations (offset=0 typically uncached)
   const noCache = searchParams.get("noCache") === "1";
@@ -241,7 +245,7 @@ const getHandler = withErrorHandling(async (req, { logger, requestId, startTime 
     }
   }
 
-  let statsResult = { success: true, data: null };
+  let statsResult: { success: boolean; data?: any; error?: string } = { success: true, data: null };
   
   if (!vehiclesResult.success) {
     logger.debug("Cache MISS - querying DB", { filters });

@@ -141,7 +141,9 @@ export function VideoPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle player error - show fallback
-
+  const handlePlayerReady = () => {
+    setHasError(false);
+  };
 
   // Handle fullscreen toggle
   const toggleFullscreen = () => {

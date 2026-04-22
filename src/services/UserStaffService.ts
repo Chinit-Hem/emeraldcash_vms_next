@@ -8,7 +8,7 @@
  */
 
 import { lmsService } from "./LmsService";
-import type { CreateLmsStaffInput, LmsStaff } from "@/lib/lms-schema";
+import type { CreateLmsStaffInput, UpdateLmsStaffInput } from "@/lib/lms-entities";
 import type { Role } from "@/lib/types";
 
 // ============================================================================
@@ -95,9 +95,9 @@ export class UserStaffService {
 
       // Step 2: Create LMS staff with unified role
       const staffData: CreateLmsStaffInput = {
-        full_name: data.full_name || data.username,
+        fullName: data.full_name || data.username,
         email: data.email || null,
-        branch_location: data.branch_location || null,
+        branchLocation: data.branch_location || null,
         role: data.role,
         phone: data.phone || null,
       };
@@ -113,15 +113,15 @@ export class UserStaffService {
 
       const unifiedUser: UnifiedUser = {
         username: data.username,
-        full_name: staffData.full_name,
+        full_name: staffData.fullName,
         email: staffData.email,
         role: data.role,
-        branch_location: staffData.branch_location,
+        branch_location: staffData.branchLocation,
         phone: staffData.phone,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        staff_id: staffResult.data?.id,
+        staff_id: staffResult.data?.id ? Number(staffResult.data.id) : undefined,
         lms_role: staffData.role,
       };
 
@@ -156,21 +156,21 @@ export class UserStaffService {
       // Merge data
       const unifiedUsers: UnifiedUser[] = usersData.users.map((user: { username: string; role: string; createdAt: number; updatedAt: number }) => {
         const staffMember = staffResult.data?.find(
-          (s) => s.full_name.toLowerCase() === user.username.toLowerCase() ||
+          (s) => s.fullName.toLowerCase() === user.username.toLowerCase() ||
                 s.email?.toLowerCase() === user.username.toLowerCase()
         );
 
         return {
           username: user.username,
-          full_name: staffMember?.full_name || user.username,
+          full_name: staffMember?.fullName || user.username,
           email: staffMember?.email || null,
           role: this.mapLmsRoleToAppRole(staffMember?.role || user.role),
-          branch_location: staffMember?.branch_location || null,
+          branch_location: staffMember?.branchLocation || null,
           phone: staffMember?.phone || null,
-          is_active: staffMember?.is_active ?? true,
+          is_active: staffMember?.isActive ?? true,
           created_at: new Date(user.createdAt).toISOString(),
           updated_at: new Date(user.updatedAt).toISOString(),
-          staff_id: staffMember?.id,
+          staff_id: staffMember?.id ? Number(staffMember.id) : undefined,
           lms_role: staffMember?.role,
         };
       });
@@ -190,14 +190,15 @@ export class UserStaffService {
     try {
       // Update LMS staff if staff_id exists
       if (data.staff_id) {
-        const staffUpdate = await lmsService.updateStaff(data.staff_id, {
-          full_name: data.full_name,
+        const staffUpdateInput: UpdateLmsStaffInput = {
+          fullName: data.full_name,
           email: data.email,
-          branch_location: data.branch_location,
+          branchLocation: data.branch_location,
           role: data.role,
           phone: data.phone,
-          is_active: data.is_active,
-        });
+          isActive: data.is_active,
+        };
+        const staffUpdate = await lmsService.updateStaff(data.staff_id, staffUpdateInput);
 
         if (!staffUpdate.success) {
           throw new Error(staffUpdate.error || "Failed to update staff");

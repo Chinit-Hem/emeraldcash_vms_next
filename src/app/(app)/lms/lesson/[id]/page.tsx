@@ -497,7 +497,6 @@ export default function LessonPlayerPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Video Player */}
             <VideoPlayer 
-              lessonId={currentLesson.id}
               title={currentLesson.title}
               description={currentLesson.description}
               youtubeUrl={currentLesson.youtube_url}

@@ -1,13 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { smsService } from '@/services/SmsService';
 
-export async function GET(req: NextRequest, { params }: { params: { assetId: string } }) {
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ assetId: string }> }
+) {
   try {
-    const { assetId } = params;
-    const history = await smsService.getAssetHistory(assetId);
-    return NextResponse.json({ success: true, data: history });
+    const { assetId } = await params;
+    const result = await smsService.getAssetHistory(assetId);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error || 'Failed to fetch asset history' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: result.data,
+      meta: result.meta,
+    });
   } catch (error) {
-    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: (error as Error).message },
+      { status: 500 }
+    );
   }
 }
-

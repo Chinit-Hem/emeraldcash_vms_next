@@ -313,14 +313,20 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
         RETURNING *
       `;
       
-      const result = await dbManager.executeUnsafe(query, [
-        transferData.assetId,
-        transferData.senderId,
-        transferData.receiverId,
-        transferData.location,
-        transferData.remark || null,
-        now,
-      ]) as Record<string, any>[];
+      const result = await dbManager.execute`
+        INSERT INTO sms_transfers (id, asset_id, sender_id, receiver_id, location, status, remark, created_at)
+        VALUES (
+          gen_random_uuid(),
+          ${transferData.assetId},
+          ${transferData.senderId},
+          ${transferData.receiverId},
+          ${transferData.location},
+          'pending',
+          ${transferData.remark || null},
+          ${now}
+        )
+        RETURNING *
+      ` as Record<string, any>[];
 
       const transfer = result[0];
       const transferEntity: SmsTransferEntity = {
@@ -362,15 +368,14 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
   ): Promise<ServiceResult<boolean>> {
     const startTime = Date.now();
     try {
-      const now = status === 'accepted' ? `NOW()` : 'NULL';
-      const query = `
+      const result = await dbManager.execute`
         UPDATE sms_transfers 
-        SET status = $1, accepted_at = ${now}
-        WHERE id = $2
+        SET
+          status = ${status},
+          accepted_at = CASE WHEN ${status} = 'accepted' THEN NOW() ELSE NULL END
+        WHERE id = ${transferId}
         RETURNING id
-      `;
-      
-      const result = await dbManager.executeUnsafe(query, [status, transferId]) as Record<string, any>[];
+      ` as Record<string, any>[];
       
       if (result.length === 0) {
         return {
@@ -406,11 +411,10 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
     metadata: Record<string, any>
   ): Promise<void> {
     try {
-      const query = `
+      await dbManager.execute`
         INSERT INTO sms_audit_logs (user_id, action, metadata)
-        VALUES ($1, $2, $3)
-      `;
-      await dbManager.executeUnsafe(query, [userId, action, metadata]) as any;
+        VALUES (${userId}, ${action}, ${JSON.stringify(metadata)}::jsonb)
+      ` as any;
     } catch (error) {
       console.error('[SmsAssetService.logAudit] Failed to log audit:', error);
     }
@@ -419,7 +423,7 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
   /**
    * Get SMS asset stats (inventory counts) - FIXED: Pure SMS stats, no vehicle pricing
    */
-  public async getStats(): Promise<ServiceResult<any>> {
+  public async getAssetStats(): Promise<ServiceResult<any>> {
     const cacheKey = 'sms:stats';
     const startTime = Date.now();
 
@@ -484,8 +488,9 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
     const startTime = Date.now();
     try {
       // Get asset info
-      const assetQuery = `SELECT name FROM sms_assets WHERE id = $1`;
-      const assetResult = await dbManager.executeUnsafe(assetQuery, [assetId]) as Record<string, any>[];
+      const assetResult = await dbManager.execute`
+        SELECT name FROM sms_assets WHERE id = ${assetId}
+      ` as Record<string, any>[];
       const assetName = assetResult[0]?.name || 'Unknown';
 
       // Get transfers
@@ -499,7 +504,16 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
         WHERE st.asset_id = $1
         ORDER BY st.created_at DESC
       `;
-      const transfersResult = await dbManager.executeUnsafe(transfersQuery, [assetId]) as Record<string, any>[];
+      const transfersResult = await dbManager.execute`
+        SELECT 
+          'transfer' as type,
+          st.id, st.asset_id as "assetId", st.sender_id as "senderId", 
+          st.receiver_id as "receiverId", st.location, st.status, st.remark as description,
+          st.created_at as timestamp, st.accepted_at
+        FROM sms_transfers st
+        WHERE st.asset_id = ${assetId}
+        ORDER BY st.created_at DESC
+      ` as Record<string, any>[];
 
       // Get audits (filter metadata->>'assetId' = assetId)
       const auditsQuery = `
@@ -511,7 +525,16 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
         WHERE (sal.metadata->>'assetId') = $1 OR sal.metadata @> $2::jsonb
         ORDER BY sal.created_at DESC
       `;
-      const auditsResult = await dbManager.executeUnsafe(auditsQuery, [assetId, `{ "assetId": "${assetId}" }`]) as Record<string, any>[];
+      const auditsResult = await dbManager.execute`
+        SELECT 
+          'audit' as type,
+          sal.id, sal.user_id, sal.action as description, sal.metadata,
+          sal.created_at as timestamp
+        FROM sms_audit_logs sal
+        WHERE (sal.metadata->>'assetId') = ${assetId}
+          OR sal.metadata @> ${`{ "assetId": "${assetId}" }`}::jsonb
+        ORDER BY sal.created_at DESC
+      ` as Record<string, any>[];
 
       // Combine and sort by timestamp DESC
       const events = [
@@ -553,7 +576,7 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
       return {
         success: false,
         error: 'Failed to fetch asset history',
-        meta: { durationMs: Date.now() - startTime }
+        meta: { durationMs: Date.now() - startTime, queryCount: 3 }
       };
     }
   }
@@ -568,6 +591,3 @@ export class SmsAssetService extends BaseService<SmsAssetEntity, SmsAssetDB> {
  * Import this for all SMS operations
  */
 export const smsService = SmsAssetService.getInstance();
-
-
-

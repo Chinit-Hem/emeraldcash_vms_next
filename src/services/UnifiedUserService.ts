@@ -8,7 +8,7 @@
  */
 
 import { lmsService } from "./LmsService";
-import type { CreateLmsStaffInput, UpdateLmsStaffInput, LmsStaff } from "@/lib/lms-schema";
+import type { CreateLmsStaffInput, UpdateLmsStaffInput, LmsStaffEntity } from "@/lib/lms-entities";
 import type { Role } from "@/lib/types";
 
 // ============================================================================
@@ -111,16 +111,16 @@ export class UnifiedUserService {
       if (input.enroll_in_lms !== false) {
         // All users get LMS access with unified role system
         const lmsResult = await this.enrollInLMS({
-          full_name: input.full_name,
+          fullName: input.full_name,
           email: input.email || null,
-          role: (input.role || "Staff") as Role,
-          branch_location: input.branch_location || null,
+          role: (input.role || "Staff"),
+          branchLocation: input.branch_location || null,
           phone: input.phone || null,
         });
 
         if (lmsResult.success && lmsResult.data) {
           lmsData = {
-            staff_id: lmsResult.data.id,
+            staff_id: Number(lmsResult.data.id),
             enrolled_at: new Date().toISOString(),
           };
         }
@@ -177,8 +177,8 @@ export class UnifiedUserService {
         updatedAt: number;
       }) => {
         // Find matching LMS staff by name or email
-        const staff = lmsStaff.find((s: LmsStaff) => 
-          s.full_name.toLowerCase() === authUser.username.toLowerCase() ||
+        const staff = lmsStaff.find((s) =>
+          s.fullName.toLowerCase() === authUser.username.toLowerCase() ||
           s.email?.toLowerCase() === authUser.username.toLowerCase()
         );
 
@@ -227,12 +227,12 @@ export class UnifiedUserService {
       // Update LMS staff if exists
       if (input.lms_staff_id) {
         const lmsUpdate: UpdateLmsStaffInput = {
-          full_name: input.full_name,
+          fullName: input.full_name,
           email: input.email,
-          branch_location: input.branch_location,
+          branchLocation: input.branch_location,
           role: input.role ? this.mapToLmsRole(input.role) : undefined,
           phone: input.phone,
-          is_active: input.is_active,
+          isActive: input.is_active,
         };
 
         const lmsResult = await lmsService.updateStaff(input.lms_staff_id, lmsUpdate);
@@ -307,7 +307,7 @@ export class UnifiedUserService {
       // Return updated user
       const updatedUser: UnifiedUser = {
         ...userResult.data,
-        lms_staff_id: lmsResult.data?.id,
+        lms_staff_id: lmsResult.data ? Number(lmsResult.data.id) : undefined,
         lms_enrolled_at: new Date().toISOString(),
       };
 
@@ -337,28 +337,28 @@ export class UnifiedUserService {
     return { success: true };
   }
 
-  private async enrollInLMS(data: CreateLmsStaffInput): Promise<ServiceResponse<LmsStaff>> {
+  private async enrollInLMS(data: CreateLmsStaffInput): Promise<ServiceResponse<LmsStaffEntity>> {
     return await lmsService.createStaff(data);
   }
 
   private mergeUserData(
     authUser: { username: string; role: string; createdAt: number; updatedAt: number },
-    staff: LmsStaff | undefined
+    staff: LmsStaffEntity | undefined
   ): UnifiedUser {
     return {
       id: authUser.username,
-      full_name: staff?.full_name || authUser.username,
+      full_name: staff?.fullName || authUser.username,
       email: staff?.email || null,
       role: this.mapFromLmsRole(staff?.role || authUser.role),
       phone: staff?.phone || null,
-      branch_location: staff?.branch_location || null,
+      branch_location: staff?.branchLocation || null,
       avatar_url: null,
-      is_active: staff?.is_active ?? true,
+      is_active: staff?.isActive ?? true,
       created_at: new Date(authUser.createdAt).toISOString(),
       updated_at: new Date(authUser.updatedAt).toISOString(),
       last_login_at: null,
-      lms_staff_id: staff?.id,
-      lms_enrolled_at: staff ? new Date().toISOString() : undefined,
+      lms_staff_id: staff?.id ? Number(staff.id) : undefined,
+      lms_enrolled_at: staff?.createdAt,
     };
   }
 

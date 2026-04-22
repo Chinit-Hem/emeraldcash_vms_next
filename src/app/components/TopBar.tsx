@@ -8,7 +8,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 
 type TopBarProps = {
   user: User;
-  onMenuClick: () => void;
+  onMenuClick?: () => void;
   title?: string;
   showBack?: boolean;
   onBack?: () => void;
@@ -16,7 +16,7 @@ type TopBarProps = {
 
 export default function TopBar({
   user,
-  onMenuClick,
+  onMenuClick = () => {},
   title,
   showBack,
   onBack,

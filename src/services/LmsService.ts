@@ -43,22 +43,22 @@ import type { InitialLmsData, LessonWithStatus } from "@/lib/lms-types";
 // ============================================================================
 
 export interface LmsDashboardStats {
-  totalStaff: number;
-  totalCategories: number;
-  totalLessons: number;
-  overallCompletionRate: number;
-  staffProgress: {
-    staffId: number;
-    staffName: string;
+  total_staff: number;
+  total_categories: number;
+  total_lessons: number;
+  overall_completion_rate: number;
+  staff_progress: {
+    staff_id: number;
+    staff_name: string;
     branch: string | null;
     role: string;
-    completionPercentage: number;
-    lastActivity: string | null;
+    completion_percentage: number;
+    last_activity: string | null;
   }[];
-  categoryCompletion: {
-    categoryId: number;
-    categoryName: string;
-    completionRate: number;
+  category_completion: {
+    category_id: number;
+    category_name: string;
+    completion_rate: number;
   }[];
 }
 
@@ -696,57 +696,6 @@ export class LmsService extends BaseService<LmsCategoryEntity, LmsCategoryDB> {
     }
   }
 
-  /**
-   * NEW: Server-side prefetch for LMS page (eliminates client loading spinner)
-   */
-  public async getLmsDashboardInitial(): Promise<ServiceResult<InitialLmsData>> {
-    const startTime = Date.now();
-    
-    try {
-      const [statsResult, categoriesResult, allLessonsResult] = await Promise.all([
-        this.getDashboardStats(),
-        this.getCategories(),
-        this.getAllLessons()
-      ]);
-
-      if (!statsResult.success || !categoriesResult.success || !allLessonsResult.success) {
-        return {
-          success: false,
-          error: 'Failed to load initial LMS data',
-          meta: { durationMs: Date.now() - startTime, queryCount: 0, cacheHit: false }
-        };
-      }
-
-      // Transform lessons to LessonWithStatus (mock is_completed for server, client will override)
-      const lessons: LessonWithStatus[] = allLessonsResult.data.map(lesson => ({
-        ...lesson,
-        is_completed: false, // Client-side user-specific
-        is_unlocked: true,   // Simplified for initial load
-        completed_at: null,
-        category_name: '',   // Client will populate from categories
-        category_color: ''
-      }));
-
-      const initialData: InitialLmsData = {
-        stats: statsResult.data,
-        categories: categoriesResult.data,
-        lessons
-      };
-
-      return {
-        success: true,
-        data: initialData,
-        meta: { 
-          durationMs: Date.now() - startTime, 
-          queryCount: 3, 
-          cacheHit: false 
-        }
-      };
-    } catch (error) {
-      return this.handleError(error, "getLmsDashboardInitial");
-    }
-  }
-
 // ============================================================================
   // Dashboard & Analytics
   // ============================================================================
@@ -774,7 +723,14 @@ export class LmsService extends BaseService<LmsCategoryEntity, LmsCategoryDB> {
 
       // Transform lessons to LessonWithStatus (mock is_completed for server, client will override)
       const lessons: LessonWithStatus[] = allLessonsResult.data.map(lesson => ({
-        ...lesson,
+        id: Number(lesson.id),
+        category_id: lesson.categoryId,
+        title: lesson.title,
+        description: lesson.description,
+        youtube_url: lesson.youtubeUrl,
+        youtube_video_id: lesson.youtubeVideoId,
+        duration_minutes: lesson.durationMinutes,
+        order_index: lesson.orderIndex,
         is_completed: false, // Client-side user-specific
         is_unlocked: true,   // Simplified for initial load
         completed_at: null,
@@ -782,9 +738,20 @@ export class LmsService extends BaseService<LmsCategoryEntity, LmsCategoryDB> {
         category_color: ''
       }));
 
+      const categories = categoriesResult.data.map((category) => ({
+        id: Number(category.id),
+        name: category.name,
+        description: category.description,
+        icon: category.icon,
+        color: category.color,
+        order_index: category.orderIndex,
+        lesson_count: category.lessonCount || 0,
+        is_active: category.isActive,
+      }));
+
       const initialData: InitialLmsData = {
         stats: statsResult.data,
-        categories: categoriesResult.data,
+        categories,
         lessons
       };
 
@@ -815,27 +782,27 @@ export class LmsService extends BaseService<LmsCategoryEntity, LmsCategoryDB> {
       const totalPossibleCompletions = totalStaff * totalLessons;
       
       const dashboardStats: LmsDashboardStats = {
-        totalStaff: stats.totalStaff,
-        totalCategories: stats.totalCategories,
-        totalLessons: stats.totalLessons,
-        overallCompletionRate: totalPossibleCompletions > 0
+        total_staff: stats.totalStaff,
+        total_categories: stats.totalCategories,
+        total_lessons: stats.totalLessons,
+        overall_completion_rate: totalPossibleCompletions > 0
           ? Math.round((stats.completedLessonsTotal / totalPossibleCompletions) * 100)
           : 0,
-        staffProgress: staffProgress.map(s => ({
-          staffId: s.staff_id,
-          staffName: s.staff_name,
+        staff_progress: staffProgress.map(s => ({
+          staff_id: s.staff_id,
+          staff_name: s.staff_name,
           branch: s.branch,
           role: s.role,
-          completionPercentage: calculateCompletionPercentage(
+          completion_percentage: calculateCompletionPercentage(
             s.completed_count,
             totalLessons
           ),
-          lastActivity: s.last_activity,
+          last_activity: s.last_activity,
         })),
-        categoryCompletion: categoryCompletion.map(c => ({
-          categoryId: c.category_id,
-          categoryName: c.category_name,
-          completionRate: calculateCompletionPercentage(
+        category_completion: categoryCompletion.map(c => ({
+          category_id: c.category_id,
+          category_name: c.category_name,
+          completion_rate: calculateCompletionPercentage(
             c.completed_lessons,
             c.total_lessons * totalStaff
           ),

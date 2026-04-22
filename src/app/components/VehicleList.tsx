@@ -185,7 +185,7 @@ export default function VehicleList({ category }: VehicleListProps) {
   const user = useAuthUser();
   const isAdmin = user.role === "Admin";
   
-  const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);

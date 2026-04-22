@@ -46,27 +46,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const legacyData = result.data
-    ? {
-        total_staff: result.data.totalStaff,
-        total_categories: result.data.totalCategories,
-        total_lessons: result.data.totalLessons,
-        overall_completion_rate: result.data.overallCompletionRate,
-        staff_progress: result.data.staffProgress.map((staff) => ({
-          staff_id: staff.staffId,
-          staff_name: staff.staffName,
-          branch: staff.branch,
-          role: staff.role,
-          completion_percentage: staff.completionPercentage,
-          last_activity: staff.lastActivity,
-        })),
-        category_completion: result.data.categoryCompletion.map((category) => ({
-          category_id: category.categoryId,
-          category_name: category.categoryName,
-          completion_rate: category.completionRate,
-        })),
-      }
-    : null;
+  const legacyData = result.data ? { ...result.data } : null;
 
   // If Staff, filter to show only their own progress
   if (!isAdmin && legacyData?.staff_progress) {

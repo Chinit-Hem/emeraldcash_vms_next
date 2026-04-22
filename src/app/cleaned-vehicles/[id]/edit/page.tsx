@@ -81,7 +81,7 @@ export default function VehicleDetailEdit() {
       });
       if (!res.ok) throw new Error("Failed to save");
       showSuccessToast("Vehicle updated successfully!");
-      setVehicle(formData); // Update local view
+      setVehicle((prev) => (prev ? { ...prev, ...formData } : prev)); // Update local view
       router.push(`/cleaned-vehicles/${id}/view`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Save failed";

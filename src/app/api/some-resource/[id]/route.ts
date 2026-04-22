@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { someService } from '@/services/SomeService';
-import type { SomeEntity } from '@/services/SomeService';
+import type { SomeDB } from '@/services/SomeService';
 
 export async function GET(
   req: NextRequest, 
@@ -38,7 +38,7 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Invalid ID' }, { status: 400 });
     }
 
-    const data = await req.json() as Partial<SomeEntity>;
+    const data = await req.json() as Partial<SomeDB>;
     const result = await someService.update(parsedId, data);
     if (!result.success || !result.data) {
       return NextResponse.json({ success: false, error: 'Resource not found' }, { status: 404 });

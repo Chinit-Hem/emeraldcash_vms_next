@@ -27,9 +27,11 @@ import {
   PLATE_NUMBER_HINTS,
   PLATE_NUMBER_MAX_LENGTH,
   TAX_TYPE_METADATA,
+  type Vehicle,
 } from "@/lib/types";
-import { useVehicleFormUnified as useVehicleForm, type Vehicle } from "@/lib/useVehicleFormUnified";
-import React, { useMemo } from "react";
+import { userStaffService, type UnifiedUser } from "@/services/UserStaffService";
+import { useVehicleFormUnified as useVehicleForm, type UseVehicleFormOptions } from "@/lib/useVehicleFormUnified";
+import React, { useEffect, useMemo, useState } from "react";
 
 
 

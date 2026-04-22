@@ -23,9 +23,9 @@ import type {
   Vehicle, 
   StockItem, 
   StockStats, 
-  StockMovementType,
-  StockItemTable 
+  StockMovementType
 } from "@/lib/types";
+import type { StockItemTable } from "@/lib/stock-schema";
 import { BaseFilters, BaseService, ServiceResult } from "./BaseService";
 
 
@@ -505,18 +505,15 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
           END as is_low_stock
         FROM stock_items si
       `;
-      const params: any[] = [];
-      let paramIndex = 1;
 
       if (modelKey) {
-        query += ` WHERE si.model_key = $${paramIndex}`;
-        params.push(modelKey);
-        paramIndex++;
+        const safeModelKey = modelKey.replace(/'/g, "''");
+        query += ` WHERE si.model_key = '${safeModelKey}'`;
       }
 
       query += ` ORDER BY si.brand, si.model, si.location`;
 
-        const result = await dbManager.executeUnsafe<any[]>(query) as StockItem[];
+      const result = await dbManager.executeUnsafe<StockItem>(query);
 
 
       return {
@@ -550,7 +547,7 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
         FROM stock_items
       `;
 
-      const result = await dbManager.executeUnsafe<any[]>(query);
+      const result = await dbManager.executeUnsafe<Record<string, unknown>>(query);
       const row = (result[0] || {}) as any;
 
 
@@ -603,7 +600,7 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
         
         let stockItem: StockItemTable | undefined;
         if (itemQuery.length > 0) {
-          stockItem = itemQuery[0];
+          stockItem = itemQuery[0] as unknown as StockItemTable;
         } else {
           // Create new stock item if not exists
           await sql`
@@ -616,7 +613,7 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
           const newItemQuery = await sql`
             SELECT * FROM stock_items WHERE model_key = ${modelKey} AND location = ${location}
           `;
-          stockItem = newItemQuery[0];
+          stockItem = newItemQuery[0] as unknown as StockItemTable;
         }
 
         if (!stockItem) {
@@ -691,47 +688,58 @@ export class VehicleService extends BaseService<VehicleEntity, VehicleDB> {
    * Seed stock from existing vehicles
    */
   public async seedStockFromVehicles(): Promise<ServiceResult<number>> {
+    const startTime = Date.now();
     try {
-      const vehiclesResult = await this.getAll({ limit: 10000 }) as ServiceResult<VehicleDB[]>;
+      const vehiclesResult = await this.getAll({ limit: 10000 });
 
-      if (!vehiclesResult.success) {
-        return { success: false, error: 'Failed to fetch vehicles' };
+      if (!vehiclesResult.success || !vehiclesResult.data) {
+        return {
+          success: false,
+          error: vehiclesResult.error ?? 'Failed to fetch vehicles',
+          meta: {
+            durationMs: Date.now() - startTime,
+            queryCount: vehiclesResult.meta?.queryCount ?? 1,
+          },
+        };
       }
 
       let seeded = 0;
-      const stockMap = new Map<string, { brand: string, model: string, year: number | null, condition: string, color: string, count: number }>();
+      const stockMap = new Map<string, number>();
 
       for (const v of vehiclesResult.data) {
         const key = this.generateModelKey(v);
-        if (!stockMap.has(key)) {
-          stockMap.set(key, {
-            brand: v.brand || '',
-            model: v.model || '',
-            year: v.year,
-            condition: v.condition || '',
-            color: v.color || '',
-            count: 0
-          });
-
-        }
-        stockMap.get(key)!.count++;
+        stockMap.set(key, (stockMap.get(key) ?? 0) + 1);
       }
 
-      for (const [key, data] of stockMap) {
+      for (const [key, count] of stockMap) {
         // Create in default location
-        const result = await this.adjustStock(key, data.count, 'Initial seed from vehicles', 'Warehouse', 1, 'IN');
+        const result = await this.adjustStock(
+          key,
+          count,
+          'Initial seed from vehicles',
+          'Warehouse',
+          1,
+          'IN'
+        );
         if (result.success) seeded++;
       }
 
       return {
         success: true,
         data: seeded,
-        meta: {},
+        meta: {
+          durationMs: Date.now() - startTime,
+          queryCount: (vehiclesResult.meta?.queryCount ?? 1) + stockMap.size,
+        },
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Seeding failed',
+        meta: {
+          durationMs: Date.now() - startTime,
+          queryCount: 1,
+        },
       };
     }
   }

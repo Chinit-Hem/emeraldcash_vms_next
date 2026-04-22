@@ -4,7 +4,7 @@ import { smsService } from '@/services/SmsService';
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
   try {
-    const result = await smsService.getStats();
+    const result = await smsService.getAssetStats();
     
     const duration = Date.now() - startTime;
     

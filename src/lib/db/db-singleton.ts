@@ -1,6 +1,2 @@
-/** Database Singleton - Neon PostgreSQL Connection */
-import { neon } from '@neondatabase/serverless';
-import type { NeonQueryFunction } from '@neondatabase/serverless';
-
-interface ConnectionConfig {
-url: string;
+export * from "@/lib/db-singleton";
+export { default } from "@/lib/db-singleton";

@@ -38,7 +38,7 @@ export default function HistoryPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/sms/assets/${assetId}/history`);
+      const res = await fetch(`/api/sms/history/${assetId}`);
       const data = await res.json();
       if (data.success) {
         setHistory(data.data);

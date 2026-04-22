@@ -10,17 +10,15 @@ const Popover = PopoverPrimitive.Root
 const PopoverTrigger = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Trigger>
->(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
-    <PopoverPrimitive.Trigger
-      ref={ref}
-      className={cn(
-        "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-50 disabled:pointer-events-none disabled:opacity-50 data-[state=pressed]:bg-slate-900 data-[state=pressed]:text-slate-50 hover:bg-slate-900 hover:text-slate-50 dark:focus-visible:ring-slate-50 dark:focus-visible:ring-offset-slate-900 dark:data-[state=pressed]:bg-slate-50 dark:data-[state=pressed]:text-slate-900 dark:hover:bg-slate-50 dark:hover:text-slate-900",
-        className
-      )}
-      {...props}
-    />
-  </PopoverPrimitive.Portal>
+>(({ className, ...props }, ref) => (
+  <PopoverPrimitive.Trigger
+    ref={ref}
+    className={cn(
+      "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 focus-visible:ring-offset-1 focus-visible:ring-offset-slate-50 disabled:pointer-events-none disabled:opacity-50 data-[state=pressed]:bg-slate-900 data-[state=pressed]:text-slate-50 hover:bg-slate-900 hover:text-slate-50 dark:focus-visible:ring-slate-50 dark:focus-visible:ring-offset-slate-900 dark:data-[state=pressed]:bg-slate-50 dark:data-[state=pressed]:text-slate-900 dark:hover:bg-slate-50 dark:hover:text-slate-900",
+      className
+    )}
+    {...props}
+  />
 ))
 PopoverTrigger.displayName = PopoverPrimitive.Trigger.displayName
 

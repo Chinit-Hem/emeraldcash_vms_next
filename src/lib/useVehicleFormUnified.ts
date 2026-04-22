@@ -32,18 +32,22 @@ interface UnifiedFormState {
   uploadError: string | null;
 }
 
-interface UseVehicleFormUnifiedOptions {
+export interface UseVehicleFormOptions {
   initialVehicle: Vehicle;
+  onSubmit?: (data: Partial<Vehicle>, imageFile: File | null) => Promise<void>;
   onSubmitSuccess?: (vehicle: Vehicle) => void;
   onSubmitError?: (error: string) => void;
+  validateOnBlur?: boolean;
   validateOnChange?: boolean;
 }
 
-export function useVehicleFormUnified(options: UseVehicleFormUnifiedOptions) {
+export function useVehicleFormUnified(options: UseVehicleFormOptions) {
   const { 
     initialVehicle, 
+    onSubmit,
     onSubmitSuccess, 
     onSubmitError, 
+    validateOnBlur = true,
     validateOnChange = false 
   } = options;
 
@@ -207,7 +211,7 @@ export function useVehicleFormUnified(options: UseVehicleFormUnifiedOptions) {
         // Compress large images
         if (image.size > 1024 * 1024) {
           const compressed = await compressImage(image, { maxWidth: 800, quality: 0.8 });
-          return URL.createObjectURL(compressed);
+          return URL.createObjectURL(compressed.file);
         }
         return URL.createObjectURL(image);
       })();
@@ -229,6 +233,34 @@ export function useVehicleFormUnified(options: UseVehicleFormUnifiedOptions) {
     }
   }, []);
 
+  const handleRemoveImage = useCallback(() => {
+    startTransition(() => {
+      setState(prev => ({
+        ...prev,
+        uploadedImage: null,
+        formData: { ...prev.formData, Image: null },
+        errors: { ...prev.errors, Image: "" },
+      }));
+    });
+  }, []);
+
+  const handleBlur = useCallback((field: keyof Vehicle | 'SenderId' | 'ReceiverId' | 'HandoverDate' | 'Status' | 'Remarks') => {
+    startTransition(() => {
+      setState(prev => {
+        const nextErrors = { ...prev.errors };
+        if (validateOnBlur) {
+          const value = prev.formData[field as keyof typeof prev.formData];
+          nextErrors[String(field)] = validateField(field, value);
+        }
+        return {
+          ...prev,
+          touched: { ...prev.touched, [String(field)]: true },
+          errors: nextErrors,
+        };
+      });
+    });
+  }, [validateField, validateOnBlur]);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -238,9 +270,11 @@ export function useVehicleFormUnified(options: UseVehicleFormUnifiedOptions) {
 
     try {
       const imageFile = state.uploadedImage instanceof File ? state.uploadedImage : null;
-      // Submit logic here (merged from neon)
-      // ... upload + API call with progress
-      onSubmitSuccess?.(initialVehicle);
+      if (onSubmit) {
+        await onSubmit(state.formData as Partial<Vehicle>, imageFile);
+      }
+      setState(prev => ({ ...prev, isSubmitting: false, stage: null, progress: 100 }));
+      onSubmitSuccess?.({ ...initialVehicle, ...(state.formData as Partial<Vehicle>) });
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Submit failed";
       setState(prev => ({ 
@@ -251,7 +285,7 @@ export function useVehicleFormUnified(options: UseVehicleFormUnifiedOptions) {
       }));
       onSubmitError?.(msg);
     }
-  }, [state, validateForm, onSubmitSuccess, onSubmitError]);
+  }, [state, validateForm, onSubmit, onSubmitSuccess, onSubmitError, initialVehicle]);
 
   return {
     // State (non-urgent)
@@ -268,7 +302,9 @@ export function useVehicleFormUnified(options: UseVehicleFormUnifiedOptions) {
     
     // Actions
     handleChange,
+    handleBlur,
     handleImageChange,
+    handleRemoveImage,
     handleSubmit,
     validateForm,
     categoryOptions,
@@ -276,4 +312,3 @@ export function useVehicleFormUnified(options: UseVehicleFormUnifiedOptions) {
     isPending, // For Suspense boundaries
   };
 }
-

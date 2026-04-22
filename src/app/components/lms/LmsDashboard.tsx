@@ -898,10 +898,10 @@ function LmsDashboard({ initialData }: LmsDashboardProps) {
 }
 
 // Wrap with Error Boundary
-function LmsDashboardWithErrorBoundary() {
+function LmsDashboardWithErrorBoundary({ initialData }: LmsDashboardProps) {
   return (
     <LmsErrorBoundary>
-      <LmsDashboard />
+      <LmsDashboard initialData={initialData} />
     </LmsErrorBoundary>
   );
 }

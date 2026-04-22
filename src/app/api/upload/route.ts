@@ -88,6 +88,7 @@ async function parseFormData(request: NextRequest): Promise<{
   } catch (error) {
     return {
       file: null,
+      base64Image: null,
       vehicleId: null,
       category: null,
       error: error instanceof Error ? error.message : "Failed to parse form data",

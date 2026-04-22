@@ -20,14 +20,22 @@ export async function GET(req: NextRequest) {
       offset: (page - 1) * pageSize 
     };
     const result = await smsService.getAssets(filters as any);
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error || 'Failed to fetch assets' },
+        { status: 500 }
+      );
+    }
+
+    const total = result.data?.length || 0;
     
     return NextResponse.json({ 
       success: true, 
       data: result.data || [], 
-      total: result.meta?.total || 0,
+      total,
       page,
       pageSize,
-      totalPages: Math.ceil((result.meta?.total || 0) / pageSize)
+      totalPages: Math.ceil(total / pageSize)
     });
   } catch (error) {
     console.error('[SMS Assets GET]', error);
@@ -38,8 +46,15 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
-    const asset = await smsService.createAsset(data);
-    return NextResponse.json({ success: true, data: asset });
+    const result = await smsService.createAsset(data);
+    if (!result.success) {
+      return NextResponse.json(
+        { success: false, error: result.error || 'Failed to create asset' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: result.data, meta: result.meta }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
