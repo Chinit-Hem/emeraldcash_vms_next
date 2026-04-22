@@ -1,1 +1,18 @@
-/**\n * Database Module - Legacy Compatibility Layer\n */\n\nexport { dbManager, sql, queryWithRetry, testConnection, isDatabaseHealthy, getConnectionStats, resetConnection } from "./db-singleton";\n\nexport type { \n  VehicleFilters, \n  VehicleStats, \n  PaginatedResult \n} from "@/services/VehicleService";\n\nexport type {\n  ServiceResult\n} from "@/services/BaseService";\n\nexport default dbManager;\n
+/**
+ * Database Module - Legacy Compatibility Layer
+ */
+
+export { sql, queryWithRetry, testConnection, isDatabaseHealthy, getConnectionStats, resetConnection, getDbManager as dbManager } from "./db-singleton";
+
+export type { 
+  VehicleFilters, 
+  VehicleStats, 
+  PaginatedResult 
+} from "@/services/VehicleService";
+
+export type {
+  ServiceResult
+} from "@/services/BaseService";
+
+
+

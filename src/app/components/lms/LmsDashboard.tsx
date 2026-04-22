@@ -906,4 +906,12 @@ function LmsDashboardWithErrorBoundary() {
   );
 }
 
-export default LmsDashboardWithErrorBoundary;
+// Export both for backward compatibility
+LmsDashboardWithErrorBoundary.displayName = 'LmsDashboardWithErrorBoundary';
+
+interface LmsDashboardProps {
+  initialData?: InitialLmsData | null;
+}
+
+export default LmsDashboard as React.FC<LmsDashboardProps>;
+

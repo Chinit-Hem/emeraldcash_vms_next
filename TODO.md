@@ -1,24 +1,17 @@
-# Deploy Fix TODO
+# Git Push Preparation TODO
 
-## 1. [ ] Fix Dependencies
-- Add shadcn-ui deps to package.json
-- npm install
+## Completed Steps
+- [x] Create TODO.md with step-by-step plan ✅
+- [ ] Stage all changes (git add .)
+- [ ] Commit changes (git commit -m "...")
+- [ ] Pull latest changes (git pull origin main)
+- [ ] Resolve any merge conflicts (if needed)
+- [ ] Push to origin/main (git push origin main)
+- [ ] Verify build (npm run build)
+- [ ] Update CHANGELOG.md version to released
+- [ ] Run lint check (npm run lint)
 
-## 2. [ ] Fix Syntax Errors
-- src/app/api/sms/assets/[id]/route.ts
-- src/app/cleaned-vehicles/page.tsx
+## Progress: 1/9 steps complete
 
-## 3. [ ] Fix TypeScript Errors
-- src/app/api/sms/history/[assetId]/route.ts (async params)
-
-## 4. [ ] Test Build
-- npm run lint
-- npm run build
-
-## 5. [ ] Git Sync & Push
-- git pull --rebase origin main
-- git push origin main
-
-## 6. [ ] Verify Deploy
-- Check Vercel/Render dashboard
+**Next step:** Stage all changes with `git add .`
 

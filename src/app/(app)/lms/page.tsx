@@ -16,11 +16,10 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import dynamic from "next/dynamic";
-import { lmsService } from "@/services/LmsService";
 import { NeuLmsSkeleton } from "@/app/components/skeletons/NeuLmsSkeleton";
 import type { InitialLmsData } from "@/lib/lms-types";
 
-const LmsDashboard = dynamic(() => import("@/app/components/lms/LmsDashboard"), {
+const LmsDashboardWithErrorBoundary = dynamic(() => import("@/app/components/lms/LmsDashboard"), {
   loading: () => <NeuLmsSkeleton />,
 });
 
@@ -48,8 +47,9 @@ export default async function LmsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200">
       <Suspense fallback={<NeuLmsSkeleton />}>
-        <LmsDashboard initialData={initialData} />
+        <LmsDashboardWithErrorBoundary initialData={initialData} />
       </Suspense>
     </div>
   );
 }
+
