@@ -1,18 +1,2 @@
-# Git Push Preparation TODO
-
-## Completed Steps
-- [x] Create TODO.md with step-by-step plan ✅
-- [x] Stage all changes (git add .) ✅
-- [x] Commit changes (git commit -m "chore(release): v0.2.0") ✅
-- [ ] Pull latest changes (git pull origin main)
-- [ ] Resolve any merge conflicts (if needed)
-- [ ] Push to origin/main (git push origin main)
-- [ ] Verify build (npm run build)
-- [ ] Update CHANGELOG.md version to released
-- [ ] Run lint check (npm run lint)
-
-## Progress: 3/9 steps complete
-
-**Next step:** Pull latest changes with `git pull origin main`
-
+# Deployment Fix Plan - Radix UI Dependencies\n\n## Steps to Complete:\n\n### 1. [x] Install missing Radix UI dependencies\n   - `@radix-ui/react-popover@latest` (1.1.15)\n   - `@radix-ui/react-slot@latest`\n   - Note: command.tsx is custom (no Radix), @radix-ui/react-command not needed\n   Status: ✅ Success\n\n### 2. [x] Test local build\n   Status: ❌ Failed - New TypeScript error in Next.js generated file next/dev/types/app/(app)/layout.ts line 5: 'InstantConfigForTypeCheckInternal' not exported. Radix module error fixed!\n\n### 3. [x] Verify command.tsx deps\n   - Custom implementation, no additional @radix-ui imports needed\n\n### 4. [ ] Commit and push\n   - `git add package.json package-lock.json`\n   - `git commit -m \"fix: add missing radix-ui deps for shadcn/ui popover (resolves module not found error)\"`\n   - `git push`\n\n### 5. [ ] Monitor Vercel deployment\n\n---\n*Radix UI fix complete. New TS issue likely Next.js/TS version mismatch (Next 16.1.6 + TS 5).*"
 
